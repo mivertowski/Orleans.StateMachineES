@@ -1,9 +1,12 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using ManagedCode.Orleans.StateMachine.Interfaces;
 using ManagedCode.Orleans.StateMachine.Models;
 using Orleans;
 using Stateless;
+using Stateless.Graph;
 
 namespace ManagedCode.Orleans.StateMachine;
 
@@ -27,22 +30,22 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
         return StateMachine.FireAsync(trigger);
     }
 
-    public Task FireAsync<TArg0>(StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0> trigger, TArg0 arg0)
+    public async Task FireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
-        return StateMachine.FireAsync(trigger, arg0);
+        var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+        await StateMachine.FireAsync(tp, arg0);
     }
 
-    public Task FireAsync<TArg0, TArg1>(StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1> trigger,
-        TArg0 arg0, TArg1 arg1)
+    public async Task FireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
-        return StateMachine.FireAsync(trigger, arg0, arg1);
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+        await StateMachine.FireAsync(tp, arg0, arg1);
     }
 
-    public Task FireAsync<TArg0, TArg1, TArg2>(
-        StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2> trigger, TArg0 arg0, TArg1 arg1,
-        TArg2 arg2)
+    public async Task FireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
-        return StateMachine.FireAsync(trigger, arg0, arg1, arg2);
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+        await StateMachine.FireAsync(tp, arg0, arg1, arg2);
     }
 
     public Task<TState> GetStateAsync()
@@ -63,6 +66,71 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     public Task<OrleansStateMachineInfo> GetInfoAsync()
     {
         return Task.FromResult(new OrleansStateMachineInfo(StateMachine.GetInfo()));
+    }
+
+    public Task<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args)
+    {
+        return Task.FromResult(StateMachine.GetPermittedTriggers(args));
+    }
+
+    public Task<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args)
+    {
+        return Task.FromResult(StateMachine.GetDetailedPermittedTriggers(args));
+    }
+
+    public Task<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync()
+    {
+        return Task.FromResult(StateMachine.PermittedTriggers);
+    }
+
+    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync(TTrigger trigger)
+    {
+        var result = StateMachine.CanFire(trigger, out var unmetGuards);
+        return Task.FromResult((result, unmetGuards));
+    }
+
+    public Task<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+        return Task.FromResult(StateMachine.CanFire(tp, arg0));
+    }
+
+    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+        var result = StateMachine.CanFire(tp, arg0, out var unmet);
+        return Task.FromResult((result, unmet));
+    }
+
+    public Task<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+        return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1));
+    }
+
+    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+        var result = StateMachine.CanFire(tp, arg0, arg1, out var unmet);
+        return Task.FromResult((result, unmet));
+    }
+
+    public Task<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+        return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1, arg2));
+    }
+
+    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+    {
+        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+        var result = StateMachine.CanFire(tp, arg0, arg1, arg2, out var unmet);
+        return Task.FromResult((result, unmet));
+    }
+    
+    public Task<string> ToStringAsync()
+    {
+        return Task.FromResult(StateMachine.ToString());
     }
 
     protected abstract StateMachine<TState, TTrigger> BuildStateMachine();

@@ -6,3 +6,4 @@ public interface ITestStatelessGrain : IGrainWithStringKey, IStateMachineGrain<s
 {
     Task<string> DoSomethingElse(char input);
 }
+
