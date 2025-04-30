@@ -5,43 +5,26 @@ using Stateless.Reflection;
 
 namespace ManagedCode.Orleans.StateMachine.Models;
 
+/// <summary>
+/// Represents serializable state information for a state in a Stateless state machine,
+/// including its substates and superstate, for use with Orleans.
+/// </summary>
 [GenerateSerializer]
 public class OrleansStateInfo
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrleansStateInfo"/> class from a Stateless <see cref="StateInfo"/>.
+    /// </summary>
+    /// <param name="stateInfo">The state information to wrap.</param>
     public OrleansStateInfo(StateInfo stateInfo)
     {
         UnderlyingState = stateInfo.UnderlyingState;
-
-        // if(stateInfo.IgnoredTriggers is not null)
-        //     IgnoredTriggers = new (stateInfo.IgnoredTriggers);
-        //
-        //
-        // if(stateInfo.EntryActions is not null)
-        //     EntryActions = new (stateInfo.EntryActions);
-        //
-        // if(stateInfo.ActivateActions is not null)
-        //     ActivateActions = new (stateInfo.ActivateActions);
-        //
-        // if(stateInfo.DeactivateActions is not null)
-        //     DeactivateActions = new (stateInfo.DeactivateActions);
-        //
-        // if(stateInfo.ExitActions is not null)
-        //     ExitActions = new (stateInfo.ExitActions);
 
         if (stateInfo.Substates is not null)
             Substates = new List<OrleansStateInfo>(stateInfo.Substates.Select(s => new OrleansStateInfo(s)));
 
         if (stateInfo.Superstate is not null)
             Superstate = new OrleansStateInfo(stateInfo.Superstate);
-
-        // if(stateInfo.FixedTransitions is not null)
-        //     FixedTransitions =new ( stateInfo.FixedTransitions);
-        //
-        // if(stateInfo.DynamicTransitions is not null)
-        //     DynamicTransitions = new (stateInfo.DynamicTransitions);
-        //
-        // if(stateInfo.IgnoredTriggers is not null)
-        //     IgnoredTriggers =new ( stateInfo.IgnoredTriggers);
     }
 
     /// <summary>The instance or value this state represents.</summary>
@@ -55,50 +38,12 @@ public class OrleansStateInfo
     /// <summary>Superstate defined, if any, for this StateResource.</summary>
     [Id(2)]
     public OrleansStateInfo Superstate { get; private set; }
+    
 
-    // /// <summary>
-    // /// Actions that are defined to be executed on state-entry.
-    // /// </summary>
-    // [Id(3)]
-    // private List<ActionInfo> EntryActions { get; private set; }
-    //
-    // /// <summary>
-    // /// Actions that are defined to be executed on activation.
-    // /// </summary>
-    // [Id(4)]
-    // public List<InvocationInfo> ActivateActions { get; private set; }
-    //
-    // /// <summary>
-    // /// Actions that are defined to be executed on deactivation.
-    // /// </summary>
-    // [Id(5)]
-    // public List<InvocationInfo> DeactivateActions { get; private set; }
-    //
-    // /// <summary>
-    // /// Actions that are defined to be exectuted on state-exit.
-    // /// </summary>
-    // [Id(6)]
-    // public List<InvocationInfo> ExitActions { get; private set; }
-
-    // /// <summary>Transitions defined for this state.</summary>
-    // [Id(7)]
-    // public List<FixedTransitionInfo> FixedTransitions { get; private set; }
-    //
-    // /// <summary>
-    // /// Dynamic Transitions defined for this state internally.
-    // /// </summary>
-    // [Id(8)]
-    // public List<DynamicTransitionInfo> DynamicTransitions { get; private set; }
-    //
-    // /// <summary>Triggers ignored for this state.</summary>
-    // [Id(9)]
-    // public List<IgnoredTransitionInfo> IgnoredTriggers { get; private set; }
-    //
-    // /// <summary>Transitions defined for this state.</summary>
-    // public List<TransitionInfo> Transitions => (List<TransitionInfo>)FixedTransitions.Concat<TransitionInfo>(DynamicTransitions);
-
-
-    /// <summary>Passes through to the value's ToString.</summary>
+    /// <summary>
+    /// Returns a string representation of the underlying state.
+    /// </summary>
+    /// <returns>The string representation of the underlying state or "&lt;null&gt;" if null.</returns>
     public override string ToString()
     {
         return UnderlyingState?.ToString() ?? "<null>";

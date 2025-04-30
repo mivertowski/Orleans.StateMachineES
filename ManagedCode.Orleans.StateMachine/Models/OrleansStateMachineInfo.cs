@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Orleans;
@@ -5,13 +6,25 @@ using Stateless.Reflection;
 
 namespace ManagedCode.Orleans.StateMachine.Models;
 
+/// <summary>
+/// Represents serializable information about a Stateless state machine,
+/// including its initial state, all states, and type information, for use with Orleans.
+/// </summary>
 [GenerateSerializer]
 public class OrleansStateMachineInfo
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrleansStateMachineInfo"/> class from a Stateless <see cref="StateMachineInfo"/>.
+    /// </summary>
+    /// <param name="info">The state machine information to wrap.</param>
     public OrleansStateMachineInfo(StateMachineInfo info)
     {
         InitialState = new OrleansStateInfo(info.InitialState);
         States = info.States.Select(s => new OrleansStateInfo(s)).ToList();
+        
+        ArgumentException.ThrowIfNullOrWhiteSpace(info.StateType?.FullName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(info.TriggerType?.FullName);
+        
         StateType = info.StateType.FullName;
         TriggerType = info.TriggerType.FullName;
     }
