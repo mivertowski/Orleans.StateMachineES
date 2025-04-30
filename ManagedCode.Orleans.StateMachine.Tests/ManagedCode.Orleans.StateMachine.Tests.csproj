@@ -38,14 +38,14 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.4" />
-        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.4" />
-        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.4" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-        <PackageReference Include="Microsoft.Orleans.Sdk" Version="8.1.0" />
-        <PackageReference Include="Microsoft.Orleans.Serialization.SystemTextJson" Version="8.1.0" />
-        <PackageReference Include="Microsoft.Orleans.Serialization.TestKit" Version="8.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
+        <PackageReference Include="Microsoft.Orleans.Serialization.SystemTextJson" Version="9.1.2" />
+        <PackageReference Include="Microsoft.Orleans.Serialization.TestKit" Version="9.1.2" />
     </ItemGroup>
 
     <ItemGroup>
