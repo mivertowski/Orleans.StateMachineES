@@ -292,6 +292,134 @@ public async Task Should_Navigate_Hierarchy_Correctly()
 }
 ```
 
+### 5. Distributed Sagas
+
+```csharp
+using ivlt.Orleans.StateMachineES.Sagas;
+
+public class InvoiceProcessingSaga : SagaOrchestratorGrain<InvoiceData>, IInvoiceProcessingSagaGrain
+{
+    protected override void ConfigureSagaSteps()
+    {
+        AddStep(new PostInvoiceStep())
+            .WithTimeout(TimeSpan.FromSeconds(30))
+            .WithRetry(3)
+            .WithMetadata("Description", "Posts invoice to accounting system");
+
+        AddStep(new CreateJournalEntryStep())
+            .WithTimeout(TimeSpan.FromSeconds(45))
+            .WithRetry(2)
+            .WithMetadata("Description", "Creates journal entries");
+
+        AddStep(new RunControlCheckStep())
+            .WithTimeout(TimeSpan.FromSeconds(60))
+            .WithRetry(1)
+            .WithMetadata("Description", "Runs compliance control checks");
+    }
+
+    protected override string GenerateBusinessTransactionId(InvoiceData sagaData)
+    {
+        return $"INV-TXN-{sagaData.InvoiceId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+    }
+}
+
+// Example saga step implementation
+public class PostInvoiceStep : ISagaStep<InvoiceData>
+{
+    public string StepName => "PostInvoice";
+    public TimeSpan Timeout => TimeSpan.FromSeconds(30);
+    public bool CanRetry => true;
+    public int MaxRetryAttempts => 3;
+
+    public async Task<SagaStepResult> ExecuteAsync(InvoiceData sagaData, SagaContext context)
+    {
+        try
+        {
+            var invoiceGrain = GrainFactory.GetGrain<IInvoiceGrain>(sagaData.InvoiceId);
+            var result = await invoiceGrain.PostAsync(sagaData, context.CorrelationId);
+            
+            return SagaStepResult.Success(result);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return SagaStepResult.BusinessFailure(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return SagaStepResult.TechnicalFailure(ex.Message, ex);
+        }
+    }
+
+    public async Task<CompensationResult> CompensateAsync(
+        InvoiceData sagaData, 
+        SagaStepResult? stepResult, 
+        SagaContext context)
+    {
+        try
+        {
+            var invoiceGrain = GrainFactory.GetGrain<IInvoiceGrain>(sagaData.InvoiceId);
+            await invoiceGrain.CancelAsync(context.CorrelationId);
+            
+            return CompensationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            return CompensationResult.Failure($"Failed to compensate invoice: {ex.Message}", ex);
+        }
+    }
+}
+```
+
+#### Usage Examples
+
+```csharp
+// Execute saga
+var sagaGrain = grainFactory.GetGrain<IInvoiceProcessingSagaGrain>("saga-123");
+var correlationId = Guid.NewGuid().ToString("N");
+
+var invoiceData = new InvoiceData
+{
+    InvoiceId = "INV-001",
+    CustomerId = "CUST-123",
+    Amount = 1500.00m
+};
+
+var result = await sagaGrain.ExecuteAsync(invoiceData, correlationId);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine("Saga completed successfully");
+}
+else if (result.IsCompensated)
+{
+    Console.WriteLine("Saga failed but was compensated successfully");
+}
+
+// Check saga status
+var status = await sagaGrain.GetStatusAsync();
+Console.WriteLine($"Saga status: {status.Status}");
+Console.WriteLine($"Current step: {status.CurrentStepName}");
+Console.WriteLine($"Progress: {status.CurrentStepIndex + 1}/{status.TotalSteps}");
+
+// Get detailed execution history
+var history = await sagaGrain.GetHistoryAsync();
+foreach (var step in history.StepExecutions)
+{
+    Console.WriteLine($"Step {step.StepName}: {step.IsSuccess} ({step.Duration.TotalMilliseconds}ms)");
+}
+```
+
+#### Saga Features
+
+- **Orchestration Pattern**: Central coordinator manages business process flow
+- **Automatic Compensation**: Failed steps trigger rollback of completed steps in reverse order
+- **Retry Logic**: Configurable retry attempts with exponential backoff for technical failures
+- **Correlation Tracking**: Full correlation ID propagation across all distributed operations
+- **Event Sourcing Integration**: Complete audit trail of saga execution and compensation
+- **Timeout Handling**: Per-step timeouts with graceful failure handling
+- **Hierarchical State Management**: Extends hierarchical state machine capabilities
+- **Business vs Technical Errors**: Different handling strategies for different error types
+
 ## Best Practices
 
 ### 1. State Machine Design

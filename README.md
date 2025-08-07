@@ -23,7 +23,8 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🌊 **Orleans Streams Integration** - Publish state transitions to streams
 - ⏰ **Timers & Reminders** - State-driven timeouts with Orleans timers and reminders
 - 🔄 **Repeating Actions** - Support for repeating timers with heartbeat patterns
-- 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships
+- 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships  
+- 🎭 **Distributed Sagas** - Multi-grain workflows with compensation and correlation tracking
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
 
 ### Original Features
@@ -350,6 +351,177 @@ var ancestors = await device.GetAncestorStatesAsync(DeviceState.Processing); // 
 var descendants = await device.GetDescendantStatesAsync(DeviceState.Online); // [Idle, Active, Processing, Monitoring]
 ```
 
+### Distributed Sagas (Phase 5)
+
+#### 1. Create a Multi-Grain Workflow with Compensation
+
+```csharp
+using ivlt.Orleans.StateMachineES.Sagas;
+
+public class InvoiceProcessingSaga : SagaOrchestratorGrain<InvoiceData>, IInvoiceProcessingSagaGrain
+{
+    protected override void ConfigureSagaSteps()
+    {
+        // Step 1: Post Invoice to accounting system
+        AddStep(new PostInvoiceStep())
+            .WithTimeout(TimeSpan.FromSeconds(30))
+            .WithRetry(3)
+            .WithMetadata("Description", "Posts invoice to accounting system");
+
+        // Step 2: Create Journal Entry in general ledger
+        AddStep(new CreateJournalEntryStep())
+            .WithTimeout(TimeSpan.FromSeconds(45))
+            .WithRetry(2)
+            .WithMetadata("Description", "Creates journal entries for GL");
+
+        // Step 3: Run Control Checks for compliance
+        AddStep(new RunControlCheckStep())
+            .WithTimeout(TimeSpan.FromSeconds(60))
+            .WithRetry(1)
+            .WithMetadata("Description", "Runs compliance control checks");
+    }
+
+    protected override string GenerateBusinessTransactionId(InvoiceData sagaData)
+    {
+        return $"INV-TXN-{sagaData.InvoiceId}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+    }
+}
+
+// Example saga step with compensation logic
+public class PostInvoiceStep : ISagaStep<InvoiceData>
+{
+    public string StepName => "PostInvoice";
+    public TimeSpan Timeout => TimeSpan.FromSeconds(30);
+    public bool CanRetry => true;
+    public int MaxRetryAttempts => 3;
+
+    public async Task<SagaStepResult> ExecuteAsync(InvoiceData sagaData, SagaContext context)
+    {
+        var invoiceGrain = GrainFactory.GetGrain<IInvoiceGrain>(sagaData.InvoiceId);
+        
+        try 
+        {
+            var result = await invoiceGrain.PostAsync(sagaData, context.CorrelationId);
+            return SagaStepResult.Success(result);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return SagaStepResult.BusinessFailure(ex.Message); // Triggers immediate compensation
+        }
+        catch (Exception ex)
+        {
+            return SagaStepResult.TechnicalFailure(ex.Message, ex); // Triggers retry then compensation
+        }
+    }
+
+    public async Task<CompensationResult> CompensateAsync(
+        InvoiceData sagaData, 
+        SagaStepResult? stepResult, 
+        SagaContext context)
+    {
+        var invoiceGrain = GrainFactory.GetGrain<IInvoiceGrain>(sagaData.InvoiceId);
+        await invoiceGrain.CancelAsync(context.CorrelationId);
+        
+        return CompensationResult.Success();
+    }
+}
+```
+
+#### 2. Execute and Monitor Sagas
+
+```csharp
+// Execute the multi-grain saga
+var sagaGrain = grainFactory.GetGrain<IInvoiceProcessingSagaGrain>("invoice-saga-123");
+var correlationId = Guid.NewGuid().ToString("N");
+
+var invoiceData = new InvoiceData
+{
+    InvoiceId = "INV-12345",
+    CustomerId = "CUST-789",
+    Amount = 2500.00m
+};
+
+var result = await sagaGrain.ExecuteAsync(invoiceData, correlationId);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine($"Saga completed successfully in {result.Duration.TotalSeconds}s");
+}
+else if (result.IsCompensated)
+{
+    Console.WriteLine("Saga failed but was fully compensated");
+    Console.WriteLine($"Error: {result.ErrorMessage}");
+}
+
+// Monitor saga progress
+var status = await sagaGrain.GetStatusAsync();
+Console.WriteLine($"Status: {status.Status}");
+Console.WriteLine($"Progress: {status.CurrentStepIndex + 1}/{status.TotalSteps}");
+
+// Get detailed execution history for audit
+var history = await sagaGrain.GetHistoryAsync();
+foreach (var step in history.StepExecutions)
+{
+    Console.WriteLine($"Step {step.StepName}: {(step.IsSuccess ? "✅" : "❌")} ({step.Duration.TotalMilliseconds}ms)");
+    if (step.RetryAttempts > 0)
+    {
+        Console.WriteLine($"  Retries: {step.RetryAttempts}");
+    }
+}
+
+// Show compensation history if any
+foreach (var compensation in history.CompensationExecutions)
+{
+    Console.WriteLine($"Compensated {compensation.StepName}: {(compensation.IsSuccess ? "✅" : "❌")}");
+}
+```
+
+#### 3. Saga Features
+
+- **Orchestration Pattern**: Central saga coordinator manages the entire business process
+- **Automatic Compensation**: Failed steps trigger rollback in reverse execution order
+- **Retry Logic**: Configurable retry with exponential backoff for technical failures
+- **Correlation Tracking**: Full distributed tracing with correlation IDs across all grains
+- **Business vs Technical Errors**: Different handling strategies for different error types
+- **Event Sourcing Integration**: Complete audit trail of saga execution and compensations
+- **Timeout Management**: Per-step timeouts with graceful degradation
+- **Status Monitoring**: Real-time saga progress and execution history
+
+#### 4. Error Handling Strategies
+
+```csharp
+// Business failures trigger immediate compensation without retry
+if (validationFails)
+{
+    return SagaStepResult.BusinessFailure("Customer credit limit exceeded");
+}
+
+// Technical failures trigger retry, then compensation if max attempts reached
+if (serviceUnavailable)
+{
+    return SagaStepResult.TechnicalFailure("Invoice service temporarily unavailable");
+}
+
+// Compensation must be idempotent and handle partial rollbacks
+public async Task<CompensationResult> CompensateAsync(...)
+{
+    try
+    {
+        // Only compensate if the step actually succeeded
+        if (stepResult?.IsSuccess == true)
+        {
+            await UndoInvoicePosting(sagaData.InvoiceId);
+        }
+        
+        return CompensationResult.Success();
+    }
+    catch (Exception ex)
+    {
+        return CompensationResult.Failure($"Compensation failed: {ex.Message}", ex);
+    }
+}
+```
+
 ## Advanced Features
 
 ### Guard Conditions with Detailed Feedback
@@ -488,7 +660,7 @@ This fork implements a phased approach to enhance Orleans state machines:
 - ✅ **Phase 1 & 2**: Event Sourcing with JournaledGrain (Complete)
 - ✅ **Phase 3**: Timers and Reminders (Complete)
 - ✅ **Phase 4**: Hierarchical/Nested States (Complete)
-- 📋 **Phase 5**: Distributed Sagas
+- ✅ **Phase 5**: Distributed Sagas & Compensations (Complete)
 - 📋 **Phase 6**: State Machine Versioning
 - 📋 **Phase 7**: Advanced Observability
 - 📋 **Phase 8**: Workflow Orchestration
