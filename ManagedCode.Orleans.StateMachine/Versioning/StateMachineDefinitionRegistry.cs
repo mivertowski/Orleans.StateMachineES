@@ -189,7 +189,7 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
 
         // Check against minimum supported version
         var latestEntry = grainDefinitions.Values.OrderByDescending(e => e.Version).FirstOrDefault();
-        if (latestEntry?.Metadata.MinSupportedVersion != null)
+        if (latestEntry?.Metadata.MinSupportedVersion is not null)
         {
             return Task.FromResult(version >= latestEntry.Metadata.MinSupportedVersion);
         }
@@ -218,15 +218,15 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
 
         if (directRule != null)
         {
-            var path = new MigrationPath
+            var directPath = new MigrationPath
             {
                 FromVersion = fromVersion,
                 ToVersion = toVersion,
                 Steps = new List<MigrationStep> { directRule.Step },
                 IsDirectPath = true
             };
-            path.UpdateEstimatedDuration();
-            return Task.FromResult<MigrationPath?>(path);
+            directPath.UpdateEstimatedDuration();
+            return Task.FromResult<MigrationPath?>(directPath);
         }
 
         // Try to find multi-step migration path

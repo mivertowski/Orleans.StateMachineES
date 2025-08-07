@@ -450,7 +450,7 @@ public class MigrationHooksTests
         
         await rollbackResult;
         context.GetStateValue<string>("TestProperty").Should().Be("TestValue");
-        context.GetStateValue<int>("AnotherProperty").Should().Be(42);
+        context.GrainState["AnotherProperty"].Should().Be(42);
         context.Metadata.Should().ContainKey("StateRestored");
     }
 

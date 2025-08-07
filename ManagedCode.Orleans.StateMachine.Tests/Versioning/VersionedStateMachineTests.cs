@@ -186,7 +186,8 @@ public class VersionedStateMachineTests
 
         // Assert
         availableVersions.Should().NotBeEmpty();
-        availableVersions.Should().Contain(v => v >= new StateMachineVersion(1, 0, 0));
+        var targetVersion = new StateMachineVersion(1, 0, 0);
+        availableVersions.Should().Contain(v => v >= targetVersion);
     }
 
     [Fact]
@@ -254,6 +255,12 @@ public class OrderWorkflowGrain :
     VersionedStateMachineGrain<OrderState, OrderTrigger, OrderWorkflowState>,
     IOrderWorkflowGrain
 {
+    protected override StateMachine<OrderState, OrderTrigger> BuildStateMachine()
+    {
+        // Return the current version's state machine
+        return BuildOrderWorkflowV2();
+    }
+
     protected override async Task RegisterBuiltInVersionsAsync()
     {
         if (DefinitionRegistry != null)
@@ -297,15 +304,15 @@ public class OrderWorkflowGrain :
         }
     }
 
-    protected override async Task<StateMachine<OrderState, OrderTrigger>?> BuildVersionedStateMachineAsync(StateMachineVersion version)
+    protected override Task<StateMachine<OrderState, OrderTrigger>?> BuildVersionedStateMachineAsync(StateMachineVersion version)
     {
-        return version switch
+        return Task.FromResult<StateMachine<OrderState, OrderTrigger>?>(version switch
         {
             { Major: 1, Minor: 0, Patch: 0 } => BuildOrderWorkflowV1(),
             { Major: 1, Minor: 1, Patch: 0 } => BuildOrderWorkflowV11(),
             { Major: 2, Minor: 0, Patch: 0 } => BuildOrderWorkflowV2(),
             _ => null
-        };
+        });
     }
 
     private StateMachine<OrderState, OrderTrigger> BuildOrderWorkflowV1()

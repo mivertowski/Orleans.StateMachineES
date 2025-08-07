@@ -290,16 +290,17 @@ public class ShadowComparisonResult<TState>
     /// <summary>
     /// Gets the results grouped by predicted outcome.
     /// </summary>
-    public Dictionary<TState?, List<StateMachineVersion>> GetResultsByOutcome()
+    public Dictionary<string, List<StateMachineVersion>> GetResultsByOutcome()
     {
-        var grouped = new Dictionary<TState?, List<StateMachineVersion>>();
+        var grouped = new Dictionary<string, List<StateMachineVersion>>();
         
         foreach (var result in EvaluationResults.Where(r => r.WouldSucceed))
         {
-            if (!grouped.ContainsKey(result.PredictedState))
-                grouped[result.PredictedState] = new List<StateMachineVersion>();
+            var key = result.PredictedState?.ToString() ?? "null";
+            if (!grouped.ContainsKey(key))
+                grouped[key] = new List<StateMachineVersion>();
             
-            grouped[result.PredictedState].Add(result.EvaluatedVersion);
+            grouped[key].Add(result.EvaluatedVersion);
         }
 
         return grouped;

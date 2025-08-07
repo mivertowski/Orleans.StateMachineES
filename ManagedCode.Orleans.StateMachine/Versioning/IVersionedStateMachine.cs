@@ -139,7 +139,7 @@ public class StateMachineVersion : IComparable<StateMachineVersion>
 
     public int CompareTo(StateMachineVersion? other)
     {
-        if (other == null) return 1;
+        if (other is null) return 1;
         
         var majorComparison = Major.CompareTo(other.Major);
         if (majorComparison != 0) return majorComparison;
