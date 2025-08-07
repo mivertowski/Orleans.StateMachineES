@@ -1,13 +1,29 @@
 # Orleans.StateMachineES
 
-[![NuGet](https://img.shields.io/nuget/v/ManagedCode.Orleans.StateMachine.svg)](https://www.nuget.org/packages/ManagedCode.Orleans.StateMachine/)
-[![.NET](https://github.com/managedcode/Orleans.StateMachineES/actions/workflows/dotnet.yml/badge.svg)](https://github.com/managedcode/Orleans.StateMachineES/actions/workflows/dotnet.yml)
-[![CodeQL](https://github.com/managedcode/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/managedcode/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml)
-[![License](https://img.shields.io/github/license/managedcode/Orleans.StateMachineES)](LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/ivlt.Orleans.StateMachineES.svg)](https://www.nuget.org/packages/ivlt.Orleans.StateMachineES/)
+[![.NET](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml)
+[![License](https://img.shields.io/github/license/mivertowski/Orleans.StateMachineES)](LICENSE)
 
-A powerful integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), enabling distributed state machines in Orleans grains with a clean, strongly-typed API.
+> **Fork Notice**: This is an enhanced fork of the original [ManagedCode.Orleans.StateMachine](https://github.com/managedcode/Orleans.StateMachine) library by the ManagedCode team.
 
-## Features
+A powerful integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), now enhanced with **event sourcing capabilities** and advanced distributed state machine features.
+
+## Fork Intention
+
+This fork extends the original ManagedCode.Orleans.StateMachine library with enterprise-grade event sourcing and advanced distributed state machine features. The goal is to provide a comprehensive solution for building event-driven, distributed state machines in Orleans with full audit trails, replay capabilities, and production-ready features.
+
+### New Features in this Fork
+
+- 📚 **Event Sourcing** - First-class event sourcing with Orleans JournaledGrain
+- 🔁 **Event Replay** - Automatic state reconstruction from event history
+- 🎯 **Idempotency** - Built-in deduplication with LRU cache
+- 📷 **Snapshots** - Configurable snapshot intervals for performance
+- 🔄 **Correlation Tracking** - Track related events across distributed systems
+- 🌊 **Orleans Streams Integration** - Publish state transitions to streams
+- 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
+
+### Original Features
 
 - 🎯 **Seamless Orleans Integration** - State machines as Orleans grains with full Orleans lifecycle support
 - 🔄 **Async-First API** - All operations are async-compatible for Orleans' single-threaded execution model
@@ -21,12 +37,14 @@ A powerful integration of the [Stateless](https://github.com/dotnet-state-machin
 ## Installation
 
 ```bash
-dotnet add package ManagedCode.Orleans.StateMachine
+dotnet add package ivlt.Orleans.StateMachineES
 ```
 
 ## Quick Start
 
-### 1. Define Your States and Triggers
+### Standard State Machine (Original Functionality)
+
+#### 1. Define Your States and Triggers
 
 ```csharp
 public enum DoorState
@@ -45,7 +63,7 @@ public enum DoorTrigger
 }
 ```
 
-### 2. Create Your State Machine Grain
+#### 2. Create Your State Machine Grain
 
 ```csharp
 public interface IDoorGrain : IGrainWithStringKey
@@ -100,7 +118,7 @@ public class DoorGrain : StateMachineGrain<DoorState, DoorTrigger>, IDoorGrain
 }
 ```
 
-### 3. Use Your State Machine Grain
+#### 3. Use Your State Machine Grain
 
 ```csharp
 // In your Orleans client or another grain
@@ -120,6 +138,57 @@ await doorGrain.LockAsync("secret-code");
 // Try to unlock
 await doorGrain.UnlockAsync("secret-code");
 ```
+
+### Event-Sourced State Machine (New in this Fork)
+
+#### 1. Create an Event-Sourced State Machine Grain
+
+```csharp
+using ivlt.Orleans.StateMachineES.EventSourcing;
+
+public class EventSourcedDoorGrain : EventSourcedStateMachineGrain<DoorState, DoorTrigger, DoorGrainState>, IDoorGrain
+{
+    private string? _lockCode;
+
+    protected override StateMachine<DoorState, DoorTrigger> BuildStateMachine()
+    {
+        // Same configuration as before
+        var machine = new StateMachine<DoorState, DoorTrigger>(DoorState.Closed);
+        // ... configure states ...
+        return machine;
+    }
+
+    protected override void ConfigureEventSourcing(EventSourcingOptions options)
+    {
+        options.AutoConfirmEvents = true;
+        options.EnableIdempotency = true;
+        options.EnableSnapshots = true;
+        options.SnapshotInterval = 100;
+        options.PublishToStream = true;
+        options.StreamProvider = "SMS";
+    }
+
+    // Implementation methods...
+}
+```
+
+#### 2. Configure Orleans Silo for Event Sourcing
+
+```csharp
+siloBuilder
+    .AddLogStorageBasedLogConsistencyProvider()
+    .AddStateStorageBasedLogConsistencyProvider()
+    .AddMemoryGrainStorage("EventStore")
+    .AddMemoryStreams("SMS");
+```
+
+#### 3. Benefits of Event Sourcing
+
+- **Complete Audit Trail** - Every state transition is recorded as an event
+- **Time Travel** - Replay events to reconstruct state at any point
+- **Debugging** - See exactly what happened and when
+- **Event Streaming** - Publish transitions to Orleans Streams for real-time processing
+- **Idempotency** - Automatic deduplication of duplicate commands
 
 ## Advanced Features
 
@@ -215,6 +284,34 @@ The library provides a base `StateMachineGrain<TState, TTrigger>` class that:
 - Microsoft Orleans 9.1.2 or higher
 - Stateless 5.17.0 or higher
 
+## Roadmap
+
+This fork implements a phased approach to enhance Orleans state machines:
+
+- ✅ **Phase 1 & 2**: Event Sourcing with JournaledGrain
+- 🚧 **Phase 3**: Timers and Reminders
+- 📋 **Phase 4**: Hierarchical/Nested States
+- 📋 **Phase 5**: Distributed Sagas
+- 📋 **Phase 6**: State Machine Versioning
+- 📋 **Phase 7**: Advanced Observability
+- 📋 **Phase 8**: Workflow Orchestration
+
+See [docs/plan.md](docs/plan.md) for detailed roadmap.
+
+## Author
+
+**Michael Ivertowski**  
+This fork is maintained by Michael Ivertowski under the MIT License.
+
+## Acknowledgements
+
+This project is a fork of the excellent [ManagedCode.Orleans.StateMachine](https://github.com/managedcode/Orleans.StateMachine) library. Deep respect and thanks to the ManagedCode team for creating the original foundation that made this enhanced version possible.
+
+Special thanks to:
+- The **ManagedCode** team for the original Orleans.StateMachine implementation
+- The **Stateless** team for the powerful state machine library
+- The **Microsoft Orleans** team for the actor framework
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -225,6 +322,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## References
 
+- [Original ManagedCode.Orleans.StateMachine](https://github.com/managedcode/Orleans.StateMachine) - The foundation for this fork
 - [Stateless State Machine](https://github.com/dotnet-state-machine/stateless)
 - [Microsoft Orleans](https://github.com/dotnet/orleans)
+- [Orleans Event Sourcing](https://learn.microsoft.com/en-us/dotnet/orleans/grains/event-sourcing/)
 - [NStateManager](https://github.com/scottctr/NStateManager) - Inspiration for some patterns

@@ -50,6 +50,9 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     private int _eventsSinceSnapshot;
     private readonly SemaphoreSlim _transitionSemaphore = new(1, 1);
     private IAsyncStream<StateTransitionEvent<TState, TTrigger>>? _eventStream;
+    
+    // Cache for trigger parameters to avoid reconfiguring
+    protected readonly Dictionary<TTrigger, object> TriggerParametersCache = new();
 
     /// <summary>
     /// Activates the state machine.
@@ -129,7 +132,14 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             }
 
             var fromState = StateMachine.State;
-            var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+            
+            // Get or create cached trigger parameters
+            if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+            {
+                cached = StateMachine.SetTriggerParameters<TArg0>(trigger);
+                TriggerParametersCache[trigger] = cached;
+            }
+            var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
             
             if (!StateMachine.CanFire(tp, arg0))
             {
@@ -173,7 +183,14 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             }
 
             var fromState = StateMachine.State;
-            var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+            
+            // Get or create cached trigger parameters
+            if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+            {
+                cached = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+                TriggerParametersCache[trigger] = cached;
+            }
+            var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
             
             if (!StateMachine.CanFire(tp, arg0, arg1))
             {
@@ -217,7 +234,14 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             }
 
             var fromState = StateMachine.State;
-            var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+            
+            // Get or create cached trigger parameters
+            if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+            {
+                cached = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+                TriggerParametersCache[trigger] = cached;
+            }
+            var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
             
             if (!StateMachine.CanFire(tp, arg0, arg1, arg2))
             {
@@ -388,7 +412,9 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args)
     {
-        return Task.FromResult(StateMachine.GetPermittedTriggers(args));
+        // Materialize the collection to avoid serialization issues with LINQ iterators
+        var triggers = StateMachine.GetPermittedTriggers(args).ToList();
+        return Task.FromResult<IEnumerable<TTrigger>>(triggers);
     }
 
     /// <summary>
@@ -396,7 +422,9 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args)
     {
-        return Task.FromResult(StateMachine.GetDetailedPermittedTriggers(args));
+        // Materialize the collection to avoid serialization issues with LINQ iterators
+        var details = StateMachine.GetDetailedPermittedTriggers(args).ToList();
+        return Task.FromResult<IEnumerable<TriggerDetails<TState, TTrigger>>>(details);
     }
 
     /// <summary>
@@ -404,7 +432,9 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync()
     {
-        return Task.FromResult(StateMachine.PermittedTriggers);
+        // Materialize the collection to avoid serialization issues with LINQ iterators
+        var triggers = StateMachine.PermittedTriggers.ToList();
+        return Task.FromResult<IEnumerable<TTrigger>>(triggers);
     }
 
     /// <summary>
@@ -421,7 +451,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
         return Task.FromResult(StateMachine.CanFire(tp, arg0));
     }
 
@@ -430,7 +466,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
         var result = StateMachine.CanFire(tp, arg0, out var unmet);
         return Task.FromResult((result, unmet));
     }
@@ -440,7 +482,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
         return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1));
     }
 
@@ -449,7 +497,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
         var result = StateMachine.CanFire(tp, arg0, arg1, out var unmet);
         return Task.FromResult((result, unmet));
     }
@@ -459,7 +513,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
         return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1, arg2));
     }
 
@@ -468,7 +528,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
-        var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+        // Get or create cached trigger parameters
+        if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
+        {
+            cached = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
+            TriggerParametersCache[trigger] = cached;
+        }
+        var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
         var result = StateMachine.CanFire(tp, arg0, arg1, arg2, out var unmet);
         return Task.FromResult((result, unmet));
     }
@@ -630,6 +696,9 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     protected virtual async Task InitializeStateMachineAsync()
     {
+        // Clear trigger parameters cache when rebuilding
+        TriggerParametersCache.Clear();
+        
         // Build the state machine configuration
         StateMachine = BuildStateMachine();
         NotNull(StateMachine, nameof(StateMachine));

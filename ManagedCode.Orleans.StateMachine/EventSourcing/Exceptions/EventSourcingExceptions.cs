@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Serialization;
+using Orleans;
 
 namespace ivlt.Orleans.StateMachineES.EventSourcing.Exceptions;
 
@@ -7,6 +8,7 @@ namespace ivlt.Orleans.StateMachineES.EventSourcing.Exceptions;
 /// Base exception for event sourcing related errors.
 /// </summary>
 [Serializable]
+[GenerateSerializer]
 public class EventSourcingException : Exception
 {
     /// <summary>
@@ -43,21 +45,25 @@ public class EventSourcingException : Exception
 /// Exception thrown when an invalid state transition is attempted.
 /// </summary>
 [Serializable]
+[GenerateSerializer]
 public class InvalidStateTransitionException : EventSourcingException
 {
     /// <summary>
     /// Gets the source state of the invalid transition.
     /// </summary>
+    [Id(0)]
     public object? FromState { get; }
 
     /// <summary>
     /// Gets the target state of the invalid transition.
     /// </summary>
+    [Id(1)]
     public object? ToState { get; }
 
     /// <summary>
     /// Gets the trigger that was attempted.
     /// </summary>
+    [Id(2)]
     public object? Trigger { get; }
 
     /// <summary>
@@ -127,16 +133,19 @@ public class InvalidStateTransitionException : EventSourcingException
 /// Exception thrown when event replay fails.
 /// </summary>
 [Serializable]
+[GenerateSerializer]
 public class EventReplayException : EventSourcingException
 {
     /// <summary>
     /// Gets the event number where replay failed.
     /// </summary>
+    [Id(0)]
     public int? FailedAtEventNumber { get; }
 
     /// <summary>
     /// Gets the event that caused the failure.
     /// </summary>
+    [Id(1)]
     public object? FailedEvent { get; }
 
     /// <summary>
@@ -194,11 +203,13 @@ public class EventReplayException : EventSourcingException
 /// Exception thrown when snapshot operations fail.
 /// </summary>
 [Serializable]
+[GenerateSerializer]
 public class SnapshotException : EventSourcingException
 {
     /// <summary>
     /// Gets the version at which the snapshot failed.
     /// </summary>
+    [Id(0)]
     public int? Version { get; }
 
     /// <summary>

@@ -6,10 +6,13 @@ using FluentAssertions;
 using ivlt.Orleans.StateMachineES.EventSourcing;
 using ivlt.Orleans.StateMachineES.EventSourcing.Configuration;
 using ivlt.Orleans.StateMachineES.EventSourcing.Events;
+using ivlt.Orleans.StateMachineES.EventSourcing.Exceptions;
 using ivlt.Orleans.StateMachineES.Tests.Cluster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.EventSourcing;
+using Orleans.Providers;
 using Orleans.TestingHost;
 using Stateless;
 using Xunit;
@@ -115,8 +118,8 @@ public class EventSourcedStateMachineGrainTests
         await grain.OpenAsync();
         
         Func<Task> act = async () => await grain.LockAsync("password");
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Cannot fire trigger 'Lock' from state 'Open'*");
+        await act.Should().ThrowAsync<InvalidStateTransitionException>()
+            .WithMessage("*Cannot fire trigger 'Lock'* from state 'Open'*");
     }
 
     [Fact]
@@ -142,8 +145,7 @@ public class EventSourcedStateMachineGrainTests
         // Arrange
         var grain = _testApp.Cluster.Client.GetGrain<ITestEventSourcedGrain>("test-es-6");
 
-        // Act - Lock with password
-        await grain.CloseAsync(); // Ensure closed first
+        // Act - Lock with password (door starts closed)
         await grain.LockAsync("my-password");
 
         // Assert
@@ -230,7 +232,7 @@ public class EventSourcedStateMachineGrainTests
 
         // Assert
         info.Should().NotBeNull();
-        info.InitialState.UnderlyingState.Should().Be(DoorState.Closed);
+        info.InitialState.UnderlyingState.Should().Be(1); // DoorState.Closed = 1
         info.States.Should().HaveCountGreaterThan(0);
         info.StateType.Should().Contain("DoorState");
         info.TriggerType.Should().Contain("DoorTrigger");
@@ -275,11 +277,14 @@ public interface ITestEventSourcedGrain : IGrainWithStringKey
         public string? LastCorrelationId { get; set; }
     }
 
+    [LogConsistencyProvider(ProviderName = "LogStorage")]
+    [StorageProvider(ProviderName = "Default")]
     public class TestEventSourcedGrain : EventSourcedStateMachineGrain<DoorState, DoorTrigger, TestEventSourcedGrainState>, ITestEventSourcedGrain
     {
         private string? _currentPassword;
         private string? _lastCorrelationId;
         private string? _currentCorrelationId;
+        private StateMachine<DoorState, DoorTrigger>.TriggerWithParameters<string>? _lockTriggerParam;
 
         protected override StateMachine<DoorState, DoorTrigger> BuildStateMachine()
         {
@@ -292,9 +297,14 @@ public interface ITestEventSourcedGrain : IGrainWithStringKey
                 .Permit(DoorTrigger.Open, DoorState.Open)
                 .Permit(DoorTrigger.Lock, DoorState.Locked);
 
+            _lockTriggerParam = machine.SetTriggerParameters<string>(DoorTrigger.Lock);
+            
+            // Cache the trigger parameter for reuse
+            TriggerParametersCache[DoorTrigger.Lock] = _lockTriggerParam;
+            
             machine.Configure(DoorState.Locked)
                 .PermitIf(DoorTrigger.Unlock, DoorState.Closed, () => true)
-                .OnEntryFrom(machine.SetTriggerParameters<string>(DoorTrigger.Lock), (string password) => 
+                .OnEntryFrom(_lockTriggerParam, (string password) => 
                 {
                     _currentPassword = password;
                     State.Password = password;
