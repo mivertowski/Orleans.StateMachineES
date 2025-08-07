@@ -218,13 +218,15 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
 
         if (directRule != null)
         {
-            return Task.FromResult<MigrationPath?>(new MigrationPath
+            var path = new MigrationPath
             {
                 FromVersion = fromVersion,
                 ToVersion = toVersion,
                 Steps = new List<MigrationStep> { directRule.Step },
                 IsDirectPath = true
-            });
+            };
+            path.UpdateEstimatedDuration();
+            return Task.FromResult<MigrationPath?>(path);
         }
 
         // Try to find multi-step migration path
@@ -278,13 +280,15 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
 
         if (currentVersion.CompareTo(toVersion) == 0)
         {
-            return new MigrationPath
+            var path = new MigrationPath
             {
                 FromVersion = fromVersion,
                 ToVersion = toVersion,
                 Steps = steps,
                 IsDirectPath = steps.Count == 1
             };
+            path.UpdateEstimatedDuration();
+            return path;
         }
 
         return null;
@@ -332,7 +336,15 @@ public class MigrationPath
     [Id(1)] public StateMachineVersion ToVersion { get; set; } = new();
     [Id(2)] public List<MigrationStep> Steps { get; set; } = new();
     [Id(3)] public bool IsDirectPath { get; set; }
-    [Id(4)] public TimeSpan EstimatedDuration => TimeSpan.FromMilliseconds(Steps.Sum(s => s.EstimatedDurationMs));
+    [Id(4)] public TimeSpan EstimatedDuration { get; set; } = TimeSpan.Zero;
+    
+    /// <summary>
+    /// Calculates and updates the estimated duration based on steps.
+    /// </summary>
+    public void UpdateEstimatedDuration()
+    {
+        EstimatedDuration = TimeSpan.FromMilliseconds(Steps.Sum(s => s.EstimatedDurationMs));
+    }
 }
 
 /// <summary>

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ivlt.Orleans.StateMachineES.EventSourcing;
 using ivlt.Orleans.StateMachineES.Sagas;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -13,14 +14,14 @@ using Stateless;
 namespace ivlt.Orleans.StateMachineES.Versioning;
 
 /// <summary>
-/// Base grain class for versioned state machines that extends SagaOrchestratorGrain.
+/// Base grain class for versioned state machines that extends EventSourcedStateMachineGrain.
 /// Provides comprehensive version management, migration, and shadow evaluation capabilities.
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 /// <typeparam name="TTrigger">The type of triggers in the state machine.</typeparam>
 /// <typeparam name="TGrainState">The type of grain state.</typeparam>
 public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> : 
-    SagaOrchestratorGrain<object>,
+    EventSourcedStateMachineGrain<TState, TTrigger, TGrainState>,
     IVersionedStateMachine<TState, TTrigger>
     where TState : struct, Enum
     where TTrigger : struct, Enum
@@ -32,10 +33,6 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
     private readonly Dictionary<StateMachineVersion, StateMachine<TState, TTrigger>> _versionedMachines = new();
     private StateMachine<TState, TTrigger>? _currentMachine;
 
-    /// <summary>
-    /// Gets the grain state cast to the versioned state type.
-    /// </summary>
-    protected new TGrainState State => (TGrainState)(object)base.State;
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
@@ -53,7 +50,7 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
         await InitializeVersioningAsync();
         
         VersionLogger?.LogInformation("Versioned state machine grain {GrainId} activated with version {Version}", 
-            GetPrimaryKeyString(), State.Version);
+            this.GetPrimaryKeyString(), State.Version);
     }
 
     /// <summary>
@@ -299,25 +296,28 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
 
             var shadowMachine = _versionedMachines[shadowVersion];
             
-            // Create a temporary machine instance with current state
-            var tempMachine = new StateMachine<TState, TTrigger>(currentState);
+            // Create the introspector for proper evaluation
+            var introspectorType = typeof(StateMachineIntrospector<,>).MakeGenericType(typeof(TState), typeof(TTrigger));
+            var loggerType = typeof(ILogger<>).MakeGenericType(introspectorType);
+            var introspectorLogger = ServiceProvider?.GetService(loggerType) ?? 
+                                    new LoggerFactory().CreateLogger(introspectorType);
             
-            // TODO: Copy configuration from shadow machine (this would need deep configuration copying)
-            // For now, we'll simulate the evaluation
+            dynamic introspector = Activator.CreateInstance(introspectorType, introspectorLogger)!;
             
-            // Check if trigger is permitted in shadow version
-            var permittedTriggers = shadowMachine.GetPermittedTriggers();
-            if (!permittedTriggers.Contains(trigger))
+            // Use introspector to predict the transition
+            dynamic prediction = await introspector.PredictTransition(shadowMachine, currentState, trigger);
+            
+            if (!prediction.CanFire)
             {
                 return ShadowEvaluationResult<TState>.Failure(
                     currentState, 
                     shadowVersion, 
-                    $"Trigger {trigger} not permitted in state {currentState}",
+                    $"Trigger {trigger} not permitted: {prediction.Reason}",
                     duration: DateTime.UtcNow - startTime);
             }
 
-            // Simulate the state transition
-            var destinationState = currentState; // This would be calculated from shadow machine rules
+            // Get the predicted destination state
+            TState destinationState = prediction.PredictedState ?? currentState;
             
             var duration = DateTime.UtcNow - startTime;
             
@@ -428,34 +428,14 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
 
     #endregion
 
-    #region State Machine Overrides
-
-    protected override StateMachine<SagaStatus, SagaTrigger> BuildStateMachine()
-    {
-        // Return the saga state machine for orchestration capabilities
-        return base.BuildStateMachine();
-    }
-
-    // For backward compatibility, provide the versioned state machine
-    protected virtual StateMachine<TState, TTrigger> BuildVersionedStateMachine()
-    {
-        throw new NotImplementedException("Override BuildVersionedStateMachine in derived classes");
-    }
-
-    protected override void ConfigureSagaSteps()
-    {
-        // Override if using saga capabilities
-    }
-
-    #endregion
 }
 
 /// <summary>
-/// State for versioned state machines that extends SagaGrainState.
+/// State for versioned state machines that extends EventSourcedStateMachineState.
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 [GenerateSerializer]
-public class VersionedStateMachineState<TState> : SagaGrainState<object>
+public class VersionedStateMachineState<TState> : EventSourcedStateMachineState<TState>
     where TState : struct, Enum
 {
     /// <summary>
@@ -464,11 +444,6 @@ public class VersionedStateMachineState<TState> : SagaGrainState<object>
     [Id(0)]
     public StateMachineVersion Version { get; set; } = new();
     
-    /// <summary>
-    /// Current state of the state machine.
-    /// </summary>
-    [Id(1)]
-    public TState CurrentState { get; set; }
     
     /// <summary>
     /// History of version upgrades.

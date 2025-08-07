@@ -295,10 +295,107 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)
     {
-        // This would analyze the actual state machine definitions
-        // For now, return a placeholder implementation
         var breakingChanges = new List<BreakingChange>();
 
+        try
+        {
+            // Get the actual state machine definitions from the registry
+            var fromDefinition = await _registry.GetDefinitionAsync<object, object>(grainTypeName, fromVersion);
+            var toDefinition = await _registry.GetDefinitionAsync<object, object>(grainTypeName, toVersion);
+
+            if (fromDefinition != null && toDefinition != null)
+            {
+                // Use reflection to create properly typed introspector
+                var definitionType = fromDefinition.GetType();
+                var genericArgs = definitionType.GetGenericArguments();
+                
+                if (genericArgs.Length == 2)
+                {
+                    var stateType = genericArgs[0];
+                    var triggerType = genericArgs[1];
+                    
+                    // Create introspector for the specific types
+                    var introspectorType = typeof(StateMachineIntrospector<,>).MakeGenericType(stateType, triggerType);
+                    var loggerType = typeof(ILogger<>).MakeGenericType(introspectorType);
+                    var logger = _logger as ILogger ?? new LoggerFactory().CreateLogger(introspectorType);
+                    
+                    dynamic introspector = Activator.CreateInstance(introspectorType, logger)!;
+                    
+                    // Extract configurations
+                    dynamic config1 = introspector.ExtractConfiguration(fromDefinition);
+                    dynamic config2 = introspector.ExtractConfiguration(toDefinition);
+                    
+                    // Compare configurations
+                    dynamic comparison = introspector.CompareConfigurations(config1, config2);
+                    
+                    // Analyze the comparison for breaking changes
+                    if (comparison.RemovedStates?.Count > 0)
+                    {
+                        foreach (var state in comparison.RemovedStates)
+                        {
+                            breakingChanges.Add(new BreakingChange
+                            {
+                                ChangeType = BreakingChangeType.StateRemoved,
+                                Description = $"State '{state}' was removed",
+                                Impact = BreakingChangeImpact.High,
+                                Mitigation = "Ensure no instances are in the removed state before upgrading"
+                            });
+                        }
+                    }
+                    
+                    if (comparison.RemovedTransitions?.Count > 0)
+                    {
+                        foreach (var transition in comparison.RemovedTransitions)
+                        {
+                            breakingChanges.Add(new BreakingChange
+                            {
+                                ChangeType = BreakingChangeType.TransitionRemoved,
+                                Description = $"Transition removed from state '{transition.State}'",
+                                Impact = BreakingChangeImpact.Medium,
+                                Mitigation = "Update client code to not use removed transitions"
+                            });
+                        }
+                    }
+                    
+                    if (comparison.ModifiedTransitions?.Count > 0)
+                    {
+                        foreach (var transition in comparison.ModifiedTransitions)
+                        {
+                            if (transition.IsBreaking)
+                            {
+                                breakingChanges.Add(new BreakingChange
+                                {
+                                    ChangeType = BreakingChangeType.TransitionRemoved,
+                                    Description = $"Transition destination changed in state '{transition.State}'",
+                                    Impact = BreakingChangeImpact.Medium,
+                                    Mitigation = "Review workflow logic for the modified transition"
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (comparison.GuardChanges?.Count > 0)
+                    {
+                        foreach (var guardChange in comparison.GuardChanges)
+                        {
+                            breakingChanges.Add(new BreakingChange
+                            {
+                                ChangeType = BreakingChangeType.GuardChanged,
+                                Description = $"Guard conditions changed in state '{guardChange.State}'",
+                                Impact = BreakingChangeImpact.Low,
+                                Mitigation = "Test guard conditions thoroughly"
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not perform deep analysis of breaking changes, using version comparison");
+        }
+
+        // Always check major version changes
         if (toVersion.Major > fromVersion.Major)
         {
             breakingChanges.Add(new BreakingChange
@@ -306,11 +403,11 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
                 ChangeType = BreakingChangeType.MajorVersionIncrease,
                 Description = $"Major version increase from {fromVersion.Major} to {toVersion.Major}",
                 Impact = BreakingChangeImpact.High,
-                Mitigation = "Full migration required"
+                Mitigation = "Full migration and testing required"
             });
         }
 
-        return await Task.FromResult(breakingChanges);
+        return breakingChanges;
     }
 
     private UpgradeRecommendationType DetermineRecommendationType(CompatibilityCheckResult compatibility)
@@ -360,14 +457,85 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)
     {
-        // This would analyze the actual differences between versions
-        // For now, return generic benefits
-        return await Task.FromResult(new List<string>
+        var benefits = new List<string>();
+
+        try
         {
-            $"Updated to version {toVersion}",
-            "Latest features and improvements",
-            "Security updates and bug fixes"
-        });
+            // Try to get version metadata from registry
+            var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
+            
+            // Get the actual definitions to analyze features
+            var fromDef = await _registry.GetDefinitionAsync<object, object>(grainTypeName, fromVersion);
+            var toDef = await _registry.GetDefinitionAsync<object, object>(grainTypeName, toVersion);
+
+            if (fromDef != null && toDef != null)
+            {
+                // Analyze structural improvements
+                var fromInfo = fromDef.GetType().GetMethod("GetInfo")?.Invoke(fromDef, Array.Empty<object>());
+                var toInfo = toDef.GetType().GetMethod("GetInfo")?.Invoke(toDef, Array.Empty<object>());
+                
+                if (fromInfo != null && toInfo != null)
+                {
+                    dynamic fromStates = fromInfo.GetType().GetProperty("States")?.GetValue(fromInfo);
+                    dynamic toStates = toInfo.GetType().GetProperty("States")?.GetValue(toInfo);
+                    
+                    if (fromStates != null && toStates != null)
+                    {
+                        int fromStateCount = 0;
+                        int toStateCount = 0;
+                        
+                        foreach (var state in fromStates) fromStateCount++;
+                        foreach (var state in toStates) toStateCount++;
+                        
+                        if (toStateCount > fromStateCount)
+                        {
+                            benefits.Add($"Added {toStateCount - fromStateCount} new state(s) for enhanced workflow");
+                        }
+                    }
+                }
+            }
+
+            // Version-specific benefits based on semantic versioning
+            if (toVersion.Major > fromVersion.Major)
+            {
+                benefits.Add($"Major version upgrade to {toVersion.Major}.x with new capabilities");
+                benefits.Add("Architectural improvements and optimizations");
+                benefits.Add("Enhanced error handling and recovery");
+            }
+            else if (toVersion.Minor > fromVersion.Minor)
+            {
+                benefits.Add($"Minor version upgrade to {toVersion} with backward compatibility");
+                benefits.Add("New features without breaking existing workflows");
+                benefits.Add("Performance improvements and bug fixes");
+            }
+            else if (toVersion.Patch > fromVersion.Patch)
+            {
+                benefits.Add($"Patch update to {toVersion} with bug fixes");
+                benefits.Add("Stability improvements");
+                benefits.Add("Security patches if applicable");
+            }
+
+            // Check for pre-release to stable upgrade
+            if (!string.IsNullOrEmpty(fromVersion.PreRelease) && string.IsNullOrEmpty(toVersion.PreRelease))
+            {
+                benefits.Add("Upgrade from pre-release to stable version");
+                benefits.Add("Production-ready release with full support");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not determine specific benefits, using defaults");
+        }
+
+        // Ensure we always have some benefits listed
+        if (benefits.Count == 0)
+        {
+            benefits.Add($"Updated to version {toVersion}");
+            benefits.Add("Latest improvements and optimizations");
+            benefits.Add("Continued support and maintenance");
+        }
+
+        return benefits;
     }
 
     private async Task<List<string>> DeterminePrerequisitesAsync(
@@ -375,13 +543,79 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)
     {
-        // This would determine what needs to be in place before upgrading
-        return await Task.FromResult(new List<string>
+        var prerequisites = new List<string>
         {
-            "Backup current state",
-            "Verify system health",
-            "Review breaking changes"
-        });
+            "Backup current state and configuration",
+            "Verify current system health and stability",
+            $"Review release notes for version {toVersion}"
+        };
+
+        try
+        {
+            // Analyze version jump to determine specific prerequisites
+            if (toVersion.Major > fromVersion.Major)
+            {
+                prerequisites.Add("Plan for potential downtime during major version upgrade");
+                prerequisites.Add("Test upgrade path in non-production environment");
+                prerequisites.Add("Prepare rollback plan in case of issues");
+                prerequisites.Add("Update client applications for compatibility");
+                prerequisites.Add("Train operations team on new features");
+            }
+            else if (toVersion.Minor > fromVersion.Minor)
+            {
+                prerequisites.Add("Review new features and their impact");
+                prerequisites.Add("Update monitoring for new metrics if applicable");
+                prerequisites.Add("Plan gradual rollout strategy");
+            }
+
+            // Check for migration path requirements
+            var migrationPath = await _registry.GetMigrationPathAsync(grainTypeName, fromVersion, toVersion);
+            if (migrationPath != null)
+            {
+                if (migrationPath.Steps.Count > 1)
+                {
+                    prerequisites.Add($"Multi-step migration required ({migrationPath.Steps.Count} steps)");
+                    prerequisites.Add($"Estimated migration time: {migrationPath.EstimatedDuration.TotalMinutes:F1} minutes");
+                }
+
+                foreach (var step in migrationPath.Steps)
+                {
+                    if (step.Type == MigrationStepType.Manual)
+                    {
+                        prerequisites.Add("Manual intervention required during migration");
+                        prerequisites.Add($"Manual step: {step.Description}");
+                    }
+                    else if (step.Type == MigrationStepType.EventReplay)
+                    {
+                        prerequisites.Add("Event replay required - ensure event store has sufficient history");
+                        prerequisites.Add("Plan for extended migration time due to event replay");
+                    }
+                    else if (step.Type == MigrationStepType.StateTransformation)
+                    {
+                        prerequisites.Add("State transformation required - validate transformation logic");
+                    }
+                }
+            }
+
+            // Check breaking changes
+            var breakingChanges = await AnalyzeBreakingChangesAsync(grainTypeName, fromVersion, toVersion);
+            if (breakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.High))
+            {
+                prerequisites.Add("High-impact breaking changes detected - thorough testing required");
+                prerequisites.Add("Update all dependent systems before migration");
+            }
+
+            // Check for active instances
+            prerequisites.Add("Verify no critical workflows are in progress");
+            prerequisites.Add("Check for long-running transactions that might be affected");
+
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not determine specific prerequisites, using defaults");
+        }
+
+        return prerequisites;
     }
 
     private DeploymentStrategy DetermineDeploymentStrategy(

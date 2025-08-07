@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Orleans;
 using Stateless;
 
 namespace ivlt.Orleans.StateMachineES.Versioning;
@@ -20,10 +22,15 @@ public class ShadowEvaluator<TState, TTrigger>
     where TTrigger : struct, Enum
 {
     private readonly ILogger<ShadowEvaluator<TState, TTrigger>> _logger;
+    private readonly StateMachineIntrospector<TState, TTrigger> _introspector;
 
-    public ShadowEvaluator(ILogger<ShadowEvaluator<TState, TTrigger>> logger)
+    public ShadowEvaluator(ILogger<ShadowEvaluator<TState, TTrigger>> logger, IServiceProvider? serviceProvider = null)
     {
         _logger = logger;
+        _introspector = serviceProvider?.GetService<StateMachineIntrospector<TState, TTrigger>>() ??
+                       new StateMachineIntrospector<TState, TTrigger>(
+                           serviceProvider?.GetService<ILogger<StateMachineIntrospector<TState, TTrigger>>>() ?? 
+                           new LoggerFactory().CreateLogger<StateMachineIntrospector<TState, TTrigger>>());
     }
 
     /// <summary>
@@ -143,34 +150,8 @@ public class ShadowEvaluator<TState, TTrigger>
         StateMachine<TState, TTrigger> originalMachine, 
         TState currentState)
     {
-        // Create a new machine instance with the current state
-        var shadowMachine = new StateMachine<TState, TTrigger>(currentState);
-        
-        // Copy the configuration from the original machine
-        CopyMachineConfiguration(originalMachine, shadowMachine);
-        
-        return shadowMachine;
-    }
-
-    /// <summary>
-    /// Copies configuration from one state machine to another.
-    /// This is a simplified implementation - in reality, this would need deep reflection.
-    /// </summary>
-    private void CopyMachineConfiguration(
-        StateMachine<TState, TTrigger> source, 
-        StateMachine<TState, TTrigger> target)
-    {
-        // This is a placeholder implementation
-        // In a real scenario, we would need to:
-        // 1. Copy all state configurations
-        // 2. Copy all permitted triggers and destinations
-        // 3. Copy all guards and actions
-        // 4. Handle parameterized triggers
-        
-        // For now, we'll assume the machines share the same basic configuration
-        // and focus on the evaluation logic
-        
-        _logger.LogDebug("Machine configuration copying is simplified in this implementation");
+        // Use the introspector to create a proper deep copy
+        return _introspector.CloneStateMachine(originalMachine, currentState);
     }
 
     /// <summary>
@@ -182,21 +163,38 @@ public class ShadowEvaluator<TState, TTrigger>
     {
         var currentState = machine.State;
         
-        // Get the destination state without actually firing the trigger
-        var permittedTriggers = machine.GetPermittedTriggers();
+        // Use the introspector to predict the transition
+        var prediction = await _introspector.PredictTransition(machine, currentState, trigger);
         
-        if (!permittedTriggers.Contains(trigger))
+        if (!prediction.CanFire)
         {
-            throw new InvalidOperationException($"Trigger {trigger} is not permitted");
+            throw new InvalidOperationException($"Trigger {trigger} is not permitted: {prediction.Reason}");
         }
 
-        // This is a simplified simulation
-        // In reality, we would need to examine the state configuration
-        // to determine the actual destination state based on guards, etc.
-        
-        // For demonstration, we'll return a predicted state
-        // In a real implementation, this would involve introspecting the machine configuration
-        return await Task.FromResult(currentState);
+        if (prediction.IsIgnored)
+        {
+            // Trigger is ignored, state remains the same
+            return currentState;
+        }
+
+        if (prediction.PredictedState.HasValue)
+        {
+            return prediction.PredictedState.Value;
+        }
+
+        if (prediction.HasGuard && prediction.PossibleDestinations.Count > 0)
+        {
+            // For guarded transitions, return the first possible destination
+            // In production, you might want to evaluate the actual guard condition
+            _logger.LogDebug("Guarded transition has {Count} possible destinations, returning first",
+                prediction.PossibleDestinations.Count);
+            return prediction.PossibleDestinations.First();
+        }
+
+        // Fallback to current state if no destination found
+        _logger.LogWarning("Could not determine destination state for trigger {Trigger} in state {State}",
+            trigger, currentState);
+        return currentState;
     }
 
     /// <summary>
