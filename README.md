@@ -351,6 +351,326 @@ var ancestors = await device.GetAncestorStatesAsync(DeviceState.Processing); // 
 var descendants = await device.GetDescendantStatesAsync(DeviceState.Online); // [Idle, Active, Processing, Monitoring]
 ```
 
+### State Machine Versioning (Phase 6)
+
+#### 1. Create a Versioned State Machine
+
+```csharp
+using ivlt.Orleans.StateMachineES.Versioning;
+
+public class OrderProcessorGrain : 
+    VersionedStateMachineGrain<OrderState, OrderTrigger, OrderProcessorState>,
+    IOrderProcessorGrain
+{
+    protected override async Task RegisterBuiltInVersionsAsync()
+    {
+        if (DefinitionRegistry != null)
+        {
+            // Register version 1.0.0 - Initial implementation
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(1, 0, 0),
+                () => BuildOrderProcessorV1(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Initial order processing implementation",
+                    Features = { "Basic order workflow", "Payment processing" }
+                });
+
+            // Register version 1.1.0 - Enhanced with validation
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(1, 1, 0),
+                () => BuildOrderProcessorV11(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Enhanced with validation and error handling",
+                    Features = { "Order validation", "Enhanced error handling", "Retry logic" }
+                });
+
+            // Register version 2.0.0 - Major refactor
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(2, 0, 0),
+                () => BuildOrderProcessorV2(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Major refactor with new workflow states",
+                    Features = { "Multi-step approval", "Advanced routing", "Batch processing" },
+                    BreakingChanges = { "Added approval states", "Changed validation logic" }
+                });
+        }
+    }
+
+    protected override async Task<StateMachine<OrderState, OrderTrigger>?> BuildVersionedStateMachineAsync(
+        StateMachineVersion version)
+    {
+        return version switch
+        {
+            { Major: 1, Minor: 0, Patch: 0 } => BuildOrderProcessorV1(),
+            { Major: 1, Minor: 1, Patch: 0 } => BuildOrderProcessorV11(),
+            { Major: 2, Minor: 0, Patch: 0 } => BuildOrderProcessorV2(),
+            _ => null
+        };
+    }
+
+    private StateMachine<OrderState, OrderTrigger> BuildOrderProcessorV1()
+    {
+        var machine = new StateMachine<OrderState, OrderTrigger>(OrderState.Created);
+
+        machine.Configure(OrderState.Created)
+            .Permit(OrderTrigger.Submit, OrderState.Processing);
+
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Complete, OrderState.Completed)
+            .Permit(OrderTrigger.Reject, OrderState.Rejected);
+
+        return machine;
+    }
+
+    private StateMachine<OrderState, OrderTrigger> BuildOrderProcessorV11()
+    {
+        var machine = BuildOrderProcessorV1();
+        
+        // Add validation state (backward compatible enhancement)
+        machine.Configure(OrderState.Created)
+            .Permit(OrderTrigger.Validate, OrderState.Validating);
+
+        machine.Configure(OrderState.Validating)
+            .Permit(OrderTrigger.Submit, OrderState.Processing)
+            .Permit(OrderTrigger.Reject, OrderState.Rejected);
+
+        return machine;
+    }
+
+    private StateMachine<OrderState, OrderTrigger> BuildOrderProcessorV2()
+    {
+        var machine = new StateMachine<OrderState, OrderTrigger>(OrderState.Created);
+        
+        // V2.0 - Major refactor with approval workflow
+        machine.Configure(OrderState.Created)
+            .Permit(OrderTrigger.Submit, OrderState.PendingApproval);
+
+        machine.Configure(OrderState.PendingApproval)
+            .Permit(OrderTrigger.Approve, OrderState.Processing)
+            .Permit(OrderTrigger.Reject, OrderState.Rejected);
+
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Complete, OrderState.Completed);
+
+        return machine;
+    }
+}
+```
+
+#### 2. Configure Versioning Services
+
+```csharp
+// In Program.cs
+siloBuilder.ConfigureServices(services =>
+{
+    services.AddSingleton<IStateMachineDefinitionRegistry, StateMachineDefinitionRegistry>();
+    services.AddSingleton<IVersionCompatibilityChecker, VersionCompatibilityChecker>();
+    
+    // Register migration hooks
+    services.AddSingleton<IMigrationHook>(provider => 
+        new BuiltInMigrationHooks.StateBackupHook());
+    services.AddSingleton<IMigrationHook>(provider => 
+        new BuiltInMigrationHooks.AuditLoggingHook(
+            provider.GetRequiredService<ILogger<BuiltInMigrationHooks.AuditLoggingHook>>()));
+});
+```
+
+#### 3. Version Management Operations
+
+```csharp
+// Check current version
+var grain = grainFactory.GetGrain<IOrderProcessorGrain>("order-123");
+var currentVersion = await grain.GetVersionAsync();
+Console.WriteLine($"Current version: {currentVersion}");
+
+// Get version compatibility information
+var compatibility = await grain.GetVersionCompatibilityAsync();
+Console.WriteLine($"Available versions: {string.Join(", ", compatibility.AvailableVersions)}");
+Console.WriteLine($"Supports automatic upgrade: {compatibility.SupportsAutomaticUpgrade}");
+
+// Upgrade to new version
+var targetVersion = new StateMachineVersion(1, 1, 0);
+var upgradeResult = await grain.UpgradeToVersionAsync(targetVersion, MigrationStrategy.Automatic);
+
+if (upgradeResult.IsSuccess)
+{
+    Console.WriteLine($"Successfully upgraded to {upgradeResult.NewVersion} in {upgradeResult.UpgradeDuration.TotalMilliseconds}ms");
+    
+    foreach (var change in upgradeResult.MigrationSummary!.ChangesApplied)
+    {
+        Console.WriteLine($"  - {change}");
+    }
+}
+else
+{
+    Console.WriteLine($"Upgrade failed: {upgradeResult.ErrorMessage}");
+}
+```
+
+#### 4. Shadow Evaluation
+
+```csharp
+// Test new version without committing changes
+var shadowVersion = new StateMachineVersion(2, 0, 0);
+var shadowResult = await grain.RunShadowEvaluationAsync(shadowVersion, OrderTrigger.Submit);
+
+if (shadowResult.WouldSucceed)
+{
+    Console.WriteLine($"Shadow evaluation: {shadowResult.CurrentState} -> {shadowResult.PredictedState}");
+    Console.WriteLine("Safe to upgrade to new version");
+}
+else
+{
+    Console.WriteLine($"Shadow evaluation failed: {shadowResult.ErrorMessage}");
+    Console.WriteLine("New version would break current workflow");
+}
+```
+
+#### 5. Blue-Green Deployment
+
+```csharp
+// Deploy new version alongside existing version
+var blueGreenResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(2, 0, 0), 
+    MigrationStrategy.BlueGreen);
+
+if (blueGreenResult.IsSuccess)
+{
+    Console.WriteLine("New version deployed in blue-green mode");
+    
+    // Test the new version with shadow evaluation
+    var testResult = await grain.RunShadowEvaluationAsync(
+        new StateMachineVersion(2, 0, 0), 
+        OrderTrigger.Submit);
+    
+    if (testResult.WouldSucceed)
+    {
+        // Switch to new version
+        await grain.UpgradeToVersionAsync(
+            new StateMachineVersion(2, 0, 0), 
+            MigrationStrategy.Automatic);
+        Console.WriteLine("Successfully switched to new version");
+    }
+    else
+    {
+        Console.WriteLine("New version failed validation, staying on current version");
+    }
+}
+```
+
+#### 6. Custom Migration Hooks
+
+```csharp
+public class OrderDataMigrationHook : IMigrationHook
+{
+    public string HookName => "OrderDataMigration";
+    public int Priority => 50;
+
+    public async Task<bool> BeforeMigrationAsync(MigrationContext context)
+    {
+        // Perform custom data migration
+        if (context.ToVersion.Major > context.FromVersion.Major)
+        {
+            // Major version upgrade - transform order data structure
+            var orderData = context.GetStateValue<OrderData>("OrderData");
+            if (orderData != null)
+            {
+                var migratedData = TransformOrderDataForV2(orderData);
+                context.SetStateValue("OrderData", migratedData);
+                
+                context.Metadata["OrderDataTransformed"] = true;
+            }
+        }
+        
+        return true;
+    }
+
+    public async Task AfterMigrationAsync(MigrationContext context)
+    {
+        // Verify migration success
+        if (context.Metadata.ContainsKey("OrderDataTransformed"))
+        {
+            Console.WriteLine("Order data successfully migrated to new format");
+        }
+    }
+
+    public async Task OnMigrationRollbackAsync(MigrationContext context, Exception error)
+    {
+        // Rollback custom changes if needed
+        Console.WriteLine($"Rolling back order data migration due to: {error.Message}");
+    }
+
+    private OrderData TransformOrderDataForV2(OrderData oldData)
+    {
+        // Transform data structure for version 2.0
+        return new OrderData
+        {
+            OrderId = oldData.OrderId,
+            // New required fields in V2
+            ApprovalRequired = oldData.Amount > 1000,
+            ApprovalLevel = DetermineApprovalLevel(oldData.Amount)
+        };
+    }
+}
+```
+
+#### 7. Version Compatibility Checking
+
+```csharp
+// Use version compatibility checker service
+var compatibilityChecker = serviceProvider.GetRequiredService<IVersionCompatibilityChecker>();
+
+// Check if upgrade is compatible
+var compatibilityResult = await compatibilityChecker.CheckCompatibilityAsync(
+    "OrderProcessorGrain",
+    new StateMachineVersion(1, 0, 0),
+    new StateMachineVersion(2, 0, 0));
+
+if (compatibilityResult.IsCompatible)
+{
+    Console.WriteLine($"Upgrade is compatible with {compatibilityResult.CompatibilityLevel} compatibility");
+}
+else
+{
+    Console.WriteLine("Upgrade requires migration:");
+    foreach (var change in compatibilityResult.BreakingChanges)
+    {
+        Console.WriteLine($"  - {change.Description} (Impact: {change.Impact})");
+        Console.WriteLine($"    Mitigation: {change.Mitigation}");
+    }
+}
+
+// Get upgrade recommendations
+var recommendations = await compatibilityChecker.GetUpgradeRecommendationsAsync(
+    "OrderProcessorGrain",
+    new StateMachineVersion(1, 0, 0));
+
+foreach (var rec in recommendations)
+{
+    Console.WriteLine($"Upgrade to {rec.ToVersion}: {rec.RecommendationType}");
+    Console.WriteLine($"  Risk: {rec.RiskLevel}, Effort: {rec.EstimatedEffort}");
+    Console.WriteLine($"  Benefits: {string.Join(", ", rec.Benefits)}");
+}
+```
+
+#### 8. Versioning Features
+
+- **Semantic Versioning**: Full semantic version support with major.minor.patch format
+- **Backward Compatibility**: Minor version upgrades are backward compatible
+- **Breaking Change Detection**: Automatic detection of breaking changes in major versions
+- **Shadow Evaluation**: Test new versions without affecting live state
+- **Migration Strategies**: Automatic, custom, blue-green, and dry-run migration options
+- **Migration Hooks**: Extensible hook system for custom migration logic
+- **Rollback Support**: Automatic rollback on migration failure
+- **Audit Trail**: Complete history of version upgrades and migrations
+- **Deployment Validation**: Check deployment compatibility with existing versions
+
 ### Distributed Sagas (Phase 5)
 
 #### 1. Create a Multi-Grain Workflow with Compensation
@@ -661,7 +981,7 @@ This fork implements a phased approach to enhance Orleans state machines:
 - ✅ **Phase 3**: Timers and Reminders (Complete)
 - ✅ **Phase 4**: Hierarchical/Nested States (Complete)
 - ✅ **Phase 5**: Distributed Sagas & Compensations (Complete)
-- 📋 **Phase 6**: State Machine Versioning
+- ✅ **Phase 6**: State Machine Versioning (Complete)
 - 📋 **Phase 7**: Advanced Observability
 - 📋 **Phase 8**: Workflow Orchestration
 

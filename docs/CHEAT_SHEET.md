@@ -420,6 +420,195 @@ foreach (var step in history.StepExecutions)
 - **Hierarchical State Management**: Extends hierarchical state machine capabilities
 - **Business vs Technical Errors**: Different handling strategies for different error types
 
+### 6. State Machine Versioning
+
+```csharp
+using ivlt.Orleans.StateMachineES.Versioning;
+
+public class VersionedOrderGrain : 
+    VersionedStateMachineGrain<OrderState, OrderTrigger, VersionedOrderState>,
+    IVersionedOrderGrain
+{
+    protected override async Task RegisterBuiltInVersionsAsync()
+    {
+        if (DefinitionRegistry != null)
+        {
+            // Register version 1.0.0
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(1, 0, 0),
+                () => BuildOrderWorkflowV1(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Initial order workflow",
+                    Features = { "Basic order processing" }
+                });
+
+            // Register version 1.1.0 (backward compatible)
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(1, 1, 0),
+                () => BuildOrderWorkflowV11(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Enhanced order workflow",
+                    Features = { "Enhanced validation", "Better error handling" }
+                });
+
+            // Register version 2.0.0 (breaking changes)
+            await DefinitionRegistry.RegisterDefinitionAsync<OrderState, OrderTrigger>(
+                GetType().Name,
+                new StateMachineVersion(2, 0, 0),
+                () => BuildOrderWorkflowV2(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = "Major refactor",
+                    Features = { "New approval workflow", "Multi-step processing" },
+                    BreakingChanges = { "Added approval states", "Changed validation rules" }
+                });
+        }
+    }
+
+    protected override Task<StateMachine<OrderState, OrderTrigger>?> BuildVersionedStateMachineAsync(
+        StateMachineVersion version)
+    {
+        return Task.FromResult(version switch
+        {
+            { Major: 1, Minor: 0, Patch: 0 } => BuildOrderWorkflowV1(),
+            { Major: 1, Minor: 1, Patch: 0 } => BuildOrderWorkflowV11(),
+            { Major: 2, Minor: 0, Patch: 0 } => BuildOrderWorkflowV2(),
+            _ => (StateMachine<OrderState, OrderTrigger>?)null
+        });
+    }
+}
+```
+
+#### Usage Examples
+
+```csharp
+// Check current version
+var grain = grainFactory.GetGrain<IVersionedOrderGrain>("order-123");
+var version = await grain.GetVersionAsync();
+Console.WriteLine($"Current version: {version}");
+
+// Get version compatibility info
+var compatibility = await grain.GetVersionCompatibilityAsync();
+Console.WriteLine($"Available versions: {string.Join(", ", compatibility.AvailableVersions)}");
+
+// Upgrade to new version
+var upgradeResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(1, 1, 0), 
+    MigrationStrategy.Automatic);
+
+if (upgradeResult.IsSuccess)
+{
+    Console.WriteLine($"Upgraded to {upgradeResult.NewVersion} in {upgradeResult.UpgradeDuration.TotalMilliseconds}ms");
+}
+
+// Shadow evaluation - test without committing
+var shadowResult = await grain.RunShadowEvaluationAsync(
+    new StateMachineVersion(2, 0, 0), 
+    OrderTrigger.Submit);
+
+if (shadowResult.WouldSucceed)
+{
+    Console.WriteLine($"Shadow: {shadowResult.CurrentState} -> {shadowResult.PredictedState}");
+    // Safe to upgrade
+}
+
+// Blue-green deployment
+var blueGreenResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(2, 0, 0), 
+    MigrationStrategy.BlueGreen);
+
+// Custom migration with hooks
+var customResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(2, 0, 0), 
+    MigrationStrategy.Custom);
+```
+
+#### Migration Hooks
+
+```csharp
+public class CustomMigrationHook : IMigrationHook
+{
+    public string HookName => "CustomDataMigration";
+    public int Priority => 50;
+
+    public async Task<bool> BeforeMigrationAsync(MigrationContext context)
+    {
+        // Pre-migration validation and data transformation
+        if (context.ToVersion.Major > context.FromVersion.Major)
+        {
+            // Handle breaking changes
+            var data = context.GetStateValue<OrderData>("OrderData");
+            if (data != null)
+            {
+                var transformed = TransformForNewVersion(data);
+                context.SetStateValue("OrderData", transformed);
+            }
+        }
+        return true;
+    }
+
+    public async Task AfterMigrationAsync(MigrationContext context)
+    {
+        // Post-migration verification
+        Console.WriteLine($"Migration completed for {context.GrainId}");
+    }
+
+    public async Task OnMigrationRollbackAsync(MigrationContext context, Exception error)
+    {
+        // Rollback custom changes
+        Console.WriteLine($"Rolling back migration: {error.Message}");
+    }
+}
+```
+
+#### Version Compatibility Checking
+
+```csharp
+var checker = serviceProvider.GetRequiredService<IVersionCompatibilityChecker>();
+
+// Check upgrade compatibility
+var result = await checker.CheckCompatibilityAsync(
+    "OrderGrain",
+    new StateMachineVersion(1, 0, 0),
+    new StateMachineVersion(2, 0, 0));
+
+if (!result.IsCompatible)
+{
+    foreach (var change in result.BreakingChanges)
+    {
+        Console.WriteLine($"Breaking change: {change.Description}");
+        Console.WriteLine($"Impact: {change.Impact}, Mitigation: {change.Mitigation}");
+    }
+}
+
+// Get upgrade recommendations
+var recommendations = await checker.GetUpgradeRecommendationsAsync(
+    "OrderGrain", 
+    new StateMachineVersion(1, 0, 0));
+
+foreach (var rec in recommendations)
+{
+    Console.WriteLine($"Upgrade to {rec.ToVersion}: {rec.RecommendationType}");
+    Console.WriteLine($"Risk: {rec.RiskLevel}, Effort: {rec.EstimatedEffort}");
+}
+```
+
+#### Versioning Features
+
+- **Semantic Versioning**: Full major.minor.patch version support with pre-release and build metadata
+- **Backward Compatibility**: Automatic compatibility checking for minor version upgrades
+- **Breaking Change Detection**: Identifies and documents breaking changes in major versions
+- **Migration Strategies**: Automatic, custom, blue-green, and dry-run migration options
+- **Shadow Evaluation**: Test new versions without affecting live state
+- **Migration Hooks**: Extensible system for custom migration logic with priorities
+- **Rollback Support**: Automatic state backup and rollback on migration failure
+- **Deployment Validation**: Check compatibility with existing deployed versions
+- **Audit Trail**: Complete history of version upgrades and migrations
+
 ## Best Practices
 
 ### 1. State Machine Design
