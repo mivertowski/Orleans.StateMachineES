@@ -23,6 +23,7 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🌊 **Orleans Streams Integration** - Publish state transitions to streams
 - ⏰ **Timers & Reminders** - State-driven timeouts with Orleans timers and reminders
 - 🔄 **Repeating Actions** - Support for repeating timers with heartbeat patterns
+- 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
 
 ### Original Features
@@ -262,6 +263,93 @@ siloBuilder
 - **Event Streaming** - Publish transitions to Orleans Streams for real-time processing
 - **Idempotency** - Automatic deduplication of duplicate commands
 
+### Hierarchical State Machine (Phase 4)
+
+#### 1. Create a State Machine with Nested States
+
+```csharp
+using ivlt.Orleans.StateMachineES.Hierarchical;
+
+public enum DeviceState { Offline, Online, Idle, Active, Processing, Monitoring }
+public enum DeviceTrigger { PowerOn, PowerOff, StartProcessing, StartMonitoring, Stop, Timeout }
+
+public class DeviceControllerGrain : HierarchicalStateMachineGrain<DeviceState, DeviceTrigger, DeviceGrainState>, IDeviceGrain
+{
+    protected override StateMachine<DeviceState, DeviceTrigger> BuildStateMachine()
+    {
+        var machine = new StateMachine<DeviceState, DeviceTrigger>(DeviceState.Offline);
+
+        // Root level states
+        machine.Configure(DeviceState.Offline)
+            .Permit(DeviceTrigger.PowerOn, DeviceState.Idle);
+
+        // Online is a parent state
+        machine.Configure(DeviceState.Online)
+            .Permit(DeviceTrigger.PowerOff, DeviceState.Offline);
+
+        // Idle is a substate of Online
+        machine.Configure(DeviceState.Idle)
+            .SubstateOf(DeviceState.Online)
+            .Permit(DeviceTrigger.StartProcessing, DeviceState.Processing);
+
+        // Active is a substate of Online, parent to Processing and Monitoring
+        machine.Configure(DeviceState.Active)
+            .SubstateOf(DeviceState.Online)
+            .Permit(DeviceTrigger.Stop, DeviceState.Idle);
+
+        // Processing is a substate of Active
+        machine.Configure(DeviceState.Processing)
+            .SubstateOf(DeviceState.Active)
+            .Permit(DeviceTrigger.StartMonitoring, DeviceState.Monitoring)
+            .Permit(DeviceTrigger.Stop, DeviceState.Idle);
+
+        return machine;
+    }
+
+    protected override void ConfigureHierarchy()
+    {
+        // Define explicit hierarchical relationships for queries
+        DefineSubstate(DeviceState.Idle, DeviceState.Online);
+        DefineSubstate(DeviceState.Active, DeviceState.Online);
+        DefineSubstate(DeviceState.Processing, DeviceState.Active);
+        DefineSubstate(DeviceState.Monitoring, DeviceState.Active);
+    }
+
+    // Interface methods
+    public Task PowerOnAsync() => FireAsync(DeviceTrigger.PowerOn);
+    public Task StartProcessingAsync() => FireAsync(DeviceTrigger.StartProcessing);
+    
+    // Hierarchical queries
+    public Task<bool> IsOnlineAsync() => IsInStateOrSubstateAsync(DeviceState.Online);
+    public Task<IReadOnlyList<DeviceState>> GetCurrentPathAsync() => GetCurrentStatePathAsync();
+}
+```
+
+#### 2. Hierarchical State Features
+
+- **Parent-Child Relationships** - States can have substates that inherit behaviors
+- **State Inheritance** - Being in a substate means you're also in the parent state
+- **Hierarchy Queries** - Query ancestors, descendants, and state paths
+- **Event Sourcing Integration** - Hierarchical transitions are recorded with full context
+- **Timer Inheritance** - Substates can inherit timeout behaviors from parent states
+
+```csharp
+// Usage examples
+var device = grainFactory.GetGrain<IDeviceGrain>("device-1");
+
+await device.PowerOnAsync();        // -> Idle (substate of Online)
+await device.StartProcessingAsync(); // -> Processing (substate of Active, which is substate of Online)
+
+// Hierarchical checks
+var isOnline = await device.IsOnlineAsync(); // true (Processing is a descendant of Online)
+var currentPath = await device.GetCurrentPathAsync(); // [Online, Active, Processing]
+
+// Query hierarchy
+var parent = await device.GetParentStateAsync(DeviceState.Processing); // Active
+var ancestors = await device.GetAncestorStatesAsync(DeviceState.Processing); // [Active, Online]
+var descendants = await device.GetDescendantStatesAsync(DeviceState.Online); // [Idle, Active, Processing, Monitoring]
+```
+
 ## Advanced Features
 
 ### Guard Conditions with Detailed Feedback
@@ -399,7 +487,7 @@ This fork implements a phased approach to enhance Orleans state machines:
 
 - ✅ **Phase 1 & 2**: Event Sourcing with JournaledGrain (Complete)
 - ✅ **Phase 3**: Timers and Reminders (Complete)
-- 📋 **Phase 4**: Hierarchical/Nested States
+- ✅ **Phase 4**: Hierarchical/Nested States (Complete)
 - 📋 **Phase 5**: Distributed Sagas
 - 📋 **Phase 6**: State Machine Versioning
 - 📋 **Phase 7**: Advanced Observability
