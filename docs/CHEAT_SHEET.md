@@ -295,7 +295,7 @@ public async Task Should_Navigate_Hierarchy_Correctly()
 ### 5. Distributed Sagas
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Sagas;
+using Orleans.StateMachineES.Sagas;
 
 public class InvoiceProcessingSaga : SagaOrchestratorGrain<InvoiceData>, IInvoiceProcessingSagaGrain
 {
@@ -423,7 +423,7 @@ foreach (var step in history.StepExecutions)
 ### 6. State Machine Versioning
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Versioning;
+using Orleans.StateMachineES.Versioning;
 
 public class VersionedOrderGrain : 
     VersionedStateMachineGrain<OrderState, OrderTrigger, VersionedOrderState>,

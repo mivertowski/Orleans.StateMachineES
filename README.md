@@ -1,6 +1,6 @@
 # Orleans.StateMachineES
 
-[![NuGet](https://img.shields.io/nuget/v/ivlt.Orleans.StateMachineES.svg)](https://www.nuget.org/packages/ivlt.Orleans.StateMachineES/)
+[![NuGet](https://img.shields.io/nuget/v/Orleans.StateMachineES.svg)](https://www.nuget.org/packages/Orleans.StateMachineES/)
 [![.NET](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mivertowski/Orleans.StateMachineES/actions/workflows/codeql-analysis.yml)
 [![License](https://img.shields.io/github/license/mivertowski/Orleans.StateMachineES)](LICENSE)
@@ -38,10 +38,15 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🔍 **Comprehensive Metadata** - Export state machine structure and configuration
 - ⚡ **Orleans Context Extensions** - Special async extensions for Orleans grain context
 
-## Installation
+## 📦 Installation
 
 ```bash
-dotnet add package ivlt.Orleans.StateMachineES
+dotnet add package Orleans.StateMachineES
+```
+
+### NuGet Package
+```xml
+<PackageReference Include="Orleans.StateMachineES" Version="1.0.0" />
 ```
 
 ## Quick Start
@@ -148,7 +153,7 @@ await doorGrain.UnlockAsync("secret-code");
 #### 1. Create an Event-Sourced State Machine Grain
 
 ```csharp
-using ivlt.Orleans.StateMachineES.EventSourcing;
+using Orleans.StateMachineES.EventSourcing;
 
 public class EventSourcedDoorGrain : EventSourcedStateMachineGrain<DoorState, DoorTrigger, DoorGrainState>, IDoorGrain
 {
@@ -181,7 +186,7 @@ public class EventSourcedDoorGrain : EventSourcedStateMachineGrain<DoorState, Do
 #### 1. Create a State Machine with Timers and Reminders
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Timers;
+using Orleans.StateMachineES.Timers;
 
 public enum ProcessingState { Idle, Processing, Monitoring, Completed, TimedOut, Failed }
 public enum ProcessingTrigger { Start, Complete, Timeout, Heartbeat, Cancel }
@@ -269,7 +274,7 @@ siloBuilder
 #### 1. Create a State Machine with Nested States
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Hierarchical;
+using Orleans.StateMachineES.Hierarchical;
 
 public enum DeviceState { Offline, Online, Idle, Active, Processing, Monitoring }
 public enum DeviceTrigger { PowerOn, PowerOff, StartProcessing, StartMonitoring, Stop, Timeout }
@@ -356,7 +361,7 @@ var descendants = await device.GetDescendantStatesAsync(DeviceState.Online); // 
 #### 1. Create a Versioned State Machine
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Versioning;
+using Orleans.StateMachineES.Versioning;
 
 public class OrderProcessorGrain : 
     VersionedStateMachineGrain<OrderState, OrderTrigger, OrderProcessorState>,
@@ -676,7 +681,7 @@ foreach (var rec in recommendations)
 #### 1. Create a Multi-Grain Workflow with Compensation
 
 ```csharp
-using ivlt.Orleans.StateMachineES.Sagas;
+using Orleans.StateMachineES.Sagas;
 
 public class InvoiceProcessingSaga : SagaOrchestratorGrain<InvoiceData>, IInvoiceProcessingSagaGrain
 {
@@ -966,6 +971,42 @@ The library provides a base `StateMachineGrain<TState, TTrigger>` class that:
 - Integrates with Orleans grain lifecycle
 - Provides thread-safe state management through Orleans' single-threaded execution model
 - Supports comprehensive state inspection and metadata export
+
+## 🏗️ Project Structure
+
+```
+Orleans.StateMachineES/
+├── src/
+│   └── Orleans.StateMachineES/
+│       ├── EventSourcing/          # Event sourcing implementation
+│       │   ├── Configuration/      # Event sourcing options
+│       │   ├── Events/            # Event definitions
+│       │   └── Exceptions/        # Custom exceptions
+│       ├── Hierarchical/          # Hierarchical state machines
+│       ├── Interfaces/            # Core interfaces
+│       ├── Models/                # Data models
+│       ├── Sagas/                 # Distributed saga support
+│       ├── Timers/                # Timer-based transitions
+│       ├── Versioning/            # State machine versioning
+│       │   ├── StateMachineIntrospector.cs
+│       │   ├── ImprovedStateMachineIntrospector.cs
+│       │   └── VersionedStateMachineGrain.cs
+│       ├── Extensions/            # Extension methods
+│       └── StateMachineGrain.cs  # Base grain implementation
+├── tests/
+│   └── Orleans.StateMachineES.Tests/
+│       ├── Cluster/               # Test cluster setup
+│       ├── EventSourcing/         # Event sourcing tests
+│       ├── Hierarchical/          # Hierarchical tests
+│       ├── Sagas/                 # Saga tests
+│       ├── Timers/                # Timer tests
+│       └── Versioning/            # Versioning tests
+├── docs/                          # Documentation
+│   ├── CHEAT_SHEET.md
+│   ├── IMPLEMENTATION_STRATEGY.md
+│   └── MIGRATION_GUIDE.md
+└── Orleans.StateMachineES.sln     # Solution file
+```
 
 ## Requirements
 

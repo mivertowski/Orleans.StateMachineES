@@ -1,14 +1,14 @@
-# Migration Guide: From ManagedCode.Orleans.StateMachine to ivlt.Orleans.StateMachineES
+# Migration Guide: From ManagedCode.Orleans.StateMachine to Orleans.StateMachineES
 
 ## Overview
 
-This guide helps you migrate from the original `ManagedCode.Orleans.StateMachine` library to the enhanced `ivlt.Orleans.StateMachineES` library with event sourcing capabilities.
+This guide helps you migrate from the original `ManagedCode.Orleans.StateMachine` library to the enhanced `Orleans.StateMachineES` library with event sourcing capabilities.
 
 ## Key Differences
 
 ### 1. Namespace Changes
 - **Old**: `ManagedCode.Orleans.StateMachine`
-- **New**: `ivlt.Orleans.StateMachineES`
+- **New**: `Orleans.StateMachineES`
 
 ### 2. New Features
 - **Event Sourcing**: Automatic persistence of state transitions as events
@@ -28,7 +28,7 @@ dotnet remove package ManagedCode.Orleans.StateMachine
 
 Add the new package:
 ```bash
-dotnet add package ivlt.Orleans.StateMachineES
+dotnet add package Orleans.StateMachineES
 ```
 
 ### Step 2: Update Namespace Imports
@@ -43,10 +43,10 @@ using ManagedCode.Orleans.StateMachine.Models;
 using ManagedCode.Orleans.StateMachine.Extensions;
 
 // New
-using ivlt.Orleans.StateMachineES;
-using ivlt.Orleans.StateMachineES.Interfaces;
-using ivlt.Orleans.StateMachineES.Models;
-using ivlt.Orleans.StateMachineES.Extensions;
+using Orleans.StateMachineES;
+using Orleans.StateMachineES.Interfaces;
+using Orleans.StateMachineES.Models;
+using Orleans.StateMachineES.Extensions;
 ```
 
 ### Step 3: Choose Your Base Class
@@ -197,10 +197,10 @@ public async Task EventSourcedGrain_PersistsTransitions()
 
 If you need to rollback to the original library:
 
-1. Keep the namespace as `ivlt.Orleans.StateMachineES` but use `StateMachineGrain` base class
+1. Keep the namespace as `Orleans.StateMachineES` but use `StateMachineGrain` base class
 2. Or create type aliases:
 ```csharp
-global using StateMachineGrain = ivlt.Orleans.StateMachineES.StateMachineGrain;
+global using StateMachineGrain = Orleans.StateMachineES.StateMachineGrain;
 ```
 
 ## Common Issues and Solutions

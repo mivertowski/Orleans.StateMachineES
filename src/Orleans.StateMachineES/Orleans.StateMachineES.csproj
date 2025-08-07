@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Orleans.StateMachineES</AssemblyName>
+    <RootNamespace>Orleans.StateMachineES</RootNamespace>
+    <PackageId>Orleans.StateMachineES</PackageId>
+    <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
+    <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Enterprise-grade state machine implementation for Microsoft Orleans with event sourcing, sagas, and versioning support</Description>
+    <Authors>mivertowski</Authors>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
+    <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="9.1.2" />
+    <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.1.2" />
+    <PackageReference Include="Microsoft.Orleans.Reminders" Version="9.1.2" />
+    <PackageReference Include="Stateless" Version="5.17.0" />
+  </ItemGroup>
+
+</Project>

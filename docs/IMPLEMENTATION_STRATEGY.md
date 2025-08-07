@@ -21,7 +21,7 @@ This document outlines the phased implementation strategy for extending the Orle
 **Goal**: Establish new project structure and basic event sourcing infrastructure
 
 **Tasks**:
-1. Rename namespace from `ManagedCode.Orleans.StateMachine` to `ivlt.Orleans.StateMachineES`
+1. Rename namespace from `ManagedCode.Orleans.StateMachine` to `Orleans.StateMachineES`
 2. Update package metadata (author, version 1.0.0-alpha)
 3. Create base classes:
    - `EventSourcedStateMachineGrain<TState, TTrigger, TEvent>` (extends JournaledGrain)
@@ -33,7 +33,7 @@ This document outlines the phased implementation strategy for extending the Orle
 5. Create comprehensive unit tests for event sourcing
 
 **Deliverables**:
-- New NuGet package: `ivlt.Orleans.StateMachineES`
+- New NuGet package: `Orleans.StateMachineES`
 - Basic event-sourced state machine working
 - Migration guide from original library
 
@@ -269,7 +269,7 @@ using ManagedCode.Orleans.StateMachine;
 public class DoorGrain : StateMachineGrain<DoorState, DoorTrigger>
 
 // After
-using ivlt.Orleans.StateMachineES;
+using Orleans.StateMachineES;
 public class DoorGrain : EventSourcedStateMachineGrain<DoorState, DoorTrigger, DoorEvent>
 ```
 
