@@ -21,6 +21,8 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 📷 **Snapshots** - Configurable snapshot intervals for performance
 - 🔄 **Correlation Tracking** - Track related events across distributed systems
 - 🌊 **Orleans Streams Integration** - Publish state transitions to streams
+- ⏰ **Timers & Reminders** - State-driven timeouts with Orleans timers and reminders
+- 🔄 **Repeating Actions** - Support for repeating timers with heartbeat patterns
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
 
 ### Original Features
@@ -172,17 +174,87 @@ public class EventSourcedDoorGrain : EventSourcedStateMachineGrain<DoorState, Do
 }
 ```
 
-#### 2. Configure Orleans Silo for Event Sourcing
+### Timer-Enabled State Machine (Phase 3)
+
+#### 1. Create a State Machine with Timers and Reminders
+
+```csharp
+using ivlt.Orleans.StateMachineES.Timers;
+
+public enum ProcessingState { Idle, Processing, Monitoring, Completed, TimedOut, Failed }
+public enum ProcessingTrigger { Start, Complete, Timeout, Heartbeat, Cancel }
+
+public class TimerProcessingGrain : TimerEnabledStateMachineGrain<ProcessingState, ProcessingTrigger, ProcessingGrainState>, IProcessingGrain
+{
+    protected override StateMachine<ProcessingState, ProcessingTrigger> BuildStateMachine()
+    {
+        var machine = new StateMachine<ProcessingState, ProcessingTrigger>(ProcessingState.Idle);
+
+        machine.Configure(ProcessingState.Processing)
+            .Permit(ProcessingTrigger.Complete, ProcessingState.Completed)
+            .Permit(ProcessingTrigger.Timeout, ProcessingState.TimedOut);
+
+        machine.Configure(ProcessingState.Monitoring)
+            .Permit(ProcessingTrigger.Cancel, ProcessingState.Idle)
+            .Ignore(ProcessingTrigger.Heartbeat); // For repeating heartbeats
+
+        return machine;
+    }
+
+    protected override void ConfigureTimeouts()
+    {
+        // Short timeout with Orleans Timer
+        RegisterStateTimeout(ProcessingState.Processing,
+            ConfigureTimeout(ProcessingState.Processing)
+                .After(TimeSpan.FromSeconds(30))
+                .TransitionTo(ProcessingTrigger.Timeout)
+                .UseTimer()
+                .WithName("ProcessingTimeout")
+                .Build());
+
+        // Repeating heartbeat timer
+        RegisterStateTimeout(ProcessingState.Monitoring,
+            ConfigureTimeout(ProcessingState.Monitoring)
+                .After(TimeSpan.FromSeconds(10))
+                .TransitionTo(ProcessingTrigger.Heartbeat)
+                .UseTimer()
+                .Repeat()
+                .WithName("MonitoringHeartbeat")
+                .Build());
+
+        // Long-running timeout with Orleans Reminder (durable)
+        RegisterStateTimeout(ProcessingState.LongRunning,
+            ConfigureTimeout(ProcessingState.LongRunning)
+                .After(TimeSpan.FromHours(2))
+                .TransitionTo(ProcessingTrigger.Timeout)
+                .UseDurableReminder() // Survives grain deactivation
+                .WithName("LongRunningTimeout")
+                .Build());
+    }
+}
+```
+
+#### 2. Configure Orleans Silo for Timers and Event Sourcing
 
 ```csharp
 siloBuilder
     .AddLogStorageBasedLogConsistencyProvider()
     .AddStateStorageBasedLogConsistencyProvider()
     .AddMemoryGrainStorage("EventStore")
-    .AddMemoryStreams("SMS");
+    .AddMemoryStreams("SMS")
+    .UseInMemoryReminderService(); // For durable reminders
 ```
 
-#### 3. Benefits of Event Sourcing
+#### 3. Timer Features
+
+- **Automatic Management** - Timers start/stop automatically on state transitions
+- **Orleans Timers** - Fast, in-memory timers for short durations (< 5 minutes)
+- **Orleans Reminders** - Durable, persistent reminders for long durations (> 5 minutes)
+- **Repeating Timers** - Support for periodic actions like heartbeats
+- **Fluent Configuration** - Intuitive API for timeout setup
+- **Event Sourcing Integration** - Timer events are recorded in event history
+
+#### 4. Benefits of Event Sourcing
 
 - **Complete Audit Trail** - Every state transition is recorded as an event
 - **Time Travel** - Replay events to reconstruct state at any point
@@ -241,6 +313,43 @@ var isProcessing = await grain.IsInStateAsync(States.Processing);
 var info = await grain.GetInfoAsync();
 ```
 
+### State-Based Timeouts and Scheduling
+
+Configure automatic timeouts and periodic actions based on state:
+
+```csharp
+protected override void ConfigureTimeouts()
+{
+    // Basic timeout - transition after specified time
+    RegisterStateTimeout(States.Processing,
+        ConfigureTimeout(States.Processing)
+            .After(TimeSpan.FromMinutes(5))
+            .TransitionTo(Triggers.Timeout)
+            .Build());
+
+    // Repeating heartbeat timer
+    RegisterStateTimeout(States.Active,
+        ConfigureTimeout(States.Active)
+            .After(TimeSpan.FromSeconds(30))
+            .TransitionTo(Triggers.Heartbeat)
+            .Repeat()
+            .WithName("HealthCheck")
+            .Build());
+
+    // Long-running durable reminder
+    RegisterStateTimeout(States.LongProcess,
+        ConfigureTimeout(States.LongProcess)
+            .After(TimeSpan.FromHours(24))
+            .TransitionTo(Triggers.Expire)
+            .UseDurableReminder() // Survives grain restarts
+            .WithName("DailyCleanup")
+            .Build());
+}
+
+// Timer events are automatically recorded in event history
+// Timers are automatically managed on state transitions
+```
+
 ### Orleans Context Extensions
 
 Use special async extensions for Orleans grain context:
@@ -288,8 +397,8 @@ The library provides a base `StateMachineGrain<TState, TTrigger>` class that:
 
 This fork implements a phased approach to enhance Orleans state machines:
 
-- ✅ **Phase 1 & 2**: Event Sourcing with JournaledGrain
-- 🚧 **Phase 3**: Timers and Reminders
+- ✅ **Phase 1 & 2**: Event Sourcing with JournaledGrain (Complete)
+- ✅ **Phase 3**: Timers and Reminders (Complete)
 - 📋 **Phase 4**: Hierarchical/Nested States
 - 📋 **Phase 5**: Distributed Sagas
 - 📋 **Phase 6**: State Machine Versioning

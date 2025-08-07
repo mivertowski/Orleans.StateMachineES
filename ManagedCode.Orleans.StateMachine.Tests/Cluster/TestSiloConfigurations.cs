@@ -18,5 +18,8 @@ public class TestSiloConfigurations : ISiloConfigurator
         // Configure memory streams with required PubSubStore
         siloBuilder.AddMemoryGrainStorage("PubSubStore");
         siloBuilder.AddMemoryStreams("SMS");
+        
+        // Configure reminders for timer tests
+        siloBuilder.UseInMemoryReminderService();
     }
 }

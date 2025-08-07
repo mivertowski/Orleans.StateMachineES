@@ -20,11 +20,13 @@ public class OrleansStateInfo
     {
         UnderlyingState = stateInfo.UnderlyingState;
 
-        if (stateInfo.Substates is not null)
-            Substates = new List<OrleansStateInfo>(stateInfo.Substates.Select(s => new OrleansStateInfo(s)));
+        Substates = stateInfo.Substates is not null 
+            ? new List<OrleansStateInfo>(stateInfo.Substates.Select(s => new OrleansStateInfo(s)))
+            : new List<OrleansStateInfo>();
 
-        if (stateInfo.Superstate is not null)
-            Superstate = new OrleansStateInfo(stateInfo.Superstate);
+        Superstate = stateInfo.Superstate is not null 
+            ? new OrleansStateInfo(stateInfo.Superstate)
+            : null;
     }
 
     /// <summary>The instance or value this state represents.</summary>
@@ -33,11 +35,11 @@ public class OrleansStateInfo
 
     /// <summary>Substates defined for this StateResource.</summary>
     [Id(1)]
-    public List<OrleansStateInfo> Substates { get; private set; }
+    public List<OrleansStateInfo> Substates { get; private set; } = new();
 
     /// <summary>Superstate defined, if any, for this StateResource.</summary>
     [Id(2)]
-    public OrleansStateInfo Superstate { get; private set; }
+    public OrleansStateInfo? Superstate { get; private set; }
     
 
     /// <summary>

@@ -36,6 +36,7 @@ public class EventSourcingException : Exception
     /// <summary>
     /// Initializes a new instance of the EventSourcingException class with serialized data.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     protected EventSourcingException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
@@ -110,6 +111,7 @@ public class InvalidStateTransitionException : EventSourcingException
     /// <summary>
     /// Initializes a new instance of the InvalidStateTransitionException class with serialized data.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     protected InvalidStateTransitionException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
         FromState = info.GetValue(nameof(FromState), typeof(object));
@@ -120,6 +122,7 @@ public class InvalidStateTransitionException : EventSourcingException
     /// <summary>
     /// Sets the SerializationInfo with information about the exception.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         base.GetObjectData(info, context);
@@ -182,6 +185,7 @@ public class EventReplayException : EventSourcingException
     /// <summary>
     /// Initializes a new instance of the EventReplayException class with serialized data.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     protected EventReplayException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
         FailedAtEventNumber = (int?)info.GetValue(nameof(FailedAtEventNumber), typeof(int?));
@@ -191,6 +195,7 @@ public class EventReplayException : EventSourcingException
     /// <summary>
     /// Sets the SerializationInfo with information about the exception.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         base.GetObjectData(info, context);
@@ -245,6 +250,7 @@ public class SnapshotException : EventSourcingException
     /// <summary>
     /// Initializes a new instance of the SnapshotException class with serialized data.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     protected SnapshotException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
         Version = (int?)info.GetValue(nameof(Version), typeof(int?));
@@ -253,6 +259,7 @@ public class SnapshotException : EventSourcingException
     /// <summary>
     /// Sets the SerializationInfo with information about the exception.
     /// </summary>
+    [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.")]
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         base.GetObjectData(info, context);
