@@ -305,41 +305,85 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         var lines = dotGraph.Split('\n');
         foreach (var line in lines)
         {
-            // Look for transition lines (e.g., "StateA -> StateB [label="Trigger"]")
-            if (line.Contains("->") && line.Contains("[label="))
+            // Look for transition lines (e.g., "StateA" -> "StateB" [style="solid", label="Trigger"];)
+            // Or with guards: "StateA" -> "StateB" [style="solid", label="Trigger [Function]"];
+            if (line.Contains("->") && line.Contains("label="))
             {
                 try
                 {
-                    var parts = line.Split(new[] { "->", "[label=" }, StringSplitOptions.None);
-                    if (parts.Length >= 3)
+                    // Extract source state (before ->)
+                    var arrowIndex = line.IndexOf("->");
+                    if (arrowIndex == -1) continue;
+                    
+                    var fromStatePart = line.Substring(0, arrowIndex).Trim().Trim('"');
+                    
+                    // Extract destination state (between -> and [)
+                    var bracketIndex = line.IndexOf('[', arrowIndex);
+                    if (bracketIndex == -1) continue;
+                    
+                    var toStatePart = line.Substring(arrowIndex + 2, bracketIndex - arrowIndex - 2).Trim().Trim('"');
+                    
+                    // Extract label content
+                    var labelStart = line.IndexOf("label=\"", bracketIndex);
+                    if (labelStart == -1) continue;
+                    labelStart += 7; // Move past 'label="'
+                    
+                    var labelEnd = line.IndexOf('"', labelStart);
+                    if (labelEnd == -1) continue;
+                    
+                    var labelContent = line.Substring(labelStart, labelEnd - labelStart);
+                    
+                    // Check if it's a guard (contains [Function] or other guard indicators)
+                    var hasGuard = labelContent.Contains("[Function]") || 
+                                   labelContent.Contains("[") && labelContent.Contains("]");
+                    
+                    // Extract trigger name (remove guard indicators)
+                    var triggerName = labelContent;
+                    if (hasGuard)
                     {
-                        var fromState = parts[0].Trim().Trim('"');
-                        var toState = parts[1].Trim().Split('[')[0].Trim().Trim('"');
-                        var trigger = parts[2].Split('"')[1];
-
-                        if (Enum.TryParse<TState>(fromState, out var from) &&
-                            Enum.TryParse<TState>(toState, out var to) &&
-                            Enum.TryParse<TTrigger>(trigger, out var trig))
+                        var bracketPos = labelContent.IndexOf('[');
+                        if (bracketPos > 0)
                         {
-                            if (config.States.TryGetValue(from, out var stateConfig))
-                            {
-                                var transition = new EnhancedTransitionConfiguration<TState, TTrigger>
-                                {
-                                    SourceState = from,
-                                    DestinationState = to,
-                                    Trigger = trig,
-                                    HasGuard = line.Contains("guard") || line.Contains("?")
-                                };
-                                stateConfig.Transitions.Add(transition);
-                                
-                                // Update transition map
-                                var key = (from, trig);
-                                if (!config.TransitionMap.ContainsKey(key))
-                                {
-                                    config.TransitionMap[key] = new List<EnhancedTransitionConfiguration<TState, TTrigger>>();
-                                }
-                                config.TransitionMap[key].Add(transition);
-                            }
+                            triggerName = labelContent.Substring(0, bracketPos).Trim();
+                        }
+                    }
+
+                    // Skip init transitions
+                    if (fromStatePart == "init") continue;
+
+                    if (Enum.TryParse<TState>(fromStatePart, out var from) &&
+                        Enum.TryParse<TState>(toStatePart, out var to) &&
+                        Enum.TryParse<TTrigger>(triggerName, out var trig))
+                    {
+                        if (!config.States.ContainsKey(from))
+                        {
+                            config.States[from] = new EnhancedStateConfiguration<TState, TTrigger> { State = from };
+                        }
+                        
+                        var stateConfig = config.States[from];
+                        
+                        var transition = new EnhancedTransitionConfiguration<TState, TTrigger>
+                        {
+                            SourceState = from,
+                            DestinationState = to,
+                            Trigger = trig,
+                            HasGuard = hasGuard,
+                            GuardDescription = hasGuard ? labelContent : null
+                        };
+                        stateConfig.Transitions.Add(transition);
+                        
+                        // Update transition map
+                        var key = (from, trig);
+                        if (!config.TransitionMap.ContainsKey(key))
+                        {
+                            config.TransitionMap[key] = new List<EnhancedTransitionConfiguration<TState, TTrigger>>();
+                        }
+                        config.TransitionMap[key].Add(transition);
+                        
+                        // Track guarded triggers
+                        if (hasGuard)
+                        {
+                            config.GuardedTriggers.Add((from, trig));
                         }
                     }
                 }
@@ -355,21 +399,15 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         StateMachine<TState, TTrigger> machine,
         EnhancedStateMachineConfiguration<TState, TTrigger> config)
     {
-        // Analyze guards by checking which triggers have conditional behavior
-        foreach (var stateConfig in config.States.Values)
-        {
-            foreach (var trigger in stateConfig.PermittedTriggers)
-            {
-                // Check if this trigger has guards by seeing if it's conditionally permitted
-                var hasGuard = stateConfig.ActivableTriggers.Contains(trigger) != 
-                              stateConfig.PermittedTriggers.Contains(trigger);
-                
-                if (hasGuard)
-                {
-                    config.GuardedTriggers.Add((stateConfig.State, trigger));
-                }
-            }
-        }
+        // Guards are now detected from DOT graph parsing
+        // This method can be extended to analyze actions and other aspects
+        
+        // Additional analysis can be done here if needed
+        // For example, we could try to detect internal transitions, 
+        // reentrant states, or other advanced features
+        
+        _logger.LogDebug("Analyzed {GuardCount} guarded triggers from DOT graph", 
+                        config.GuardedTriggers.Count);
     }
 
     private void CalculateMetrics(EnhancedStateMachineConfiguration<TState, TTrigger> config)
