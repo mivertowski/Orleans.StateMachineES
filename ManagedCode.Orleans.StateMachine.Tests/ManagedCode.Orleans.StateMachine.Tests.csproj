@@ -4,7 +4,8 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-
+        <RootNamespace>ivlt.Orleans.StateMachineES.Tests</RootNamespace>
+        <AssemblyName>ivlt.Orleans.StateMachineES.Tests</AssemblyName>
         <IsPackable>false</IsPackable>
 
         <LangVersion>13</LangVersion>

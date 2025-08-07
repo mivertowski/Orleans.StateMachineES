@@ -1,7 +1,7 @@
 using Orleans.TestingHost;
 using Xunit;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster;
 
 [CollectionDefinition(nameof(TestClusterApplication))]
 public class TestClusterApplication : ICollectionFixture<TestClusterApplication>

@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Stateless;
 
-namespace ManagedCode.Orleans.StateMachine.Extensions;
+namespace ivlt.Orleans.StateMachineES.Extensions;
 
 /// <summary>
 /// Provides extension methods for configuring Stateless state machines to run entry, exit, and trigger actions

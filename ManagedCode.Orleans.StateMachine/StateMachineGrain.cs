@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using ManagedCode.Orleans.StateMachine.Interfaces;
-using ManagedCode.Orleans.StateMachine.Models;
+using ivlt.Orleans.StateMachineES.Interfaces;
+using ivlt.Orleans.StateMachineES.Models;
 using Orleans;
 using Stateless;
 using Stateless.Graph;
 
-namespace ManagedCode.Orleans.StateMachine;
+namespace ivlt.Orleans.StateMachineES;
 
 /// <summary>
 /// Base grain class for integrating a Stateless state machine with Orleans.

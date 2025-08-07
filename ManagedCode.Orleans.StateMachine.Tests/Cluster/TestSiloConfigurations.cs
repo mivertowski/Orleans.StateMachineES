@@ -1,6 +1,6 @@
 using Orleans.TestingHost;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster;
 
 public class TestSiloConfigurations : ISiloConfigurator
 {

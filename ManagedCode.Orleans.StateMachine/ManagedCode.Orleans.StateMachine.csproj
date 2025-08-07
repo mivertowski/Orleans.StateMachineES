@@ -6,20 +6,30 @@
         <OutputType>Library</OutputType>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
+        <RootNamespace>ivlt.Orleans.StateMachineES</RootNamespace>
+        <AssemblyName>ivlt.Orleans.StateMachineES</AssemblyName>
     </PropertyGroup>
 
     <!--NuGet-->
     <PropertyGroup>
-        <Title>ManagedCode.Orleans.StateMachine</Title>
-        <PackageId>ManagedCode.Orleans.StateMachine</PackageId>
-        <Description>StateMachine implementation on Orleans</Description>
-        <PackageTags>managedcode, orleans</PackageTags>
+        <Title>ivlt.Orleans.StateMachineES</Title>
+        <PackageId>ivlt.Orleans.StateMachineES</PackageId>
+        <Description>Event-sourced state machine implementation for Orleans with advanced features</Description>
+        <PackageTags>orleans, statemachine, eventsourcing, fsm, saga</PackageTags>
+        <Authors>Michael Ivertowski</Authors>
+        <Copyright>Copyright (c) 2024 Michael Ivertowski</Copyright>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <Version>1.0.0-alpha</Version>
+        <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
         <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
         <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="9.1.2" />
+        <PackageReference Include="Microsoft.Orleans.EventSourcing" Version="9.1.2" />
+        <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.1.2" />
         <PackageReference Include="Stateless" Version="5.17.0" />
     </ItemGroup>
 

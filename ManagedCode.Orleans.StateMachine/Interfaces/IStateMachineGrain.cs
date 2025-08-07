@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ManagedCode.Orleans.StateMachine.Models;
+using ivlt.Orleans.StateMachineES.Models;
 using Stateless;
 
-namespace ManagedCode.Orleans.StateMachine.Interfaces;
+namespace ivlt.Orleans.StateMachineES.Interfaces;
 
 /// <summary>
 /// Represents a state machine grain that manages states and transitions.

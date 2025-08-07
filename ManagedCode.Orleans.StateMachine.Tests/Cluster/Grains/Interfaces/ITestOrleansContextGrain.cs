@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ManagedCode.Orleans.StateMachine.Interfaces;
+using ivlt.Orleans.StateMachineES.Interfaces;
 using Orleans;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains.Interfaces;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 
 // Use enums instead of string constants
 public enum TestOrleansContextStates

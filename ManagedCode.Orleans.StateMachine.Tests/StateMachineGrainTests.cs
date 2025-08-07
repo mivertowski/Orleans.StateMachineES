@@ -1,12 +1,12 @@
 using FluentAssertions;
-using ManagedCode.Orleans.StateMachine.Tests.Cluster;
-using ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains.Interfaces;
+using ivlt.Orleans.StateMachineES.Tests.Cluster;
+using ivlt.Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Xunit;
 using Xunit.Abstractions;
 using System.Collections.Generic; // Added for List<string>
 using Stateless; // Added for StateMachine
 
-namespace ManagedCode.Orleans.StateMachine.Tests;
+namespace ivlt.Orleans.StateMachineES.Tests;
 
 [Collection(nameof(TestClusterApplication))]
 public class StateMachineGrainTests

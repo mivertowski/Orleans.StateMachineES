@@ -647,3 +647,4 @@ MigrationBackup/
 .ionide/
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,intellij+all,macos,linux,windows,visualstudio,visualstudiocode,rider
+CLAUDE.md

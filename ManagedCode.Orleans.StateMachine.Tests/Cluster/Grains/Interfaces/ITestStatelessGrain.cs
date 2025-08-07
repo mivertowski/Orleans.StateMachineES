@@ -1,6 +1,6 @@
-using ManagedCode.Orleans.StateMachine.Interfaces;
+using ivlt.Orleans.StateMachineES.Interfaces;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains.Interfaces;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 
 public interface ITestStatelessGrain : IGrainWithStringKey, IStateMachineGrain<string, char>
 {

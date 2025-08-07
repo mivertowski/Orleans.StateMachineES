@@ -3,7 +3,7 @@ using System.Linq;
 using Orleans;
 using Stateless.Reflection;
 
-namespace ManagedCode.Orleans.StateMachine.Models;
+namespace ivlt.Orleans.StateMachineES.Models;
 
 /// <summary>
 /// Represents serializable state information for a state in a Stateless state machine,

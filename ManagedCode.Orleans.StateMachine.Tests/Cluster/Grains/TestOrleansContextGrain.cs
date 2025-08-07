@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ManagedCode.Orleans.StateMachine.Extensions;
-using ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains.Interfaces;
+using ivlt.Orleans.StateMachineES;
+using ivlt.Orleans.StateMachineES.Extensions;
+using ivlt.Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Stateless;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster.Grains;
 
 public class TestOrleansContextGrain : StateMachineGrain<TestOrleansContextStates, TestOrleansContextTriggers>, ITestOrleansContextGrain
 {

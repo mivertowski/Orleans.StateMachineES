@@ -1,7 +1,8 @@
-using ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains.Interfaces;
+using ivlt.Orleans.StateMachineES;
+using ivlt.Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Stateless;
 
-namespace ManagedCode.Orleans.StateMachine.Tests.Cluster.Grains;
+namespace ivlt.Orleans.StateMachineES.Tests.Cluster.Grains;
 
 public class TestStatelessGrain : StateMachineGrain<string, char>, ITestStatelessGrain
 {

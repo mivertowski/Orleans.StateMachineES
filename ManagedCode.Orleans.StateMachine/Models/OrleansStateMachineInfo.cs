@@ -4,7 +4,7 @@ using System.Linq;
 using Orleans;
 using Stateless.Reflection;
 
-namespace ManagedCode.Orleans.StateMachine.Models;
+namespace ivlt.Orleans.StateMachineES.Models;
 
 /// <summary>
 /// Represents serializable information about a Stateless state machine,
