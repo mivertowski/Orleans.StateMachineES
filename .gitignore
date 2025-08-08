@@ -650,3 +650,5 @@ MigrationBackup/
 CLAUDE.md
 TestDotGraph/Program.cs
 TestDotGraph/TestDotGraph.csproj
+docs/GAP_ANALYSIS.md
+build_output.txt

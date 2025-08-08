@@ -73,6 +73,51 @@ Enterprise document approval with multiple review stages:
 - Custom health checks for Orleans, database, and external services
 - Background monitoring service with automatic alerting
 
+### 4. Smart Home System (`SmartHome/`) 🆕
+
+**Features Demonstrated:**
+- ✅ **Roslyn Source Generator** - State machines generated from YAML/JSON specifications
+- ✅ **Orthogonal Regions** - Multiple independent state machines running in parallel
+- ✅ **Cross-region Synchronization** - Coordinated behavior across subsystems
+- ✅ **Generated Type Safety** - Strongly-typed trigger and state methods
+- ✅ **Region-specific Triggers** - Targeted control of individual subsystems
+- ✅ **Composite State Calculation** - Overall system state from region states
+
+**Business Scenario:**
+Complete smart home automation system with:
+- Security subsystem (armed/disarmed/alarm states)
+- Climate control (heating/cooling/auto/eco modes)
+- Energy management (normal/peak/night rate/saving)
+- Presence detection (home/away/sleep/vacation)
+- Device integration (lights, thermostats)
+- Automated routines (morning, bedtime, vacation)
+
+**Key Components:**
+- `SmartLight.statemachine.yaml` - YAML specification for smart light bulb
+- `Thermostat.statemachine.json` - JSON specification for thermostat
+- `SmartHomeSystemGrain.cs` - Orthogonal state machine with 4 independent regions
+- `Program.cs` - Demonstration of generated code and orthogonal features
+
+**Generated Code Features:**
+```csharp
+// Generated from YAML/JSON specifications
+ISmartLightGrain light = grainFactory.GetGrain<ISmartLightGrain>("living-room");
+await light.FireTurnOnAsync();        // Typed trigger method
+bool isOn = await light.IsOnAsync();  // Typed state check
+SmartLightState.Off.IsTerminal();     // Generated extension methods
+```
+
+**Orthogonal Regions Example:**
+```csharp
+// Independent regions operating in parallel
+await smartHome.FireInRegionAsync("Security", SmartHomeTrigger.ArmAway);
+await smartHome.FireInRegionAsync("Climate", SmartHomeTrigger.SetEco);
+await smartHome.FireInRegionAsync("Energy", SmartHomeTrigger.EnableSaving);
+
+// Cross-region synchronization
+await smartHome.ActivateVacationModeAsync(); // Affects all regions
+```
+
 ## 🚀 Getting Started
 
 ### Prerequisites

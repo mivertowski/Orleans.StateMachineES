@@ -1,31 +1,28 @@
 <Project>
     <!--NuGet-->
     <PropertyGroup>
-        <Authors>ManagedCode</Authors>
-        <Copyright>Copyright © 2021-$([System.DateTime]::Now.ToString(`yyyy`)) ManagedCode SAS</Copyright>
+        <Authors>Michael Ivertowski</Authors>
+        <Copyright>Copyright © 2025 Michael Ivertowski</Copyright>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <RepositoryType>Github</RepositoryType>
-        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-        <PackageIcon>logo.png</PackageIcon>
+        <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>        
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <EnablePackageValidation>true</EnablePackageValidation>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-
-        <RepositoryUrl>https://github.com/managedcode/Orleans.StateMachine</RepositoryUrl>
-        <PackageProjectUrl>https://github.com/managedcode/Orleans.StateMachine</PackageProjectUrl>
-        <Product>Managed Code - Orleans StateMachine</Product>
-        <Version>0.1.1</Version>
-        <PackageVersion>0.1.1</PackageVersion>
+        <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
+        <Product>Orleans Event Sourced StateMachine</Product>
+        <Version>1.0.0</Version>
+        <PackageVersion>1.0.0</PackageVersion>
 
     </PropertyGroup>
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
-    <ItemGroup>
-        <None Include="$(SolutionDir)\logo.png" Pack="true" Visible="false" PackagePath="\"/>
+    <ItemGroup>        
         <None Include="$(SolutionDir)\README.md" Pack="true" Visible="false" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>

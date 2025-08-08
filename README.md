@@ -34,6 +34,8 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🎨 **Visualization Batch Service** - Analyze and visualize multiple state machines simultaneously
 - 🔧 **Component Inheritance** - Create reusable state machine components (Validation, Retry, Approval)
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
+- ⚙️ **Roslyn Source Generator** - Generate state machines from YAML/JSON specifications at compile-time
+- 🎛️ **Orthogonal Regions** - Support for parallel state machines with independent regions and cross-region synchronization
 
 ### Original Features
 
@@ -1293,6 +1295,131 @@ protected override StateMachine<State, Trigger> BuildStateMachine()
 }
 ```
 
+### Roslyn Source Generator
+
+Generate strongly-typed state machines from YAML or JSON specifications at compile-time:
+
+#### YAML Specification
+```yaml
+name: SmartLight
+namespace: SmartHome.Devices
+states:
+  - Off
+  - On
+  - Dimmed
+  - ColorMode
+  - NightMode
+triggers:
+  - TurnOn
+  - TurnOff
+  - Dim
+  - SetColor
+  - ActivateNightMode
+initialState: Off
+transitions:
+  - from: Off
+    to: On
+    trigger: TurnOn
+  - from: On
+    to: Dimmed
+    trigger: Dim
+```
+
+#### Generated Code Usage
+```csharp
+// The generator creates interfaces and implementations
+ISmartLightGrain light = grainFactory.GetGrain<ISmartLightGrain>("living-room");
+
+// Strongly-typed trigger methods
+await light.FireTurnOnAsync();
+await light.FireDimAsync();
+
+// Type-safe state checks
+bool isOn = await light.IsOnAsync();
+bool isDimmed = await light.IsDimmedAsync();
+
+// Extension methods on enums
+SmartLightState.Off.IsTerminal();
+SmartLightState.ColorMode.GetDescription();
+```
+
+#### Configuration
+```xml
+<ItemGroup>
+  <!-- Add state machine specifications -->
+  <AdditionalFiles Include="**\*.statemachine.yaml" />
+  <AdditionalFiles Include="**\*.statemachine.json" />
+</ItemGroup>
+
+<ItemGroup>
+  <!-- Reference the generator package -->
+  <PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.0" />
+</ItemGroup>
+```
+
+### Orthogonal Regions (Parallel State Machines)
+
+Support for multiple independent state machines running in parallel within a single grain:
+
+```csharp
+public class SmartHomeSystemGrain : OrthogonalStateMachineGrain<SmartHomeState, SmartHomeTrigger>
+{
+    protected override void ConfigureOrthogonalRegions()
+    {
+        // Define independent regions that operate in parallel
+        DefineOrthogonalRegion("Security", SmartHomeState.SecurityDisarmed, machine =>
+        {
+            machine.Configure(SmartHomeState.SecurityDisarmed)
+                .Permit(SmartHomeTrigger.ArmHome, SmartHomeState.SecurityArmedHome)
+                .Permit(SmartHomeTrigger.ArmAway, SmartHomeState.SecurityArmedAway);
+        });
+        
+        DefineOrthogonalRegion("Climate", SmartHomeState.ClimateOff, machine =>
+        {
+            machine.Configure(SmartHomeState.ClimateOff)
+                .Permit(SmartHomeTrigger.StartHeating, SmartHomeState.ClimateHeating)
+                .Permit(SmartHomeTrigger.StartCooling, SmartHomeState.ClimateCooling);
+        });
+        
+        DefineOrthogonalRegion("Energy", SmartHomeState.EnergyNormal, machine =>
+        {
+            machine.Configure(SmartHomeState.EnergyNormal)
+                .Permit(SmartHomeTrigger.EnterPeakDemand, SmartHomeState.EnergyPeakDemand)
+                .Permit(SmartHomeTrigger.EnableSaving, SmartHomeState.EnergySaving);
+        });
+        
+        // Map triggers to specific regions
+        MapTriggerToRegions(SmartHomeTrigger.VacationMode, "Security", "Climate", "Energy");
+    }
+    
+    // Cross-region synchronization
+    protected override async Task OnRegionStateChangedAsync(
+        string regionName, SmartHomeState previousState, 
+        SmartHomeState newState, SmartHomeTrigger trigger)
+    {
+        if (regionName == "Presence" && newState == SmartHomeState.PresenceAway)
+        {
+            // Automatically adjust other regions when everyone leaves
+            await FireInRegionAsync("Security", SmartHomeTrigger.ArmAway);
+            await FireInRegionAsync("Climate", SmartHomeTrigger.SetEco);
+            await FireInRegionAsync("Energy", SmartHomeTrigger.EnableSaving);
+        }
+    }
+}
+
+// Usage
+var smartHome = grainFactory.GetGrain<ISmartHomeSystemGrain>("my-home");
+
+// Fire triggers in specific regions
+await smartHome.FireInRegionAsync("Security", SmartHomeTrigger.ArmHome);
+await smartHome.FireInRegionAsync("Climate", SmartHomeTrigger.StartHeating);
+
+// Get composite state
+var summary = await smartHome.GetStateSummary();
+Console.WriteLine($"Security: {summary.RegionStates["Security"]}");
+Console.WriteLine($"Climate: {summary.RegionStates["Climate"]}");
+```
+
 ## Architecture
 
 The library provides a base `StateMachineGrain<TState, TTrigger>` class that:
@@ -1302,46 +1429,96 @@ The library provides a base `StateMachineGrain<TState, TTrigger>` class that:
 - Provides thread-safe state management through Orleans' single-threaded execution model
 - Supports comprehensive state inspection and metadata export
 
+## 📚 Comprehensive Examples
+
+The `examples/` directory contains four production-ready applications demonstrating all features:
+
+### 1. **E-Commerce Workflow** - Complete order processing system
+- Event sourcing with full audit trail
+- Timers and reminders for payment/shipping timeouts
+- Version management for evolving business rules
+- Distributed tracing with OpenTelemetry
+- Health monitoring and metrics
+
+### 2. **Document Approval** - Enterprise approval workflow
+- Hierarchical state machines with nested states
+- Saga orchestration for complex workflows
+- Parallel and conditional review processes
+- Compensation and rollback strategies
+- Dynamic routing based on business rules
+
+### 3. **Monitoring Dashboard** - Real-time monitoring system
+- ASP.NET Core health checks integration
+- Prometheus metrics and Jaeger tracing
+- Interactive visualization dashboard
+- Background health monitoring service
+- Custom alerting and thresholds
+
+### 4. **Smart Home System** - IoT automation platform
+- **Roslyn Source Generator** - State machines from YAML/JSON specs
+- **Orthogonal Regions** - Parallel independent subsystems
+- Cross-region synchronization and reactions
+- Generated type-safe interfaces
+- Integration with device grains
+
+See the [examples README](examples/README.md) for detailed documentation and usage instructions.
+
 ## 🏗️ Project Structure
 
 ```
 Orleans.StateMachineES/
 ├── src/
-│   └── Orleans.StateMachineES/
-│       ├── EventSourcing/          # Event sourcing implementation
-│       │   ├── Configuration/      # Event sourcing options
-│       │   ├── Events/            # Event definitions
-│       │   └── Exceptions/        # Custom exceptions
-│       ├── Hierarchical/          # Hierarchical state machines
-│       ├── Interfaces/            # Core interfaces
-│       ├── Models/                # Data models
-│       ├── Sagas/                 # Distributed saga support
-│       ├── Timers/                # Timer-based transitions
-│       ├── Tracing/               # OpenTelemetry distributed tracing
-│       │   ├── StateMachineActivitySource.cs
-│       │   ├── StateMachineMetrics.cs
-│       │   ├── TracingExtensions.cs
-│       │   ├── TracingHelper.cs
-│       │   └── TracingSetupExamples.cs
-│       ├── Visualization/         # State machine visualization
-│       │   ├── Models/           # Visualization data models
-│       │   ├── Web/              # Interactive web visualization
-│       │   ├── StateMachineVisualizer.cs
-│       │   └── BatchVisualizationService.cs
-│       ├── Versioning/            # State machine versioning
-│       │   ├── StateMachineIntrospector.cs
-│       │   ├── ImprovedStateMachineIntrospector.cs
-│       │   └── VersionedStateMachineGrain.cs
-│       ├── Extensions/            # Extension methods
-│       └── StateMachineGrain.cs  # Base grain implementation
+│   ├── Orleans.StateMachineES/
+│   │   ├── EventSourcing/          # Event sourcing implementation
+│   │   │   ├── Configuration/      # Event sourcing options
+│   │   │   ├── Events/            # Event definitions
+│   │   │   └── Exceptions/        # Custom exceptions
+│   │   ├── Hierarchical/          # Hierarchical state machines
+│   │   ├── Interfaces/            # Core interfaces
+│   │   ├── Models/                # Data models
+│   │   ├── Orthogonal/            # Orthogonal regions support
+│   │   │   └── OrthogonalStateMachineGrain.cs
+│   │   ├── Sagas/                 # Distributed saga support
+│   │   ├── Timers/                # Timer-based transitions
+│   │   ├── Tracing/               # OpenTelemetry distributed tracing
+│   │   │   ├── StateMachineActivitySource.cs
+│   │   │   ├── StateMachineMetrics.cs
+│   │   │   ├── TracingExtensions.cs
+│   │   │   ├── TracingHelper.cs
+│   │   │   └── TracingSetupExamples.cs
+│   │   ├── Visualization/         # State machine visualization
+│   │   │   ├── Models/           # Visualization data models
+│   │   │   ├── Web/              # Interactive web visualization
+│   │   │   ├── StateMachineVisualizer.cs
+│   │   │   └── BatchVisualizationService.cs
+│   │   ├── Versioning/            # State machine versioning
+│   │   │   ├── StateMachineIntrospector.cs
+│   │   │   ├── ImprovedStateMachineIntrospector.cs
+│   │   │   └── VersionedStateMachineGrain.cs
+│   │   ├── Extensions/            # Extension methods
+│   │   └── StateMachineGrain.cs  # Base grain implementation
+│   └── Orleans.StateMachineES.Generators/  # Roslyn source generator
+│       ├── StateMachineGenerator.cs
+│       ├── Models/
+│       └── Templates/
 ├── tests/
 │   └── Orleans.StateMachineES.Tests/
 │       ├── Cluster/               # Test cluster setup
 │       ├── EventSourcing/         # Event sourcing tests
 │       ├── Hierarchical/          # Hierarchical tests
+│       ├── Orthogonal/            # Orthogonal regions tests
 │       ├── Sagas/                 # Saga tests
 │       ├── Timers/                # Timer tests
 │       └── Versioning/            # Versioning tests
+├── examples/                      # Example applications
+│   ├── ECommerceWorkflow/         # Order processing example
+│   ├── DocumentApproval/          # Approval workflow example
+│   ├── MonitoringDashboard/       # Monitoring system example
+│   ├── SmartHome/                 # Smart home automation example
+│   │   ├── SmartLight.statemachine.yaml
+│   │   ├── Thermostat.statemachine.json
+│   │   └── SmartHomeSystemGrain.cs
+│   └── README.md
 ├── docs/                          # Documentation
 │   ├── CHEAT_SHEET.md
 │   ├── IMPLEMENTATION_STRATEGY.md

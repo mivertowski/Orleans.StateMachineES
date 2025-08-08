@@ -1,0 +1,52 @@
+name: SmartLight
+namespace: SmartHome.Devices
+description: Smart light bulb with dimming and color control
+states:
+  - Off
+  - On
+  - Dimmed
+  - ColorMode
+  - NightMode
+triggers:
+  - TurnOn
+  - TurnOff
+  - Dim
+  - SetColor
+  - ActivateNightMode
+  - Deactivate
+initialState: Off
+terminalStates: []
+transitions:
+  - from: Off
+    to: On
+    trigger: TurnOn
+  - from: On
+    to: Off
+    trigger: TurnOff
+  - from: On
+    to: Dimmed
+    trigger: Dim
+  - from: On
+    to: ColorMode
+    trigger: SetColor
+  - from: On
+    to: NightMode
+    trigger: ActivateNightMode
+  - from: Dimmed
+    to: On
+    trigger: TurnOn
+  - from: Dimmed
+    to: Off
+    trigger: TurnOff
+  - from: ColorMode
+    to: On
+    trigger: Deactivate
+  - from: ColorMode
+    to: Off
+    trigger: TurnOff
+  - from: NightMode
+    to: On
+    trigger: Deactivate
+  - from: NightMode
+    to: Off
+    trigger: TurnOff

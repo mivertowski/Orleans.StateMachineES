@@ -42,7 +42,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// Fires the specified trigger asynchronously.
     /// </summary>
     /// <param name="trigger">The trigger to fire.</param>
-    public Task FireAsync(TTrigger trigger)
+    public virtual Task FireAsync(TTrigger trigger)
     {
         return StateMachine.FireAsync(trigger);
     }

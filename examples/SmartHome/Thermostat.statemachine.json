@@ -1,0 +1,79 @@
+{
+  "name": "Thermostat",
+  "namespace": "SmartHome.Climate",
+  "description": "Smart thermostat with heating and cooling modes",
+  "states": [
+    "Idle",
+    "Heating",
+    "Cooling",
+    "FanOnly",
+    "Auto",
+    "Away",
+    "Emergency"
+  ],
+  "triggers": [
+    "Heat",
+    "Cool",
+    "FanOn",
+    "AutoMode",
+    "SetAway",
+    "SetHome",
+    "EmergencyHeat",
+    "Stop"
+  ],
+  "initialState": "Idle",
+  "terminalStates": [],
+  "transitions": [
+    {
+      "from": "Idle",
+      "to": "Heating",
+      "trigger": "Heat"
+    },
+    {
+      "from": "Idle",
+      "to": "Cooling",
+      "trigger": "Cool"
+    },
+    {
+      "from": "Idle",
+      "to": "FanOnly",
+      "trigger": "FanOn"
+    },
+    {
+      "from": "Idle",
+      "to": "Auto",
+      "trigger": "AutoMode"
+    },
+    {
+      "from": "Heating",
+      "to": "Idle",
+      "trigger": "Stop"
+    },
+    {
+      "from": "Cooling",
+      "to": "Idle",
+      "trigger": "Stop"
+    },
+    {
+      "from": "Auto",
+      "to": "Away",
+      "trigger": "SetAway",
+      "guard": "IsScheduledAway"
+    },
+    {
+      "from": "Away",
+      "to": "Auto",
+      "trigger": "SetHome"
+    },
+    {
+      "from": "Heating",
+      "to": "Emergency",
+      "trigger": "EmergencyHeat"
+    },
+    {
+      "from": "Emergency",
+      "to": "Heating",
+      "trigger": "Stop"
+    }
+  ]
+}

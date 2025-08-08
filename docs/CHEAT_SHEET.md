@@ -126,6 +126,131 @@ public class DeviceGrain : HierarchicalStateMachineGrain<DeviceState, DeviceTrig
 }
 ```
 
+### 5. Source-Generated State Machines (Roslyn Generator)
+
+#### YAML Specification (`SmartLight.statemachine.yaml`)
+```yaml
+name: SmartLight
+namespace: SmartHome.Devices
+states: [Off, On, Dimmed, ColorMode, NightMode]
+triggers: [TurnOn, TurnOff, Dim, SetColor, ActivateNightMode]
+initialState: Off
+transitions:
+  - { from: Off, to: On, trigger: TurnOn }
+  - { from: On, to: Dimmed, trigger: Dim }
+  - { from: On, to: ColorMode, trigger: SetColor }
+```
+
+#### JSON Specification (`Thermostat.statemachine.json`)
+```json
+{
+  "name": "Thermostat",
+  "namespace": "SmartHome.Climate",
+  "states": ["Idle", "Heating", "Cooling", "Auto"],
+  "triggers": ["Heat", "Cool", "AutoMode", "Stop"],
+  "transitions": [
+    { "from": "Idle", "to": "Heating", "trigger": "Heat" },
+    { "from": "Heating", "to": "Idle", "trigger": "Stop" }
+  ]
+}
+```
+
+#### Generated Code Usage
+```csharp
+// Auto-generated interfaces and implementations
+ISmartLightGrain light = grainFactory.GetGrain<ISmartLightGrain>("living-room");
+IThermostatGrain thermostat = grainFactory.GetGrain<IThermostatGrain>("main");
+
+// Strongly-typed methods
+await light.FireTurnOnAsync();
+await light.FireDimAsync();
+bool isOn = await light.IsOnAsync();
+
+// Generated extension methods
+SmartLightState.Off.IsTerminal();
+SmartLightTrigger.TurnOn.GetDescription();
+```
+
+#### Project Configuration
+```xml
+<ItemGroup>
+  <AdditionalFiles Include="**\*.statemachine.yaml" />
+  <AdditionalFiles Include="**\*.statemachine.json" />
+</ItemGroup>
+<ItemGroup>
+  <PackageReference Include="Orleans.StateMachineES.Generators" />
+</ItemGroup>
+```
+
+### 6. Orthogonal Regions (Parallel State Machines)
+
+```csharp
+public class SmartHomeSystemGrain : OrthogonalStateMachineGrain<SmartHomeState, SmartHomeTrigger>
+{
+    protected override void ConfigureOrthogonalRegions()
+    {
+        // Define independent regions
+        DefineOrthogonalRegion("Security", SmartHomeState.SecurityDisarmed, machine =>
+        {
+            machine.Configure(SmartHomeState.SecurityDisarmed)
+                .Permit(SmartHomeTrigger.ArmHome, SmartHomeState.SecurityArmedHome)
+                .Permit(SmartHomeTrigger.ArmAway, SmartHomeState.SecurityArmedAway);
+                
+            machine.Configure(SmartHomeState.SecurityAlarm)
+                .OnEntry(() => _logger.LogWarning("ALARM TRIGGERED!"));
+        });
+        
+        DefineOrthogonalRegion("Climate", SmartHomeState.ClimateOff, machine =>
+        {
+            machine.Configure(SmartHomeState.ClimateOff)
+                .Permit(SmartHomeTrigger.StartHeating, SmartHomeState.ClimateHeating)
+                .Permit(SmartHomeTrigger.StartCooling, SmartHomeState.ClimateCooling);
+        });
+        
+        DefineOrthogonalRegion("Energy", SmartHomeState.EnergyNormal, machine =>
+        {
+            machine.Configure(SmartHomeState.EnergyNormal)
+                .Permit(SmartHomeTrigger.EnterPeakDemand, SmartHomeState.EnergyPeakDemand)
+                .Permit(SmartHomeTrigger.EnableSaving, SmartHomeState.EnergySaving);
+        });
+        
+        // Map triggers to regions
+        MapTriggerToRegions(SmartHomeTrigger.VacationMode, "Security", "Climate", "Energy");
+    }
+    
+    // Cross-region synchronization
+    protected override async Task OnRegionStateChangedAsync(
+        string regionName, SmartHomeState prev, SmartHomeState next, SmartHomeTrigger trigger)
+    {
+        if (regionName == "Presence" && next == SmartHomeState.PresenceAway)
+        {
+            // Auto-adjust when leaving home
+            await FireInRegionAsync("Security", SmartHomeTrigger.ArmAway);
+            await FireInRegionAsync("Climate", SmartHomeTrigger.SetEco);
+            await FireInRegionAsync("Energy", SmartHomeTrigger.EnableSaving);
+        }
+    }
+    
+    // Usage
+    public async Task ActivateVacationModeAsync()
+    {
+        await FireInRegionAsync("Presence", SmartHomeTrigger.StartVacation);
+        await FireInRegionAsync("Security", SmartHomeTrigger.ArmAway);
+        await FireInRegionAsync("Climate", SmartHomeTrigger.SetEco);
+        await FireInRegionAsync("Energy", SmartHomeTrigger.EnableSaving);
+    }
+}
+
+// Client usage
+var smartHome = grainFactory.GetGrain<ISmartHomeSystemGrain>("my-home");
+await smartHome.FireInRegionAsync("Security", SmartHomeTrigger.ArmHome);
+await smartHome.FireInRegionAsync("Climate", SmartHomeTrigger.StartHeating);
+
+var status = await smartHome.GetStateSummary();
+Console.WriteLine($"Security: {status.RegionStates["Security"]}");
+Console.WriteLine($"Climate: {status.RegionStates["Climate"]}");
+```
+
 ## Core Interfaces & Methods
 
 ### IStateMachineGrain<TState, TTrigger>
@@ -679,5 +804,24 @@ var info = await grain.GetInfoAsync();
 var hierarchy = await grain.GetHierarchicalInfoAsync();
 var path = await grain.GetCurrentStatePathAsync();
 ```
+
+## Complete Example Applications
+
+The `examples/` directory contains four production-ready applications:
+
+1. **ECommerceWorkflow** - Order processing with event sourcing, timers, and monitoring
+2. **DocumentApproval** - Hierarchical states with saga orchestration
+3. **MonitoringDashboard** - Health checks, metrics, and visualization
+4. **SmartHome** - Source generator and orthogonal regions demonstration
+
+### SmartHome Example Highlights
+
+The SmartHome example demonstrates the newest features:
+- State machines generated from YAML/JSON specifications
+- Orthogonal regions with 4 independent subsystems (Security, Climate, Energy, Presence)
+- Cross-region synchronization and reactions
+- Integration between generated device grains and orthogonal system grain
+
+See [examples/README.md](../examples/README.md) for complete documentation and usage instructions.
 
 This cheat sheet covers all major features of Orleans.StateMachineES. For detailed examples, see the test projects and documentation.

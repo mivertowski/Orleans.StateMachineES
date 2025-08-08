@@ -1,0 +1,29 @@
+name: Door
+namespace: Examples.StateMachines
+description: A simple door state machine
+states:
+  - Closed
+  - Open
+  - Locked
+triggers:
+  - Open
+  - Close 
+  - Lock
+  - Unlock
+initialState: Closed
+terminalStates:
+  - Locked
+transitions:
+  - from: Closed
+    to: Open
+    trigger: Open
+  - from: Open
+    to: Closed
+    trigger: Close
+  - from: Closed
+    to: Locked
+    trigger: Lock
+  - from: Locked
+    to: Closed
+    trigger: Unlock
+    guard: HasKey

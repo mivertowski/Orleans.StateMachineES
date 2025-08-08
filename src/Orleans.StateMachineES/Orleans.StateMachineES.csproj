@@ -12,7 +12,7 @@
     <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Enterprise-grade state machine implementation for Microsoft Orleans with event sourcing, sagas, and versioning support</Description>
-    <Authors>mivertowski</Authors>
+    <Authors>Michael Ivertowski</Authors>
     <Version>1.0.0</Version>
   </PropertyGroup>
 
