@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.EventSourcing;
 using Orleans.Providers;
+using Orleans.Runtime;
+using Orleans.Storage;
 using Stateless;
 using Xunit;
 using Xunit.Abstractions;
@@ -313,13 +315,15 @@ public interface IInvoiceProcessingSagaGrain : ISagaCoordinatorGrain<InvoiceData
 {
 }
 
-[LogConsistencyProvider(ProviderName = "LogStorage")]
 [StorageProvider(ProviderName = "Default")]
-[Alias("InvoiceProcessingSagaGrain")]
 public class InvoiceProcessingSagaGrain : 
     SagaOrchestratorGrain<InvoiceData>, 
     IInvoiceProcessingSagaGrain
 {
+    public InvoiceProcessingSagaGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<InvoiceData>> state) 
+        : base(state)
+    {
+    }
     protected override void ConfigureSagaSteps()
     {
         AddStep(new PostInvoiceStep())

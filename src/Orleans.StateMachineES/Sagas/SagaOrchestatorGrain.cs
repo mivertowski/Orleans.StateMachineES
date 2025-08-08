@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Orleans.StateMachineES.Hierarchical;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orleans;
-using Orleans.EventSourcing;
+using Orleans.Runtime;
+using Orleans.Storage;
 using Stateless;
 
 namespace Orleans.StateMachineES.Sagas;
 
 /// <summary>
-/// Base grain class for saga orchestration that extends HierarchicalStateMachineGrain.
+/// Base grain class for saga orchestration.
 /// Provides comprehensive saga management with compensation, retry logic, and audit trails.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data passed between saga steps.</typeparam>
 public abstract class SagaOrchestratorGrain<TSagaData> : 
-    HierarchicalStateMachineGrain<SagaStatus, SagaTrigger, SagaGrainState<TSagaData>>,
+    Grain,
     ISagaCoordinatorGrain<TSagaData>
     where TSagaData : class
 {
@@ -26,6 +26,21 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
     private readonly List<SagaStepDefinition<TSagaData>> _steps = new();
     private readonly List<SagaStepExecution> _executionHistory = new();
     private SagaContext? _sagaContext;
+    private StateMachine<SagaStatus, SagaTrigger>? _stateMachine;
+    
+    /// <summary>
+    /// The saga state containing all saga-specific data.
+    /// </summary>
+    private readonly IPersistentState<SagaGrainState<TSagaData>> _state;
+    
+    /// <summary>
+    /// Constructor for dependency injection.
+    /// </summary>
+    /// <param name="state">The persistent state for the saga.</param>
+    protected SagaOrchestratorGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<TSagaData>> state)
+    {
+        _state = state;
+    }
 
     /// <inheritdoc/>
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -34,11 +49,33 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         
         _sagaLogger = this.ServiceProvider.GetService<ILogger<SagaOrchestratorGrain<TSagaData>>>();
         
+        // Initialize state machine
+        _stateMachine = BuildStateMachine();
+        if (_state.State.Status != SagaStatus.NotStarted)
+        {
+            // Restore state machine to current status
+            _stateMachine = new StateMachine<SagaStatus, SagaTrigger>(_state.State.Status);
+            _stateMachine = BuildStateMachine();
+        }
+        
         // Configure saga-specific steps
         ConfigureSagaSteps();
         
         _sagaLogger?.LogInformation("Saga orchestrator grain {SagaId} activated with {StepCount} steps", 
             this.GetPrimaryKeyString(), _steps.Count);
+    }
+    
+    /// <summary>
+    /// Fires a trigger and updates the state.
+    /// </summary>
+    private async Task FireTriggerAsync(SagaTrigger trigger)
+    {
+        if (_stateMachine?.CanFire(trigger) == true)
+        {
+            _stateMachine.Fire(trigger);
+            _state.State.Status = _stateMachine.State;
+            await _state.WriteStateAsync();
+        }
     }
 
     /// <summary>
@@ -46,8 +83,10 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
     /// </summary>
     protected abstract void ConfigureSagaSteps();
 
-    /// <inheritdoc/>
-    protected override StateMachine<SagaStatus, SagaTrigger> BuildStateMachine()
+    /// <summary>
+    /// Builds the state machine for saga orchestration.
+    /// </summary>
+    protected virtual StateMachine<SagaStatus, SagaTrigger> BuildStateMachine()
     {
         var machine = new StateMachine<SagaStatus, SagaTrigger>(SagaStatus.NotStarted);
 
@@ -56,10 +95,11 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
 
         machine.Configure(SagaStatus.Running)
             .OnEntry(() => _sagaLogger?.LogDebug("Saga {SagaId} is now running", this.GetPrimaryKeyString()))
-            .Permit(SagaTrigger.StepCompleted, SagaStatus.Running)
+            .PermitReentry(SagaTrigger.StepCompleted)
             .Permit(SagaTrigger.Complete, SagaStatus.Completed)
             .Permit(SagaTrigger.StepFailedBusiness, SagaStatus.Compensating)
             .Permit(SagaTrigger.StepFailedTechnical, SagaStatus.Compensating)
+            .Permit(SagaTrigger.StartCompensation, SagaStatus.Compensating)
             .Permit(SagaTrigger.Timeout, SagaStatus.Compensating);
 
         machine.Configure(SagaStatus.Compensating)
@@ -86,11 +126,6 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         return machine;
     }
 
-    /// <inheritdoc/>
-    protected override void ConfigureHierarchy()
-    {
-        // Sagas don't typically need hierarchical states, but can be overridden
-    }
 
     /// <summary>
     /// Adds a saga step to the execution sequence.
@@ -131,16 +166,15 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         {
             // Initialize saga context
             _sagaContext = CreateSagaContext(sagaData, correlationId);
-            SetCorrelationId(_sagaContext.CorrelationId);
             
             // Update grain state
-            State.SagaData = sagaData;
-            State.SagaContext = _sagaContext;
-            State.StartTime = startTime;
-            State.Status = SagaStatus.Running;
+            _state.State.SagaData = sagaData;
+            _state.State.SagaContext = _sagaContext;
+            _state.State.StartTime = startTime;
+            _state.State.Status = SagaStatus.Running;
             
             // Transition to running state
-            await FireAsync(SagaTrigger.Start);
+            await FireTriggerAsync(SagaTrigger.Start);
             
             _sagaLogger?.LogInformation("Starting saga {SagaId} with correlation {CorrelationId}", 
                 _sagaContext.SagaId, _sagaContext.CorrelationId);
@@ -181,20 +215,20 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                         IsCompensated = compensationResult.IsSuccess,
                         ErrorMessage = stepResult.ErrorMessage,
                         ExecutionHistory = _executionHistory.AsReadOnly(),
-                        CompensationHistory = State.CompensationHistory,
+                        CompensationHistory = _state.State.CompensationHistory,
                         Duration = DateTime.UtcNow - startTime
                     };
                 }
 
                 // Fire step completed trigger
-                await FireAsync(SagaTrigger.StepCompleted);
+                await FireTriggerAsync(SagaTrigger.StepCompleted);
                 _sagaLogger?.LogDebug("Saga step {StepName} completed successfully", stepDefinition.StepName);
             }
 
             // Mark saga as completed
-            State.Status = SagaStatus.Completed;
-            State.CompletionTime = DateTime.UtcNow;
-            await FireAsync(SagaTrigger.Complete);
+            _state.State.Status = SagaStatus.Completed;
+            _state.State.CompletionTime = DateTime.UtcNow;
+            await FireTriggerAsync(SagaTrigger.Complete);
 
             _sagaLogger?.LogInformation("Saga {SagaId} completed successfully in {Duration}ms", 
                 _sagaContext.SagaId, (DateTime.UtcNow - startTime).TotalMilliseconds);
@@ -204,7 +238,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                 IsSuccess = true,
                 IsCompensated = false,
                 ExecutionHistory = _executionHistory.AsReadOnly(),
-                CompensationHistory = State.CompensationHistory,
+                CompensationHistory = _state.State.CompensationHistory,
                 Duration = DateTime.UtcNow - startTime
             };
         }
@@ -212,8 +246,8 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         {
             _sagaLogger?.LogError(ex, "Unexpected error during saga execution");
             
-            State.Status = SagaStatus.Failed;
-            State.ErrorMessage = ex.Message;
+            _state.State.Status = SagaStatus.Failed;
+            _state.State.ErrorMessage = ex.Message;
             
             // Attempt compensation
             var compensationResult = await CompensateAsync($"Unexpected error: {ex.Message}");
@@ -224,7 +258,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                 IsCompensated = compensationResult.IsSuccess,
                 ErrorMessage = ex.Message,
                 ExecutionHistory = _executionHistory.AsReadOnly(),
-                CompensationHistory = State.CompensationHistory,
+                CompensationHistory = _state.State.CompensationHistory,
                 Duration = DateTime.UtcNow - startTime
             };
         }
@@ -244,10 +278,10 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
 
         var startTime = DateTime.UtcNow;
         _sagaContext.IsCompensating = true;
-        State.Status = SagaStatus.Compensating;
+        _state.State.Status = SagaStatus.Compensating;
         
         // Transition to compensating state
-        await FireAsync(SagaTrigger.StartCompensation);
+        await FireTriggerAsync(SagaTrigger.StartCompensation);
         
         _sagaLogger?.LogWarning("Starting compensation for saga {SagaId}: {Reason}", 
             _sagaContext.SagaId, reason);
@@ -275,7 +309,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                     IsSuccess = compensationResult.IsSuccess,
                     ErrorMessage = compensationResult.ErrorMessage
                 };
-                State.CompensationHistory.Add(compensationRecord);
+                _state.State.CompensationHistory.Add(compensationRecord);
 
                 if (!compensationResult.IsSuccess)
                 {
@@ -287,9 +321,9 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
 
             if (allCompensationSucceeded)
             {
-                State.Status = SagaStatus.Compensated;
-                State.CompletionTime = DateTime.UtcNow;
-                await FireAsync(SagaTrigger.CompensationCompleted);
+                _state.State.Status = SagaStatus.Compensated;
+                _state.State.CompletionTime = DateTime.UtcNow;
+                await FireTriggerAsync(SagaTrigger.CompensationCompleted);
                 
                 _sagaLogger?.LogInformation("Compensation completed for saga {SagaId} in {Duration}ms", 
                     _sagaContext.SagaId, (DateTime.UtcNow - startTime).TotalMilliseconds);
@@ -298,8 +332,8 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
             }
             else
             {
-                State.Status = SagaStatus.CompensationFailed;
-                await FireAsync(SagaTrigger.CompensationFailed);
+                _state.State.Status = SagaStatus.CompensationFailed;
+                await FireTriggerAsync(SagaTrigger.CompensationFailed);
                 
                 return CompensationResult.Failure("Some compensations failed", null, DateTime.UtcNow - startTime);
             }
@@ -308,9 +342,9 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         {
             _sagaLogger?.LogError(ex, "Unexpected error during compensation");
             
-            State.Status = SagaStatus.CompensationFailed;
-            State.ErrorMessage = ex.Message;
-            await FireAsync(SagaTrigger.CompensationFailed);
+            _state.State.Status = SagaStatus.CompensationFailed;
+            _state.State.ErrorMessage = ex.Message;
+            await FireTriggerAsync(SagaTrigger.CompensationFailed);
             
             return CompensationResult.Failure($"Compensation failed: {ex.Message}", ex, DateTime.UtcNow - startTime);
         }
@@ -325,15 +359,15 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         var statusInfo = new SagaStatusInfo
         {
             SagaId = this.GetPrimaryKeyString(),
-            Status = State.Status,
-            StartTime = State.StartTime,
-            CompletionTime = State.CompletionTime,
-            ErrorMessage = State.ErrorMessage,
+            Status = _state.State.Status,
+            StartTime = _state.State.StartTime,
+            CompletionTime = _state.State.CompletionTime,
+            ErrorMessage = _state.State.ErrorMessage,
             CurrentStepIndex = _sagaContext?.CurrentStepIndex ?? -1,
             CurrentStepName = _sagaContext?.CurrentStepName,
             TotalSteps = _steps.Count,
             ExecutionHistory = _executionHistory.AsReadOnly(),
-            CompensationHistory = State.CompensationHistory
+            CompensationHistory = _state.State.CompensationHistory
         };
 
         return Task.FromResult(statusInfo);
@@ -349,14 +383,14 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         {
             SagaId = this.GetPrimaryKeyString(),
             CorrelationId = _sagaContext?.CorrelationId ?? "",
-            StartTime = State.StartTime,
-            CompletionTime = State.CompletionTime,
-            Status = State.Status,
+            StartTime = _state.State.StartTime,
+            CompletionTime = _state.State.CompletionTime,
+            Status = _state.State.Status,
             StepExecutions = _executionHistory.AsReadOnly(),
-            CompensationExecutions = State.CompensationHistory,
-            TotalDuration = State.CompletionTime.HasValue 
-                ? State.CompletionTime.Value - State.StartTime 
-                : DateTime.UtcNow - State.StartTime
+            CompensationExecutions = _state.State.CompensationHistory,
+            TotalDuration = _state.State.CompletionTime.HasValue 
+                ? _state.State.CompletionTime.Value - _state.State.StartTime 
+                : DateTime.UtcNow - _state.State.StartTime
         };
 
         return Task.FromResult(history);
@@ -483,7 +517,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
         SagaStepDefinition<TSagaData> stepDefinition,
         SagaStepExecution stepExecution)
     {
-        if (State.SagaData == null || _sagaContext == null)
+        if (_state.State.SagaData == null || _sagaContext == null)
         {
             return CompensationResult.Failure("Saga data or context not available");
         }
@@ -499,7 +533,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                 ? SagaStepResult.Success(stepExecution.Result)
                 : SagaStepResult.BusinessFailure(stepExecution.ErrorMessage ?? "Unknown error");
                 
-            var compensationResult = await stepDefinition.Step.CompensateAsync(State.SagaData, stepResult, _sagaContext);
+            var compensationResult = await stepDefinition.Step.CompensateAsync(_state.State.SagaData, stepResult, _sagaContext);
             
             // Set actual duration if not provided
             if (compensationResult.Duration == TimeSpan.Zero)
@@ -531,11 +565,11 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
 }
 
 /// <summary>
-/// Saga grain state that extends HierarchicalStateMachineState for saga-specific data.
+/// Saga grain state for saga-specific data.
 /// </summary>
 /// <typeparam name="TSagaData">The type of saga data.</typeparam>
 [GenerateSerializer]
-public class SagaGrainState<TSagaData> : HierarchicalStateMachineState<SagaStatus>
+public class SagaGrainState<TSagaData>
     where TSagaData : class
 {
     /// <summary>

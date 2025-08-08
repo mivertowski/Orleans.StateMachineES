@@ -1,0 +1,141 @@
+name: 🚀 Feature Request
+description: Suggest a new feature or enhancement for Orleans.StateMachineES
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to suggest a new feature! 🌟
+
+  - type: input
+    id: version
+    attributes:
+      label: Current Version
+      description: What version of Orleans.StateMachineES are you currently using?
+      placeholder: "e.g., 1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component would this feature relate to?
+      options:
+        - Core StateMachineGrain
+        - Event Sourcing
+        - Hierarchical States
+        - Timers & Reminders
+        - Saga Orchestration
+        - Distributed Tracing
+        - Health Checks & Monitoring
+        - Visualization
+        - Versioning & Migration
+        - State Machine Composition
+        - Roslyn Source Generator
+        - Orthogonal Regions
+        - Examples
+        - Documentation
+        - DevEx (Developer Experience)
+        - Performance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: |
+        A clear and concise description of the feature you'd like to see.
+        
+        **Tip**: You can attach mockups or diagrams by clicking this area to highlight it and then dragging files in.
+      placeholder: "Describe the feature you'd like to see..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-solving
+    attributes:
+      label: Problem This Solves
+      description: What problem would this feature solve? What use case does it address?
+      placeholder: "This feature would help with..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        How do you envision this feature working? Provide as much detail as possible.
+        
+        **Tip**: Use code blocks (```) for better formatting of API proposals.
+      render: csharp
+      placeholder: |
+        ```csharp
+        // Example API or implementation approach
+        ```
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What alternative solutions or features have you considered?
+      placeholder: "Alternative approaches could be..."
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Example
+      description: |
+        Provide a concrete example of how this feature would be used in practice.
+        Include code samples if possible.
+      render: csharp
+      placeholder: |
+        ```csharp
+        // Example usage scenario
+        ```
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve my workflow
+        - High - Blocking my current work
+        - Critical - Essential for adoption
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context, screenshots, links, or references about the feature request here.
+        
+        **Links to:**
+        - Similar features in other libraries
+        - Relevant documentation
+        - Academic papers or blog posts
+        - Community discussions
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Before submitting, please check the following:
+      options:
+        - label: I have searched for existing feature requests that might be similar
+          required: true
+        - label: I have provided a clear description of the problem this feature solves
+          required: true
+        - label: I have considered backwards compatibility implications
+          required: false
+        - label: I would be willing to help implement this feature
+          required: false

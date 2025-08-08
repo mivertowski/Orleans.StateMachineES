@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/ivlt/Orleans.StateMachineES/discussions
+    about: Ask questions, share ideas, and discuss Orleans.StateMachineES with the community
+  - name: 📚 Documentation
+    url: https://github.com/ivlt/Orleans.StateMachineES/tree/main/docs
+    about: Browse the comprehensive documentation and guides
+  - name: 🎯 Examples
+    url: https://github.com/ivlt/Orleans.StateMachineES/tree/main/examples
+    about: Explore working examples and code samples
+  - name: 📖 Cheat Sheet
+    url: https://github.com/ivlt/Orleans.StateMachineES/blob/main/docs/CHEAT_SHEET.md
+    about: Quick reference for common patterns and usage

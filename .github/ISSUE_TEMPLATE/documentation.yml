@@ -1,0 +1,160 @@
+name: 📚 Documentation Issue
+description: Report an issue with documentation or request documentation improvements
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation! 📖
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - API Documentation
+        - Getting Started Guide
+        - Examples & Tutorials
+        - Architecture Documentation
+        - Troubleshooting Guide
+        - CHEAT_SHEET.md
+        - README.md
+        - Code Comments
+        - Migration Guide
+        - Performance Guide
+        - Best Practices
+        - FAQ
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing Documentation
+        - Incorrect Information
+        - Outdated Content
+        - Unclear Explanation
+        - Broken Links
+        - Code Example Issues
+        - Typo/Grammar
+        - Formatting Issues
+        - Missing Code Comments
+        - Translation Request
+        - New Documentation Request
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Which file or section is affected? (provide file path, URL, or section name)
+      placeholder: "e.g., docs/getting-started.md, README.md:L45, https://..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue Description
+      description: |
+        Clearly describe the documentation issue you found.
+        
+        **For incorrect information:** What is wrong and what should it be?
+        **For missing documentation:** What information is missing?
+        **For unclear content:** What part is confusing and why?
+      placeholder: "The documentation says... but it should say..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-content
+    attributes:
+      label: Current Content (if applicable)
+      description: |
+        If reporting incorrect or unclear content, paste the current text here.
+        
+        **Tip**: Use markdown code blocks for better formatting.
+      render: markdown
+      placeholder: |
+        ```
+        Current documentation text that needs to be fixed...
+        ```
+
+  - type: textarea
+    id: suggested-content
+    attributes:
+      label: Suggested Improvement
+      description: |
+        If you have a suggestion for how to fix or improve the documentation, please share it here.
+        
+        **For code examples:** Include working, tested code
+        **For explanations:** Provide clearer wording
+        **For new content:** Outline what should be covered
+      render: markdown
+      placeholder: |
+        ```
+        Suggested replacement text or new content...
+        ```
+
+  - type: textarea
+    id: context
+    attributes:
+      label: User Context
+      description: |
+        Help us understand your perspective:
+        - What were you trying to accomplish?
+        - What is your experience level with Orleans.StateMachineES?
+        - What documentation would have helped you?
+      placeholder: |
+        I was trying to...
+        My experience level: Beginner/Intermediate/Advanced
+        What would have helped: ...
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Target Audience
+      description: Who would benefit most from this documentation improvement?
+      options:
+        - New Users/Getting Started
+        - Intermediate Users
+        - Advanced Users
+        - Contributors/Developers
+        - DevOps/Operations
+        - All Users
+        - Specific Component Users
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: |
+        Any other context that would help us improve the documentation:
+        - Related documentation that works well
+        - Examples from other projects
+        - Specific use cases this would help
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      description: Before submitting, please check the following:
+      options:
+        - label: I have searched for existing documentation issues that might be related
+          required: true
+        - label: I have provided specific location information where possible
+          required: true
+        - label: I have provided constructive suggestions where applicable
+          required: false
+        - label: I would be willing to help improve this documentation
+          required: false
