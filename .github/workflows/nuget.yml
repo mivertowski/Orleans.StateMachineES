@@ -28,10 +28,18 @@ jobs:
       - name: Pack
         run: dotnet pack -p:IncludeSymbols=false -p:SymbolPackageFormat=snupkg --configuration Release
 
-      - name: publish nuget packages
+      - name: publish to nuget.org
         run: |
           shopt -s globstar
           for file in **/*.nupkg
           do
             dotnet nuget push "$file" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+      - name: publish to github packages
+        run: |
+          shopt -s globstar
+          for file in **/*.nupkg
+          do
+            dotnet nuget push "$file" --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
           done
