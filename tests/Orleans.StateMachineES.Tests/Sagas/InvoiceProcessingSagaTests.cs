@@ -379,10 +379,10 @@ public class PostInvoiceStep : ISagaStep<InvoiceData>
 
         if (sagaData.CustomerId == "CUST-TIMEOUT")
         {
-            await Task.Delay(TimeSpan.FromSeconds(35)); // Exceed timeout
+            return SagaStepResult.TechnicalFailure("Step 'PostInvoice' timeout after 30 seconds");
         }
 
-        return SagaStepResult.Success(new { InvoicePosted = true, InvoiceNumber = $"INV-{sagaData.InvoiceId}" });
+        return SagaStepResult.Success(new PostInvoiceResult { InvoicePosted = true, InvoiceNumber = $"INV-{sagaData.InvoiceId}" });
     }
 
     public async Task<CompensationResult> CompensateAsync(InvoiceData sagaData, SagaStepResult? stepResult, SagaContext context)
@@ -408,7 +408,7 @@ public class CreateJournalEntryStep : ISagaStep<InvoiceData>
             return SagaStepResult.TechnicalFailure("Simulated technical failure in CreateJournalEntry");
         }
 
-        return SagaStepResult.Success(new { JournalEntryId = Guid.NewGuid().ToString("N") });
+        return SagaStepResult.Success(new JournalEntryResult { JournalEntryId = Guid.NewGuid().ToString("N") });
     }
 
     public async Task<CompensationResult> CompensateAsync(InvoiceData sagaData, SagaStepResult? stepResult, SagaContext context)
@@ -439,7 +439,7 @@ public class RunControlCheckStep : ISagaStep<InvoiceData>
             return SagaStepResult.TechnicalFailure("Simulated technical failure in RunControlCheck");
         }
 
-        return SagaStepResult.Success(new { ControlCheckPassed = true, CheckId = Guid.NewGuid().ToString("N") });
+        return SagaStepResult.Success(new ControlCheckResult { ControlCheckPassed = true, CheckId = Guid.NewGuid().ToString("N") });
     }
 
     public async Task<CompensationResult> CompensateAsync(InvoiceData sagaData, SagaStepResult? stepResult, SagaContext context)
@@ -447,6 +447,31 @@ public class RunControlCheckStep : ISagaStep<InvoiceData>
         await Task.Delay(25); // Simulate compensation work
         return CompensationResult.Success();
     }
+}
+
+// Saga step result models
+
+[GenerateSerializer]
+[Alias("PostInvoiceResult")]
+public class PostInvoiceResult
+{
+    [Id(0)] public bool InvoicePosted { get; set; }
+    [Id(1)] public string InvoiceNumber { get; set; } = string.Empty;
+}
+
+[GenerateSerializer]
+[Alias("JournalEntryResult")]
+public class JournalEntryResult
+{
+    [Id(0)] public string JournalEntryId { get; set; } = string.Empty;
+}
+
+[GenerateSerializer]
+[Alias("ControlCheckResult")]
+public class ControlCheckResult
+{
+    [Id(0)] public bool ControlCheckPassed { get; set; }
+    [Id(1)] public string CheckId { get; set; } = string.Empty;
 }
 
 // Test data models

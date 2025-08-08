@@ -186,7 +186,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                 _sagaContext.CurrentStepIndex = stepIndex;
                 _sagaContext.CurrentStepName = stepDefinition.StepName;
 
-                var stepResult = await ExecuteStepWithRetryAsync(stepDefinition, sagaData, _sagaContext);
+                var (stepResult, retryAttempts) = await ExecuteStepWithRetryAsync(stepDefinition, sagaData, _sagaContext);
                 
                 // Record step execution
                 var execution = new SagaStepExecution
@@ -197,7 +197,8 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                     Duration = stepResult.Duration,
                     IsSuccess = stepResult.IsSuccess,
                     ErrorMessage = stepResult.ErrorMessage,
-                    Result = stepResult.Result
+                    Result = stepResult.Result,
+                    RetryAttempts = retryAttempts
                 };
                 _executionHistory.Add(execution);
 
@@ -439,7 +440,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
     /// <summary>
     /// Executes a saga step with retry logic.
     /// </summary>
-    private async Task<SagaStepResult> ExecuteStepWithRetryAsync(
+    private async Task<(SagaStepResult stepResult, int retryAttempts)> ExecuteStepWithRetryAsync(
         SagaStepDefinition<TSagaData> stepDefinition, 
         TSagaData sagaData, 
         SagaContext context)
@@ -470,7 +471,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                 // If successful or business failure, don't retry
                 if (stepResult.IsSuccess || stepResult.IsBusinessFailure)
                 {
-                    return stepResult;
+                    return (stepResult, retryCount);
                 }
 
                 // Technical failure - retry if possible
@@ -486,7 +487,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                     continue;
                 }
 
-                return stepResult;
+                return (stepResult, retryCount);
             }
             catch (OperationCanceledException) when (retryCount <= maxRetries)
             {
@@ -498,16 +499,16 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
                     continue;
                 }
 
-                return SagaStepResult.TechnicalFailure($"Step '{stepDefinition.StepName}' timed out after {maxRetries} retries");
+                return (SagaStepResult.TechnicalFailure($"Step '{stepDefinition.StepName}' timed out after {maxRetries} retries"), retryCount);
             }
             catch (Exception ex)
             {
                 _sagaLogger?.LogError(ex, "Unexpected error in step {StepName}", stepDefinition.StepName);
-                return SagaStepResult.TechnicalFailure($"Unexpected error: {ex.Message}", ex);
+                return (SagaStepResult.TechnicalFailure($"Unexpected error: {ex.Message}", ex), retryCount);
             }
         }
 
-        return SagaStepResult.TechnicalFailure("Max retry attempts exceeded");
+        return (SagaStepResult.TechnicalFailure("Max retry attempts exceeded"), retryCount);
     }
 
     /// <summary>

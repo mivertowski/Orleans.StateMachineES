@@ -1,8 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Providers;
 using Orleans.StateMachineES.EventSourcing;
+using Orleans.StateMachineES.EventSourcing.Configuration;
+using Orleans.StateMachineES.EventSourcing.Events;
 using Stateless;
 
 namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
@@ -81,6 +87,21 @@ public class ResilientWorkflowGrain :
     EventSourcedStateMachineGrain<ResilientState, ResilientTrigger, ResilientWorkflowState>,
     IResilientWorkflowGrain
 {
+    private ILogger<ResilientWorkflowGrain>? _logger;
+    
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        await base.OnActivateAsync(cancellationToken);
+        _logger = ServiceProvider.GetService(typeof(ILogger<ResilientWorkflowGrain>)) as ILogger<ResilientWorkflowGrain>;
+    }
+
+    protected override void ConfigureEventSourcing(EventSourcingOptions options)
+    {
+        // Enable auto-confirm to ensure state is persisted
+        options.AutoConfirmEvents = true;
+        options.EnableSnapshots = false; // Disable snapshots for simpler testing
+    }
+    
     protected override StateMachine<ResilientState, ResilientTrigger> BuildStateMachine()
     {
         var machine = new StateMachine<ResilientState, ResilientTrigger>(ResilientState.Initial);
@@ -104,13 +125,15 @@ public class ResilientWorkflowGrain :
 
     public async Task InitializeAsync()
     {
-        State.CurrentState = ResilientState.Initial;
-        State.EventCount = 0;
+        // Just ensure the grain is activated - state restoration is handled by base class
+        _logger?.LogDebug("ResilientWorkflowGrain {GrainId} initialized", this.GetPrimaryKeyString());
         await Task.CompletedTask;
     }
 
     public async Task ProcessStepAsync(string stepName)
     {
+        _logger?.LogDebug("Processing step {StepName} in state {State}", stepName, StateMachine.State);
+        
         switch (StateMachine.State)
         {
             case ResilientState.Initial:
@@ -125,8 +148,12 @@ public class ResilientWorkflowGrain :
                 break;
         }
 
-        State.EventCount++;
+        // The FireAsync method will record the event and update State.CurrentState
+        // The event count will be updated in the RecordTransitionEvent override
         State.LastStepProcessed = stepName;
+        
+        _logger?.LogDebug("Completed step {StepName}, new state: {NewState}, event count: {EventCount}", 
+            stepName, StateMachine.State, State.EventCount);
     }
 
     public new Task<string> GetStateAsync()
@@ -137,6 +164,66 @@ public class ResilientWorkflowGrain :
     public Task<int> GetEventCountAsync()
     {
         return Task.FromResult(State.EventCount);
+    }
+
+    protected override async Task RecordTransitionEvent(
+        ResilientState fromState, 
+        ResilientState toState, 
+        ResilientTrigger trigger, 
+        string? dedupeKey,
+        Dictionary<string, object>? metadata = null)
+    {
+        // Update our custom event count first
+        State.EventCount++;
+        
+        // Call the base implementation 
+        await base.RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata);
+        
+        _logger?.LogDebug("Recorded transition event: {From} -> {To} via {Trigger}, EventCount: {EventCount}", 
+            fromState, toState, trigger, State.EventCount);
+    }
+
+    protected override async Task ReplayEventsAsync()
+    {
+        try
+        {
+            _logger?.LogDebug("Starting event replay for ResilientWorkflowGrain {GrainId}", this.GetPrimaryKeyString());
+
+            // Get the events from the journal
+            var events = await RetrieveConfirmedEvents(0, Version);
+            
+            if (events != null && events.Any())
+            {
+                _logger?.LogDebug("Replaying {Count} events for resilient grain", events.Count());
+                
+                State.EventCount = 0; // Reset counter before replay
+                
+                foreach (var evt in events)
+                {
+                    if (evt is StateTransitionEvent<ResilientState, ResilientTrigger> transitionEvent)
+                    {
+                        // Update state tracking
+                        State.CurrentState = transitionEvent.ToState;
+                        State.LastTransitionTimestamp = transitionEvent.Timestamp;
+                        State.TransitionCount++;
+                        State.EventCount++; // Update our custom event count
+                    }
+                }
+                
+                _logger?.LogInformation("Successfully replayed {Count} events, current state: {State}, event count: {EventCount}", 
+                    events.Count(), State.CurrentState, State.EventCount);
+            }
+            else
+            {
+                _logger?.LogDebug("No events to replay for resilient grain");
+                State.EventCount = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to replay events for resilient grain");
+            // Don't throw - we can still function without perfect replay
+        }
     }
 
     public new async Task DeactivateAsync()

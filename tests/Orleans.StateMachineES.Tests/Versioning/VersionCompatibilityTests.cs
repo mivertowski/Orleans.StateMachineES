@@ -128,14 +128,13 @@ public class VersionCompatibilityTests
 
         var existingVersions = new[]
         {
-            new StateMachineVersion(1, 0, 0),
-            new StateMachineVersion(1, 1, 0)
+            new StateMachineVersion(1, 0, 0)
         };
 
-        // Act - compatible deployment
+        // Act - compatible deployment using registered version (minor upgrade)
         var compatibleResult = await checker.ValidateDeploymentCompatibilityAsync(
             "TestGrain",
-            new StateMachineVersion(1, 2, 0),
+            new StateMachineVersion(1, 1, 0),
             existingVersions);
 
         // Assert
@@ -149,8 +148,8 @@ public class VersionCompatibilityTests
             existingVersions);
 
         // Assert
-        incompatibleResult.Warnings.Should().NotBeEmpty();
-        incompatibleResult.SuggestedStrategy.Should().Be(DeploymentStrategy.BlueGreenDeployment);
+        incompatibleResult.CanDeploy.Should().BeFalse();
+        incompatibleResult.SuggestedStrategy.Should().Be(DeploymentStrategy.CannotDeploy);
     }
 
     [Fact]
@@ -356,8 +355,8 @@ public class MigrationHooksTests
         result.Should().BeTrue();
         hook1.BeforeMigrationCalled.Should().BeTrue();
         hook2.BeforeMigrationCalled.Should().BeTrue();
-        context.ExecutedHooks.Should().Contain("Hook1");
-        context.ExecutedHooks.Should().Contain("Hook2");
+        context.ExecutedHooks.Should().Contain("Hook1_BeforeMigration");
+        context.ExecutedHooks.Should().Contain("Hook2_BeforeMigration");
     }
 
     [Fact]

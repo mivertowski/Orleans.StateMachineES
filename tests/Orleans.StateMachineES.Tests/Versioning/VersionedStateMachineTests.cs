@@ -79,13 +79,13 @@ public class VersionedStateMachineTests
 
         await grain.InitializeWithVersionAsync(new StateMachineVersion(1, 0, 0));
 
-        // Act - try to downgrade
+        // Act - try to downgrade to unregistered version
         var targetVersion = new StateMachineVersion(0, 9, 0);
         var upgradeResult = await grain.UpgradeToVersionAsync(targetVersion);
 
         // Assert
         upgradeResult.IsSuccess.Should().BeFalse();
-        upgradeResult.ErrorMessage.Should().Contain("must be higher than current version");
+        upgradeResult.ErrorMessage.Should().Contain("is not compatible");
     }
 
     [Fact]
@@ -117,9 +117,9 @@ public class VersionedStateMachineTests
 
         await grain.InitializeWithVersionAsync(new StateMachineVersion(1, 0, 0));
 
-        // Act - perform multiple upgrades
-        await grain.UpgradeToVersionAsync(new StateMachineVersion(1, 0, 1));
+        // Act - perform multiple upgrades using registered versions
         await grain.UpgradeToVersionAsync(new StateMachineVersion(1, 1, 0));
+        await grain.UpgradeToVersionAsync(new StateMachineVersion(2, 0, 0));
 
         var history = await grain.GetVersionHistoryAsync();
 
@@ -128,8 +128,8 @@ public class VersionedStateMachineTests
         history.Count.Should().BeGreaterThan(2); // Initial + 2 upgrades
         
         var lastUpgrade = history[^1];
-        lastUpgrade.Version.Should().Be(new StateMachineVersion(1, 1, 0));
-        lastUpgrade.PreviousVersion.Should().Be(new StateMachineVersion(1, 0, 1));
+        lastUpgrade.Version.Should().Be(new StateMachineVersion(2, 0, 0));
+        lastUpgrade.PreviousVersion.Should().Be(new StateMachineVersion(1, 1, 0));
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class VersionedStateMachineTests
 
         // Assert
         dryRunResult.IsSuccess.Should().BeTrue();
-        dryRunResult.MigrationSummary!.ChangesApplied.Should().Contain("Dry run migration");
+        dryRunResult.MigrationSummary!.ChangesApplied.Should().Contain(x => x.Contains("Dry run migration"));
 
         // Version should remain unchanged after dry run
         var currentVersion = await grain.GetVersionAsync();

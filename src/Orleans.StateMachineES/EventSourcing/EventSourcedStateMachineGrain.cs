@@ -699,39 +699,72 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
         // Clear trigger parameters cache when rebuilding
         TriggerParametersCache.Clear();
         
-        // Build the state machine configuration
-        StateMachine = BuildStateMachine();
-        NotNull(StateMachine, nameof(StateMachine));
+        // Replay events first to rebuild state
+        await ReplayEventsAsync();
 
-        // If we have a persisted state, we need to restore from events
-        if (State.CurrentState != null)
+        // If we have a persisted state, create machine with that state as initial
+        if (State.CurrentState != null && !EqualityComparer<TState>.Default.Equals(State.CurrentState, default(TState)!))
         {
             _logger?.LogDebug("Restoring state machine from persisted state: {State}", State.CurrentState);
             
-            // Create a new state machine with the ability to set state
-            TState currentState = State.CurrentState;
-            StateMachine = new StateMachine<TState, TTrigger>(
-                () => currentState,
-                s => currentState = s
-            );
+            // Create state machine with restored state as the initial state
+            TState restoredState = State.CurrentState;
+            StateMachine = new StateMachine<TState, TTrigger>(restoredState);
+            
+            // Apply the configuration to the machine with restored state
+            ApplyConfigurationToMachine(StateMachine);
+        }
+        else
+        {
+            // Build the state machine with default initial state
+            StateMachine = BuildStateMachine();
+        }
+        
+        NotNull(StateMachine, nameof(StateMachine));
+    }
 
-            // Reapply the configuration
-            var configuredMachine = BuildStateMachine();
+    /// <summary>
+    /// Applies the state machine configuration to an existing machine instance.
+    /// This is used when restoring state to avoid overwriting the current state.
+    /// </summary>
+    protected virtual void ApplyConfigurationToMachine(StateMachine<TState, TTrigger> machine)
+    {
+        try
+        {
+            // Build a temporary machine to get the configuration
+            var templateMachine = BuildStateMachine();
             
-            // Note: Stateless doesn't provide a direct way to copy configuration
-            // In a production system, you might want to use reflection or maintain
-            // the configuration separately to properly restore it
-            StateMachine = configuredMachine;
+            // Copy the configuration using reflection
+            // This is a workaround since Stateless doesn't provide direct configuration copying
+            var templateStateConfig = templateMachine.GetType()
+                .GetField("_stateConfiguration", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var machineStateConfig = machine.GetType()
+                .GetField("_stateConfiguration", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            // Force the state to the persisted value
-            if (!EqualityComparer<TState>.Default.Equals(State.CurrentState, default(TState)!))
+            if (templateStateConfig?.GetValue(templateMachine) != null && machineStateConfig != null)
             {
-                await ForceStateAsync(State.CurrentState);
+                machineStateConfig.SetValue(machine, templateStateConfig.GetValue(templateMachine));
+                _logger?.LogDebug("Applied configuration to state machine with restored state");
+            }
+            else
+            {
+                _logger?.LogWarning("Could not copy state machine configuration using reflection, using workaround");
+                
+                // Fallback: rebuild from scratch and use ForceStateAsync
+                var currentState = machine.State;
+                StateMachine = BuildStateMachine();
+                _ = ForceStateAsync(currentState);
             }
         }
-
-        // Replay events to rebuild state and dedupe keys
-        await ReplayEventsAsync();
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to apply configuration to state machine, falling back to rebuild");
+            
+            // Fallback: rebuild from scratch
+            var currentState = machine.State;
+            StateMachine = BuildStateMachine();
+            _ = ForceStateAsync(currentState);
+        }
     }
 
     /// <summary>
