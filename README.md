@@ -25,6 +25,14 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🔄 **Repeating Actions** - Support for repeating timers with heartbeat patterns
 - 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships  
 - 🎭 **Distributed Sagas** - Multi-grain workflows with compensation and correlation tracking
+- 🔍 **Distributed Tracing** - OpenTelemetry integration with activity sources and metrics
+- 📊 **State Machine Visualization** - Interactive diagrams and analysis tools (DOT, Mermaid, PlantUML, HTML)
+- 📈 **Advanced Monitoring** - Real-time metrics, health checks, and monitoring endpoints
+- 🔄 **State Machine Versioning** - Seamless versioning with migration support
+- 🧩 **State Machine Composition** - Build complex state machines from reusable components
+- 🏥 **Health Checks** - ASP.NET Core health check integration with custom providers
+- 🎨 **Visualization Batch Service** - Analyze and visualize multiple state machines simultaneously
+- 🔧 **Component Inheritance** - Create reusable state machine components (Validation, Retry, Approval)
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
 
 ### Original Features
@@ -847,6 +855,328 @@ public async Task<CompensationResult> CompensateAsync(...)
 }
 ```
 
+### Distributed Tracing with OpenTelemetry
+
+#### 1. Configure OpenTelemetry for State Machine Tracing
+
+```csharp
+using Orleans.StateMachineES.Tracing;
+
+// In Program.cs for ASP.NET Core or console applications
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddStateMachineInstrumentation()
+        .AddJaegerExporter()
+        .AddConsoleExporter())
+    .WithMetrics(metrics => metrics
+        .AddStateMachineMetrics()
+        .AddPrometheusExporter());
+
+// For Orleans Silo
+siloBuilder.ConfigureServices(services =>
+{
+    services.AddOpenTelemetry()
+        .WithTracing(tracing => tracing
+            .AddStateMachineInstrumentation()
+            .AddOtlpExporter())
+        .WithMetrics(metrics => metrics
+            .AddStateMachineMetrics());
+});
+```
+
+#### 2. Automatic Activity Tracking
+
+State machine operations are automatically traced:
+
+```csharp
+public class OrderGrain : EventSourcedStateMachineGrain<OrderState, OrderTrigger, OrderGrainState>
+{
+    protected override StateMachine<OrderState, OrderTrigger> BuildStateMachine()
+    {
+        var machine = new StateMachine<OrderState, OrderTrigger>(OrderState.Created);
+        
+        machine.Configure(OrderState.Created)
+            .OnEntry(() => 
+            {
+                // This action is automatically traced
+                Logger.LogInformation("Order created");
+            })
+            .Permit(OrderTrigger.Submit, OrderState.Processing);
+            
+        return machine;
+    }
+
+    // This method call will create a distributed trace
+    public async Task SubmitOrderAsync()
+    {
+        await FireAsync(OrderTrigger.Submit); // Traced automatically
+    }
+}
+```
+
+#### 3. Custom Tracing with Helper
+
+```csharp
+using Orleans.StateMachineES.Tracing;
+
+public class PaymentProcessorGrain : StateMachineGrain<PaymentState, PaymentTrigger>
+{
+    public async Task ProcessPaymentAsync(PaymentRequest request)
+    {
+        // Use TracingHelper for custom operations
+        var result = await TracingHelper.TraceStateTransition(
+            grainType: GetType().Name,
+            grainId: this.GetPrimaryKeyString(),
+            fromState: StateMachine.State.ToString(),
+            trigger: PaymentTrigger.Process.ToString(),
+            operation: async () =>
+            {
+                // Your business logic here
+                var paymentResult = await ProcessPaymentLogic(request);
+                await FireAsync(PaymentTrigger.Process);
+                return paymentResult;
+            },
+            parameterCount: 1);
+            
+        // Activity context is automatically enriched with:
+        // - Grain type and ID
+        // - State transition details
+        // - Duration and success status
+        // - Custom tags and events
+    }
+    
+    public async Task ProcessSagaStepAsync(string sagaId, string stepName)
+    {
+        // Trace saga execution with correlation
+        await TracingHelper.TraceSagaExecution(
+            sagaType: "PaymentSaga",
+            sagaId: sagaId,
+            stepName: stepName,
+            grainId: this.GetPrimaryKeyString(),
+            operation: async () =>
+            {
+                await ExecuteSagaStep();
+            });
+    }
+}
+```
+
+#### 4. Metrics Collection
+
+Built-in metrics are automatically collected:
+
+```csharp
+// Metrics are automatically exported:
+// - statemachine_transitions_total: Counter of state transitions
+// - statemachine_transition_duration: Histogram of transition times  
+// - statemachine_active_grains: Gauge of currently active grains
+// - statemachine_trigger_errors_total: Counter of failed trigger attempts
+// - statemachine_saga_executions_total: Counter of saga executions
+// - statemachine_saga_duration: Histogram of saga execution times
+
+// View metrics in your monitoring dashboard (Grafana, etc.)
+```
+
+#### 5. Distributed Trace Visualization
+
+Traces will show the complete flow across grains:
+
+```
+OrderService.SubmitOrder
+├── OrderGrain.SubmitOrderAsync (span: 245ms)
+│   ├── State Transition: Created → Processing
+│   └── Event: OrderSubmittedEvent published
+├── PaymentGrain.ProcessPaymentAsync (span: 180ms)  
+│   ├── State Transition: Pending → Authorized
+│   └── External API call: PaymentProvider.Authorize
+├── InventoryGrain.ReserveItemsAsync (span: 95ms)
+│   └── State Transition: Available → Reserved  
+└── NotificationGrain.SendConfirmationAsync (span: 45ms)
+    └── External call: EmailService.SendEmail
+
+Total Duration: 565ms
+```
+
+### State Machine Visualization and Analysis
+
+#### 1. Generate Visual Diagrams
+
+```csharp
+using Orleans.StateMachineES.Visualization;
+
+public class OrderVisualizationService
+{
+    public async Task GenerateOrderStateDiagramAsync()
+    {
+        var grain = grainFactory.GetGrain<IOrderGrain>("order-123");
+        
+        // Create a comprehensive visualization report
+        var report = await StateMachineVisualizer.CreateReportAsync(grain, includeRuntimeInfo: true);
+        
+        if (report.Success)
+        {
+            // Export to various formats
+            var dotGraph = StateMachineVisualizer.ToDotGraph(stateMachine);
+            var analysis = StateMachineVisualizer.AnalyzeStructure(stateMachine);
+            
+            // Export to multiple formats
+            var jsonBytes = await StateMachineVisualizer.ExportAsync(stateMachine, ExportFormat.Json);
+            var mermaidBytes = await StateMachineVisualizer.ExportAsync(stateMachine, ExportFormat.Mermaid);
+            var plantUmlBytes = await StateMachineVisualizer.ExportAsync(stateMachine, ExportFormat.PlantUml);
+            
+            await File.WriteAllBytesAsync("order-state-machine.json", jsonBytes);
+            await File.WriteAllBytesAsync("order-diagram.mmd", mermaidBytes);
+        }
+    }
+}
+```
+
+#### 2. Interactive Web Visualization
+
+```csharp
+using Orleans.StateMachineES.Visualization.Web;
+
+public class StateMachineWebController : ControllerBase
+{
+    [HttpGet("visualize/{grainType}/{grainId}")]
+    public async Task<IActionResult> VisualizeGrain(string grainType, string grainId)
+    {
+        // Generate interactive HTML visualization
+        var html = StateMachineWebVisualizer.GenerateRealTimeHtml<OrderState, OrderTrigger>(
+            grainType, grainId, new WebVisualizationOptions
+            {
+                Title = $"Order State Machine: {grainId}",
+                ShowStatistics = true,
+                VisualizationLibrary = WebVisualizationLibrary.VisJS
+            });
+            
+        return Content(html, "text/html");
+    }
+    
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> Dashboard()
+    {
+        // Create a dashboard showing multiple state machines
+        var stateMachines = await GetStateMachineAnalyses();
+        
+        var dashboardHtml = StateMachineWebVisualizer.GenerateDashboardHtml(
+            stateMachines, new DashboardOptions
+            {
+                Title = "State Machine Operations Dashboard",
+                ShowCharts = true,
+                ShowMiniVisualizations = true
+            });
+            
+        return Content(dashboardHtml, "text/html");
+    }
+}
+```
+
+#### 3. Batch Analysis and Reporting
+
+```csharp
+using Orleans.StateMachineES.Visualization;
+
+public class StateMachineAnalyticsService
+{
+    public async Task GenerateBatchReportsAsync()
+    {
+        var batchService = new BatchVisualizationService();
+        
+        // Analyze multiple grain types
+        var result = await batchService.GenerateGrainVisualizationsAsync<OrderGrain, OrderState, OrderTrigger>(
+            grainFactory,
+            new[] { "order-1", "order-2", "order-3" },
+            new BatchVisualizationOptions
+            {
+                OutputDirectory = "./reports",
+                IncludeStatistics = true,
+                GenerateComparisons = true,
+                ExportFormats = { ExportFormat.Json, ExportFormat.Mermaid, ExportFormat.Dot }
+            });
+            
+        Console.WriteLine($"Generated {result.SuccessfulCount} reports in {result.ProcessingTime.TotalSeconds}s");
+        
+        // View comparative statistics
+        var statistics = result.Statistics;
+        Console.WriteLine($"Average complexity: {statistics.AverageComplexity:F2}");
+        Console.WriteLine($"State count range: {statistics.StateCountRange.Min}-{statistics.StateCountRange.Max}");
+    }
+}
+```
+
+#### 4. Real-Time Monitoring Dashboard
+
+The web visualization includes:
+
+- **Live State Tracking**: See current state of running grains
+- **Transition History**: Visual timeline of state changes
+- **Performance Metrics**: Transition times and success rates
+- **Interactive Controls**: Trigger state transitions directly from UI
+- **Comparative Analysis**: Side-by-side comparison of multiple state machines
+- **Export Functions**: Download diagrams and reports in various formats
+
+#### 5. Analysis Features
+
+```csharp
+// Analyze state machine complexity
+var analysis = StateMachineVisualizer.AnalyzeStructure(stateMachine);
+
+Console.WriteLine($"State Machine Analysis:");
+Console.WriteLine($"  States: {analysis.States.Count}");
+Console.WriteLine($"  Triggers: {analysis.Triggers.Count}");
+Console.WriteLine($"  Complexity Level: {analysis.Metrics.ComplexityLevel}");
+Console.WriteLine($"  Cyclomatic Complexity: {analysis.Metrics.CyclomaticComplexity}");
+Console.WriteLine($"  Max Depth: {analysis.Metrics.MaxDepth}");
+Console.WriteLine($"  Connectivity Index: {analysis.Metrics.ConnectivityIndex:F2}");
+
+// Find potential issues
+foreach (var state in analysis.States.Where(s => s.Substates.Count > 5))
+{
+    Console.WriteLine($"Warning: State {state.Name} has {state.Substates.Count} substates (consider refactoring)");
+}
+
+foreach (var trigger in analysis.Triggers.Where(t => t.UsageCount > 10))
+{
+    Console.WriteLine($"Info: Trigger {trigger.Name} is used {trigger.UsageCount} times across states");
+}
+```
+
+#### 6. Visualization Output Formats
+
+- **DOT (Graphviz)**: Generate publication-quality diagrams
+- **Mermaid**: GitHub-compatible markdown diagrams  
+- **PlantUML**: Enterprise documentation standard
+- **JSON**: Machine-readable analysis data
+- **XML**: Structured metadata export
+- **Interactive HTML**: Real-time web dashboards
+
+#### 7. Integration with Monitoring Systems
+
+```csharp
+// Export metrics to monitoring platforms
+public class MonitoringIntegration
+{
+    public async Task ExportToPrometheus()
+    {
+        // State machine metrics are automatically available in Prometheus format
+        // Access at http://your-app/metrics
+    }
+    
+    public async Task ExportToAppInsights()
+    {
+        // Traces and metrics are automatically sent to Application Insights
+        // when configured with OpenTelemetry
+    }
+    
+    public async Task ExportToJaeger()
+    {
+        // Distributed traces are automatically sent to Jaeger
+        // View complete request flows across all grains
+    }
+}
+```
+
 ## Advanced Features
 
 ### Guard Conditions with Detailed Feedback
@@ -987,6 +1317,17 @@ Orleans.StateMachineES/
 │       ├── Models/                # Data models
 │       ├── Sagas/                 # Distributed saga support
 │       ├── Timers/                # Timer-based transitions
+│       ├── Tracing/               # OpenTelemetry distributed tracing
+│       │   ├── StateMachineActivitySource.cs
+│       │   ├── StateMachineMetrics.cs
+│       │   ├── TracingExtensions.cs
+│       │   ├── TracingHelper.cs
+│       │   └── TracingSetupExamples.cs
+│       ├── Visualization/         # State machine visualization
+│       │   ├── Models/           # Visualization data models
+│       │   ├── Web/              # Interactive web visualization
+│       │   ├── StateMachineVisualizer.cs
+│       │   └── BatchVisualizationService.cs
 │       ├── Versioning/            # State machine versioning
 │       │   ├── StateMachineIntrospector.cs
 │       │   ├── ImprovedStateMachineIntrospector.cs
@@ -1008,6 +1349,133 @@ Orleans.StateMachineES/
 └── Orleans.StateMachineES.sln     # Solution file
 ```
 
+## State Machine Composition & Inheritance
+
+Build complex state machines from reusable components with multiple composition strategies.
+
+### Creating Reusable Components
+
+```csharp
+// Create a reusable validation component
+public class EmailValidationComponent : ComposableStateMachineBase<ProcessState, ProcessTrigger>
+{
+    public EmailValidationComponent(ILogger logger) 
+        : base("email-validation", "Validates email addresses", ProcessState.Validating, logger)
+    {
+        // Define exit states
+        AddExitStates(ProcessState.Valid, ProcessState.Invalid);
+        
+        // Register mappable triggers
+        RegisterDefaultTrigger(ProcessTrigger.Validate);
+    }
+
+    public override void Configure(StateMachine<ProcessState, ProcessTrigger> stateMachine)
+    {
+        stateMachine.Configure(ProcessState.Validating)
+            .Permit(ProcessTrigger.ValidationSuccess, ProcessState.Valid)
+            .Permit(ProcessTrigger.ValidationFailure, ProcessState.Invalid)
+            .OnEntry(() => PerformValidation());
+    }
+}
+```
+
+### Composing State Machines
+
+```csharp
+public class OrderProcessingGrain : ComposedStateMachineGrain<OrderState, OrderTrigger>
+{
+    protected override void RegisterComponents()
+    {
+        // Register reusable components
+        RegisterComponent(new ValidationComponent<OrderState, OrderTrigger>(
+            componentId: "order-validation",
+            entryState: OrderState.Validating,
+            validatingState: OrderState.ValidatingOrder,
+            validState: OrderState.OrderValid,
+            invalidState: OrderState.OrderInvalid,
+            // ... other parameters
+            logger: _logger
+        ));
+
+        RegisterComponent(new RetryComponent<OrderState, OrderTrigger>(
+            componentId: "payment-retry",
+            entryState: OrderState.PaymentPending,
+            attemptingState: OrderState.ProcessingPayment,
+            successState: OrderState.PaymentSuccess,
+            failedState: OrderState.PaymentFailed,
+            retryingState: OrderState.RetryingPayment,
+            maxAttempts: 3,
+            retryDelay: TimeSpan.FromSeconds(5),
+            backoffStrategy: BackoffStrategy.Exponential,
+            logger: _logger
+        ));
+
+        RegisterComponent(new ApprovalComponent<OrderState, OrderTrigger>(
+            componentId: "manager-approval",
+            entryState: OrderState.PendingApproval,
+            pendingApprovalState: OrderState.AwaitingManager,
+            approvedState: OrderState.Approved,
+            rejectedState: OrderState.Rejected,
+            escalatedState: OrderState.Escalated,
+            configuration: new ApprovalConfiguration
+            {
+                ApprovalLevels = 2,
+                Timeout = TimeSpan.FromHours(24),
+                AutoApproveIfNoResponse = false,
+                AllowEscalation = true
+            },
+            logger: _logger
+        ));
+    }
+
+    protected override CompositionStrategy CompositionStrategy => 
+        CompositionStrategy.Sequential; // or Parallel, Hierarchical, Mixed
+
+    protected override OrderState GetInitialState() => OrderState.Draft;
+}
+```
+
+### Available Composition Strategies
+
+- **Sequential**: Components execute one after another
+- **Parallel**: Components can execute simultaneously  
+- **Hierarchical**: Components nested within parent components
+- **Mixed**: Combination of different strategies
+
+### Built-in Reusable Components
+
+#### ValidationComponent
+- Input validation with custom logic
+- Success/failure state routing
+- Configurable validation rules
+
+#### RetryComponent  
+- Automatic retry with backoff strategies
+- Fixed, Linear, Exponential, or Jittered backoff
+- Configurable max attempts and delays
+
+#### ApprovalComponent
+- Multi-level approval workflows
+- Timeout and escalation support
+- Required approvers configuration
+- Auto-approval options
+
+### Dynamic Component Management
+
+```csharp
+// Add components at runtime
+await grain.AddComponentDynamicallyAsync(new CustomComponent());
+
+// Remove components
+await grain.RemoveComponentDynamicallyAsync("component-id");
+
+// Access component data
+var component = grain.GetComponent("component-id");
+var allComponents = grain.GetComponents();
+```
+
+```
+
 ## Requirements
 
 - .NET 9.0 or higher
@@ -1023,8 +1491,11 @@ This fork implements a phased approach to enhance Orleans state machines:
 - ✅ **Phase 4**: Hierarchical/Nested States (Complete)
 - ✅ **Phase 5**: Distributed Sagas & Compensations (Complete)
 - ✅ **Phase 6**: State Machine Versioning (Complete)
-- 📋 **Phase 7**: Advanced Observability
-- 📋 **Phase 8**: Workflow Orchestration
+- ✅ **Phase 7a**: Distributed Tracing with OpenTelemetry (Complete)
+- ✅ **Phase 7b**: State Machine Visualization & Analysis (Complete)
+- ✅ **Phase 7c**: Health Checks and Monitoring Endpoints (Complete)
+- ✅ **Phase 8**: State Machine Composition & Inheritance (Complete)
+- ✅ **Phase 9**: Example Applications & Documentation (Complete)
 
 See [docs/plan.md](docs/plan.md) for detailed roadmap.
 

@@ -12,7 +12,6 @@ using Orleans.StateMachineES.Tests.Cluster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
 using Orleans.TestingHost;
 using Stateless;

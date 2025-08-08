@@ -374,7 +374,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
             BusinessTransactionId = GenerateBusinessTransactionId(sagaData),
             InitiatedBy = GetInitiatingUser(),
             StartTime = DateTime.UtcNow,
-            Properties = CreateContextProperties(sagaData)
+            Metadata = CreateContextProperties(sagaData)
         };
     }
 

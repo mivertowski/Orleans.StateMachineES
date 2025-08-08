@@ -169,9 +169,9 @@ public class SagaContext
     [Id(4)] public DateTime StartTime { get; init; } = DateTime.UtcNow;
     
     /// <summary>
-    /// Additional properties for the saga context.
+    /// Additional metadata for the saga context.
     /// </summary>
-    [Id(5)] public Dictionary<string, object> Properties { get; init; } = new();
+    [Id(5)] public Dictionary<string, object> Metadata { get; init; } = new();
     
     /// <summary>
     /// Current step index in the saga execution.

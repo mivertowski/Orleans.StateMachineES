@@ -12,7 +12,6 @@ using Orleans;
 using Orleans.EventSourcing;
 using Orleans.Providers;
 using Orleans.TestingHost;
-using Orleans.Timers;
 using Stateless;
 using System.Reflection;
 using Xunit;
