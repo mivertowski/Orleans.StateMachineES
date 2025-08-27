@@ -754,12 +754,14 @@ foreach (var rec in recommendations)
 - Keep states focused and meaningful
 - Use hierarchical states for related behaviors
 - Design for testability with clear state transitions
+- Enable nullable reference types (`<Nullable>enable</Nullable>`) for better null safety
 
 ### 2. Performance
 - Use timers for short durations (< 5 minutes)
 - Use reminders for long durations (> 5 minutes)
 - Enable snapshots for high-frequency state machines
 - Configure appropriate dedupe key limits
+- Optimize async methods by removing unnecessary `async` keywords where no await is needed
 
 ### 3. Error Handling
 ```csharp
@@ -785,7 +787,27 @@ siloBuilder
     .AddMemoryStreams("SMS");
 ```
 
-### 5. Monitoring & Observability
+### 5. Build Configuration
+```xml
+<!-- Recommended project settings for Orleans.StateMachineES -->
+<PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+</PropertyGroup>
+
+<!-- Package references with verified compatibility -->
+<ItemGroup>
+    <PackageReference Include="Orleans.StateMachineES" Version="1.0.0" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
+    <!-- For testing -->
+    <PackageReference Include="xunit" Version="2.8.0" />
+    <PackageReference Include="FluentAssertions" Version="7.0.0" />
+</ItemGroup>
+```
+
+### 6. Monitoring & Observability
 ```csharp
 protected override async Task RecordTransitionEvent(/*...*/)
 {
