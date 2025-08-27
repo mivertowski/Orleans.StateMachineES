@@ -12,7 +12,7 @@
     <PackageId>Orleans.StateMachineES.Generators</PackageId>
     <Description>Roslyn source generators for Orleans.StateMachineES typed triggers and states</Description>
     <Authors>Michael Ivertowski</Authors>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
