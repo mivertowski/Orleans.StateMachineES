@@ -16,6 +16,8 @@
         <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.14.0" />
         <PackageReference Include="Microsoft.Orleans.TestingHost" Version="9.1.2" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.5.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.5.0" />
     </ItemGroup>
 
     <ItemGroup>

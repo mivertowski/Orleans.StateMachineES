@@ -63,7 +63,7 @@ public sealed class MigrationPathCalculator
         }
 
         // Evaluate and rank paths
-        var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix).ConfigureAwait(false);
+        var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix);
 
         // Select optimal path
         var optimalPath = SelectOptimalPath(evaluatedPaths);
@@ -89,7 +89,7 @@ public sealed class MigrationPathCalculator
             .ConfigureAwait(false);
 
         var allPaths = FindAllPaths(graph, fromVersion, toVersion);
-        var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix).ConfigureAwait(false);
+        var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix);
 
         // Return top N paths
         return evaluatedPaths
@@ -102,14 +102,14 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Gets or builds the version graph for a grain type.
     /// </summary>
-    private async Task<VersionGraph> GetOrBuildVersionGraphAsync(
+    private Task<VersionGraph> GetOrBuildVersionGraphAsync(
         string grainType,
         IEnumerable<StateMachineVersion> availableVersions,
         CompatibilityMatrix? compatibilityMatrix)
     {
         if (_versionGraphs.TryGetValue(grainType, out var existingGraph))
         {
-            return existingGraph;
+            return Task.FromResult(existingGraph);
         }
 
         var graph = new VersionGraph(grainType);
@@ -128,8 +128,8 @@ public sealed class MigrationPathCalculator
             {
                 if (fromVer.CompareTo(toVer) < 0) // Only consider upgrades
                 {
-                    var isCompatible = await CheckCompatibilityAsync(
-                        fromVer, toVer, compatibilityMatrix).ConfigureAwait(false);
+                    var isCompatible = CheckCompatibilityAsync(
+                        fromVer, toVer, compatibilityMatrix);
 
                     if (isCompatible)
                     {
@@ -141,13 +141,13 @@ public sealed class MigrationPathCalculator
         }
 
         _versionGraphs[grainType] = graph;
-        return graph;
+        return Task.FromResult(graph);
     }
 
     /// <summary>
     /// Checks if two versions are compatible.
     /// </summary>
-    private async Task<bool> CheckCompatibilityAsync(
+    private bool CheckCompatibilityAsync(
         StateMachineVersion from,
         StateMachineVersion to,
         CompatibilityMatrix? matrix)
@@ -225,7 +225,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Evaluates migration paths and creates MigrationPath objects.
     /// </summary>
-    private async Task<List<MigrationPath>> EvaluatePathsAsync(
+    private Task<List<MigrationPath>> EvaluatePathsAsync(
         List<List<StateMachineVersion>> paths,
         CompatibilityMatrix? matrix)
     {
@@ -233,17 +233,17 @@ public sealed class MigrationPathCalculator
 
         foreach (var versionPath in paths)
         {
-            var migrationPath = await BuildMigrationPathAsync(versionPath, matrix).ConfigureAwait(false);
+            var migrationPath = BuildMigrationPathAsync(versionPath, matrix);
             evaluatedPaths.Add(migrationPath);
         }
 
-        return evaluatedPaths;
+        return Task.FromResult(evaluatedPaths);
     }
 
     /// <summary>
     /// Builds a detailed migration path from a version sequence.
     /// </summary>
-    private async Task<MigrationPath> BuildMigrationPathAsync(
+    private MigrationPath BuildMigrationPathAsync(
         List<StateMachineVersion> versionPath,
         CompatibilityMatrix? matrix)
     {

@@ -89,8 +89,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
             }
 
             // Build compatibility context
-            var context = await BuildCompatibilityContextAsync(grainTypeName, fromVersion, toVersion)
-                .ConfigureAwait(false);
+            var context = BuildCompatibilityContextAsync(grainTypeName, fromVersion, toVersion);
 
             // Evaluate rules
             var result = await _rulesEngine.EvaluateCompatibilityAsync(context).ConfigureAwait(false);
@@ -136,8 +135,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
             {
                 if (fromVersion.CompareTo(toVersion) < 0)
                 {
-                    var result = await CheckCompatibilityAsync(grainTypeName, fromVersion, toVersion)
-                        .ConfigureAwait(false);
+                    var result = await CheckCompatibilityAsync(grainTypeName, fromVersion, toVersion);
                     
                     matrix.AddEntry(fromVersion, toVersion, result);
                 }
@@ -159,8 +157,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
 
         foreach (var targetVersion in availableVersions.Where(v => v.CompareTo(currentVersion) > 0))
         {
-            var compatibility = await CheckCompatibilityAsync(grainTypeName, currentVersion, targetVersion)
-                .ConfigureAwait(false);
+            var compatibility = await CheckCompatibilityAsync(grainTypeName, currentVersion, targetVersion);
 
             var paths = await _pathCalculator.CalculateAlternativePathsAsync(
                 grainTypeName, currentVersion, targetVersion, availableVersions, 3).ConfigureAwait(false);
@@ -204,8 +201,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         foreach (var existingVersion in existingVersions)
         {
             // Check forward compatibility
-            var forwardCheck = await CheckCompatibilityAsync(grainTypeName, existingVersion, newVersion)
-                .ConfigureAwait(false);
+            var forwardCheck = await CheckCompatibilityAsync(grainTypeName, existingVersion, newVersion);
             
             if (!forwardCheck.IsCompatible)
             {
@@ -222,8 +218,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
             // Check backward compatibility if needed
             if (existingVersion.CompareTo(newVersion) > 0)
             {
-                var backwardCheck = await CheckCompatibilityAsync(grainTypeName, newVersion, existingVersion)
-                    .ConfigureAwait(false);
+                var backwardCheck = await CheckCompatibilityAsync(grainTypeName, newVersion, existingVersion);
                 
                 if (!backwardCheck.IsCompatible)
                 {
@@ -244,7 +239,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return result;
     }
 
-    private async Task<CompatibilityContext> BuildCompatibilityContextAsync(
+    private CompatibilityContext BuildCompatibilityContextAsync(
         string grainTypeName,
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)

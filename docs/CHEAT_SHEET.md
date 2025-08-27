@@ -296,8 +296,7 @@ protected TimeoutConfiguration<TState, TTrigger> ConfigureTimeout(TState state)
 
 ```csharp
 protected override void ConfigureEventSourcing(EventSourcingOptions options)
-{
-    // 🚀 CRITICAL FOR PERFORMANCE - Always enable!
+{   
     options.AutoConfirmEvents = true;      // Essential for optimal performance
     
     // Performance optimizations
@@ -314,7 +313,7 @@ protected override void ConfigureEventSourcing(EventSourcingOptions options)
 ```
 
 ⚠️ **CRITICAL:** `AutoConfirmEvents = true` is **essential** for:
-- Maximum performance (30%+ improvement)
+- Maximum performance
 - Proper state recovery after grain deactivation
 - Reliable event persistence
 
@@ -822,7 +821,7 @@ var path = await grain.GetCurrentStatePathAsync();
 
 ## Complete Example Applications
 
-The `examples/` directory contains four production-ready applications:
+The `examples/` directory contains four applications:
 
 1. **ECommerceWorkflow** - Order processing with event sourcing, timers, and monitoring
 2. **DocumentApproval** - Hierarchical states with saga orchestration

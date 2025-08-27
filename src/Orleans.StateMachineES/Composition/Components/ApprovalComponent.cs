@@ -241,8 +241,8 @@ public class ApprovalComponent<TState, TTrigger> : ComposableStateMachineBase<TS
     /// <inheritdoc />
     protected override async Task OnExitAsync(CompositionContext context)
     {
-        context.SharedData[$"{ComponentId}_ApproverId"] = _approverId;
-        context.SharedData[$"{ComponentId}_Comments"] = _comments;
+        context.SharedData[$"{ComponentId}_ApproverId"] = _approverId ?? string.Empty;
+        context.SharedData[$"{ComponentId}_Comments"] = _comments ?? string.Empty;
         context.SharedData[$"{ComponentId}_Duration"] = 
             DateTime.UtcNow - (_submittedAt ?? DateTime.UtcNow);
 

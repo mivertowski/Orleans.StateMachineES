@@ -71,7 +71,7 @@ public class BatchVisualizationService
     /// <param name="stateMachines">State machines to compare.</param>
     /// <param name="options">Comparison options.</param>
     /// <returns>Comparative analysis results.</returns>
-    public async Task<ComparisonReport> GenerateComparisonReportAsync<TState, TTrigger>(
+    public Task<ComparisonReport> GenerateComparisonReportAsync<TState, TTrigger>(
         Dictionary<string, StateMachine<TState, TTrigger>> stateMachines,
         ComparisonOptions? options = null)
     {
@@ -117,7 +117,7 @@ public class BatchVisualizationService
             report.SimilarityMatrix = GenerateSimilarityMatrix(analyses);
         }
 
-        return report;
+        return Task.FromResult(report);
     }
 
     /// <summary>
@@ -444,9 +444,9 @@ public class ComplexityComparison
 /// </summary>
 public class StructuralComparison
 {
-    public Range StateCountRange { get; set; }
-    public Range TriggerCountRange { get; set; }
-    public Range TransitionCountRange { get; set; }
+    public Range StateCountRange { get; set; } = new Range(0, 0);
+    public Range TriggerCountRange { get; set; } = new Range(0, 0);
+    public Range TransitionCountRange { get; set; } = new Range(0, 0);
     public List<string> CommonStates { get; set; } = new();
     public List<string> CommonTriggers { get; set; } = new();
 }

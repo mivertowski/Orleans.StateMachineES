@@ -201,18 +201,18 @@ public class StateMachineMonitoringController : ControllerBase
     [ProducesResponseType(typeof(GrainTypeMonitoringInfo), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<GrainTypeMonitoringInfo>> GetGrainTypeMonitoringAsync(
+    public Task<ActionResult<GrainTypeMonitoringInfo>> GetGrainTypeMonitoringAsync(
         string grainType,
         [FromQuery] int limit = 100)
     {
         if (string.IsNullOrWhiteSpace(grainType))
         {
-            return BadRequest(new { error = "GrainType is required" });
+            return Task.FromResult<ActionResult<GrainTypeMonitoringInfo>>(BadRequest(new { error = "GrainType is required" }));
         }
 
         if (limit <= 0 || limit > 1000)
         {
-            return BadRequest(new { error = "Limit must be between 1 and 1000" });
+            return Task.FromResult<ActionResult<GrainTypeMonitoringInfo>>(BadRequest(new { error = "Limit must be between 1 and 1000" }));
         }
 
         try
@@ -229,13 +229,13 @@ public class StateMachineMonitoringController : ControllerBase
                 RecentActivities = new List<GrainActivity>()
             };
 
-            return Ok(info);
+            return Task.FromResult<ActionResult<GrainTypeMonitoringInfo>>(Ok(info));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get monitoring info for grain type {GrainType}", grainType);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { error = "Failed to retrieve grain type monitoring info", message = ex.Message });
+            return Task.FromResult<ActionResult<GrainTypeMonitoringInfo>>(StatusCode(StatusCodes.Status500InternalServerError, 
+                new { error = "Failed to retrieve grain type monitoring info", message = ex.Message }));
         }
     }
 
@@ -304,6 +304,7 @@ public class StateMachineMonitoringController : ControllerBase
                 }
             }, cancellationToken);
 
+            await Task.CompletedTask;
             return Accepted(new { message = "Health check refresh initiated", requestedAt = DateTime.UtcNow });
         }
         catch (Exception ex)
@@ -326,14 +327,14 @@ public class StateMachineMonitoringController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult> GetGrainVisualizationAsync(
+    public Task<ActionResult> GetGrainVisualizationAsync(
         string grainType,
         string grainId,
         [FromQuery] string format = "json")
     {
         if (string.IsNullOrWhiteSpace(grainType) || string.IsNullOrWhiteSpace(grainId))
         {
-            return BadRequest(new { error = "Both grainType and grainId are required" });
+            return Task.FromResult<ActionResult>(BadRequest(new { error = "Both grainType and grainId are required" }));
         }
 
         try
@@ -359,13 +360,13 @@ public class StateMachineMonitoringController : ControllerBase
                 _ => "application/json"
             };
 
-            return Ok(visualizationData);
+            return Task.FromResult<ActionResult>(Ok(visualizationData));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to generate visualization for {GrainType}:{GrainId}", grainType, grainId);
-            return StatusCode(StatusCodes.Status500InternalServerError, 
-                new { error = "Failed to generate visualization", message = ex.Message });
+            return Task.FromResult<ActionResult>(StatusCode(StatusCodes.Status500InternalServerError, 
+                new { error = "Failed to generate visualization", message = ex.Message }));
         }
     }
 }

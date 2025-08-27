@@ -187,6 +187,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
         if (_lastSystemHealth != null &&
             now - _lastSystemHealthUpdate < _options.SystemHealthCacheDuration)
         {
+            await Task.CompletedTask;
             return _lastSystemHealth;
         }
 
@@ -217,7 +218,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
             result.Status = DetermineSystemHealth(recentResults);
 
             // Calculate system metrics
-            result.Metrics = await CalculateSystemMetricsAsync();
+            result.Metrics = CalculateSystemMetricsAsync();
 
             // Generate alerts
             result.Alerts = GenerateSystemAlerts(recentResults, result.Metrics);
@@ -276,7 +277,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
             // If grain implements IStateMachineGrain, get additional info
             if (grain is IStateMachineGrain<Enum, Enum> stateMachineGrain)
             {
-                var currentState = await GetCurrentStateAsync(stateMachineGrain);
+                var currentState = GetCurrentStateAsync(stateMachineGrain);
                 metadata["currentState"] = currentState ?? "Unknown";
                 metadata["lastActivity"] = DateTime.UtcNow;
 
@@ -317,7 +318,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
         }
     }
 
-    private async Task<string?> GetCurrentStateAsync(IStateMachineGrain<Enum, Enum> grain)
+    private string? GetCurrentStateAsync(IStateMachineGrain<Enum, Enum> grain)
     {
         try
         {
@@ -375,7 +376,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
         return DetermineOverallHealth(recentResults);
     }
 
-    private async Task<SystemMetrics> CalculateSystemMetricsAsync()
+    private SystemMetrics CalculateSystemMetricsAsync()
     {
         try
         {

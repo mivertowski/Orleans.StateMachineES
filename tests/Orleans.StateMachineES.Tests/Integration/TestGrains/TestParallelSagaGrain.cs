@@ -248,7 +248,7 @@ public class TestParallelSagaGrain : ParallelSagaOrchestrator<TestSagaData>, ITe
         return await ExecuteConfiguredWorkflowAsync(builder, sagaData, correlationId);
     }
 
-    public async Task<List<SagaStepExecutionInfo>> GetExecutionHistoryAsync(string correlationId)
+    public new async Task<List<SagaStepExecutionInfo>> GetExecutionHistoryAsync(string correlationId)
     {
         if (_executionHistory.TryGetValue(correlationId, out var history))
         {

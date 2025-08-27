@@ -132,22 +132,22 @@ public class StateMachineVisualizer
     /// <param name="format">The export format.</param>
     /// <param name="options">Export options.</param>
     /// <returns>Exported content as a byte array.</returns>
-    public static async Task<byte[]> ExportAsync<TState, TTrigger>(
+    public static Task<byte[]> ExportAsync<TState, TTrigger>(
         StateMachine<TState, TTrigger> stateMachine,
         ExportFormat format,
         VisualizationOptions? options = null)
     {
         options ??= new VisualizationOptions();
 
-        return format switch
+        return Task.FromResult(format switch
         {
             ExportFormat.Dot => Encoding.UTF8.GetBytes(ToDotGraph(stateMachine, options)),
-            ExportFormat.Json => await ExportToJsonAsync(stateMachine, options),
-            ExportFormat.Xml => await ExportToXmlAsync(stateMachine, options),
-            ExportFormat.Mermaid => await ExportToMermaidAsync(stateMachine, options),
-            ExportFormat.PlantUml => await ExportToPlantUmlAsync(stateMachine, options),
+            ExportFormat.Json => ExportToJsonAsync(stateMachine, options),
+            ExportFormat.Xml => ExportToXmlAsync(stateMachine, options),
+            ExportFormat.Mermaid => ExportToMermaidAsync(stateMachine, options),
+            ExportFormat.PlantUml => ExportToPlantUmlAsync(stateMachine, options),
             _ => throw new ArgumentException($"Unsupported export format: {format}")
-        };
+        });
     }
 
     /// <summary>
@@ -329,7 +329,7 @@ public class StateMachineVisualizer
         return maxPossibleTransitions > 0 ? (double)actualTransitions / maxPossibleTransitions : 0.0;
     }
 
-    private static async Task<byte[]> ExportToJsonAsync<TState, TTrigger>(
+    private static byte[] ExportToJsonAsync<TState, TTrigger>(
         StateMachine<TState, TTrigger> stateMachine,
         VisualizationOptions options)
     {
@@ -342,7 +342,7 @@ public class StateMachineVisualizer
         return Encoding.UTF8.GetBytes(json);
     }
 
-    private static async Task<byte[]> ExportToXmlAsync<TState, TTrigger>(
+    private static byte[] ExportToXmlAsync<TState, TTrigger>(
         StateMachine<TState, TTrigger> stateMachine,
         VisualizationOptions options)
     {
@@ -370,7 +370,7 @@ public class StateMachineVisualizer
         return Encoding.UTF8.GetBytes(xml.ToString());
     }
 
-    private static async Task<byte[]> ExportToMermaidAsync<TState, TTrigger>(
+    private static byte[] ExportToMermaidAsync<TState, TTrigger>(
         StateMachine<TState, TTrigger> stateMachine,
         VisualizationOptions options)
     {
@@ -408,7 +408,7 @@ public class StateMachineVisualizer
         return Encoding.UTF8.GetBytes(mermaid.ToString());
     }
 
-    private static async Task<byte[]> ExportToPlantUmlAsync<TState, TTrigger>(
+    private static byte[] ExportToPlantUmlAsync<TState, TTrigger>(
         StateMachine<TState, TTrigger> stateMachine,
         VisualizationOptions options)
     {
