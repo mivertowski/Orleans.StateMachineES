@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 

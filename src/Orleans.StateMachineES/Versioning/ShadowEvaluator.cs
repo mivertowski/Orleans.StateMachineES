@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Stateless;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -280,7 +281,7 @@ public class ShadowComparisonResult<TState>
 {
     [Id(0)] public TState CurrentState { get; set; }
     [Id(1)] public object Trigger { get; set; } = new();
-    [Id(2)] public StateMachineVersion CurrentVersion { get; set; } = new();
+    [Id(2)] public StateMachineVersion CurrentVersion { get; set; } = new(1, 0, 0);
     [Id(3)] public List<ShadowEvaluationResult<TState>> EvaluationResults { get; set; } = new();
     [Id(4)] public TimeSpan TotalDuration { get; set; }
     [Id(5)] public bool HasDivergentBehavior { get; set; }

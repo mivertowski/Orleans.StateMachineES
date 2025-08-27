@@ -9,6 +9,7 @@ using Orleans.StateMachineES.Tests.Integration;
 using Orleans.StateMachineES.Versioning;
 using Xunit;
 using Xunit.Abstractions;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Tests.Performance;
 

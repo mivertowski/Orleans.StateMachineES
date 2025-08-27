@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Stateless;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -300,7 +301,7 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
 /// </summary>
 public class StateMachineDefinitionEntry
 {
-    public StateMachineVersion Version { get; set; } = new();
+    public StateMachineVersion Version { get; set; } = new(1, 0, 0);
     public string GrainTypeName { get; set; } = "";
     public Type StateType { get; set; } = typeof(object);
     public Type TriggerType { get; set; } = typeof(object);

@@ -6,6 +6,7 @@ using Orleans.StateMachineES.Versioning;
 using Microsoft.Extensions.Logging;
 using Stateless;
 using Xunit;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Tests.Versioning;
 

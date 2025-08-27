@@ -9,6 +9,7 @@ using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Versioning;
 using Orleans.StateMachineES.Tests.Integration;
 using Stateless;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
 

@@ -115,6 +115,57 @@ public sealed record StateMachineVersion : IComparable<StateMachineVersion>
     }
 
     /// <summary>
+    /// Determines whether one version is greater than another.
+    /// </summary>
+    public static bool operator >(StateMachineVersion left, StateMachineVersion right)
+    {
+        return left?.CompareTo(right) > 0;
+    }
+
+    /// <summary>
+    /// Determines whether one version is less than another.
+    /// </summary>
+    public static bool operator <(StateMachineVersion left, StateMachineVersion right)
+    {
+        return left?.CompareTo(right) < 0;
+    }
+
+    /// <summary>
+    /// Determines whether one version is greater than or equal to another.
+    /// </summary>
+    public static bool operator >=(StateMachineVersion left, StateMachineVersion right)
+    {
+        return left?.CompareTo(right) >= 0;
+    }
+
+    /// <summary>
+    /// Determines whether one version is less than or equal to another.
+    /// </summary>
+    public static bool operator <=(StateMachineVersion left, StateMachineVersion right)
+    {
+        return left?.CompareTo(right) <= 0;
+    }
+
+    /// <summary>
+    /// Determines if this version is compatible with another version.
+    /// Minor and patch version increases are considered compatible.
+    /// Major version changes are not compatible.
+    /// </summary>
+    /// <param name="other">The version to check compatibility with.</param>
+    /// <returns>True if versions are compatible, false otherwise.</returns>
+    public bool IsCompatibleWith(StateMachineVersion other)
+    {
+        if (other == null) return false;
+        
+        // Same major version is compatible
+        if (Major == other.Major)
+            return true;
+            
+        // Older major versions are not compatible with newer ones
+        return false;
+    }
+
+    /// <summary>
     /// Returns the string representation of this version.
     /// </summary>
     /// <returns>The string representation.</returns>

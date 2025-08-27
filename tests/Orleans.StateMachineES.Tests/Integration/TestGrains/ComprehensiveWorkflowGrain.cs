@@ -13,6 +13,7 @@ using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Timers;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using Orleans.StateMachineES.Versioning;
 using Stateless;
 

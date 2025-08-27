@@ -13,6 +13,7 @@ using Orleans.Providers;
 using Stateless;
 using Xunit;
 using Xunit.Abstractions;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Tests.Versioning;
 

@@ -4,6 +4,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
+using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -522,28 +524,3 @@ internal sealed class MigrationCostEvaluator
     }
 }
 
-/// <summary>
-/// Risk levels for migrations.
-/// </summary>
-public enum RiskLevel
-{
-    /// <summary>
-    /// Low risk migration.
-    /// </summary>
-    Low = 0,
-    
-    /// <summary>
-    /// Medium risk migration.
-    /// </summary>
-    Medium = 1,
-    
-    /// <summary>
-    /// High risk migration.
-    /// </summary>
-    High = 2,
-    
-    /// <summary>
-    /// Critical risk migration.
-    /// </summary>
-    Critical = 3
-}

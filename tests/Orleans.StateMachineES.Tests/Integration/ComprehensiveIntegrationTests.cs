@@ -13,6 +13,7 @@ using Orleans.Runtime;
 using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Events;
 using Orleans.StateMachineES.Hierarchical;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Sagas;

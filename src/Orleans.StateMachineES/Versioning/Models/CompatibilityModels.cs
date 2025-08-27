@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
+using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
 
 namespace Orleans.StateMachineES.Versioning;
 

@@ -9,6 +9,7 @@ using Orleans;
 using Stateless;
 using Stateless.Graph;
 using Stateless.Reflection;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 

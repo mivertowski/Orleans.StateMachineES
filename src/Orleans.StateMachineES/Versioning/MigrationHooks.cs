@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -51,8 +52,8 @@ public class MigrationContext
 {
     [Id(0)] public string GrainId { get; set; } = "";
     [Id(1)] public string GrainTypeName { get; set; } = "";
-    [Id(2)] public StateMachineVersion FromVersion { get; set; } = new();
-    [Id(3)] public StateMachineVersion ToVersion { get; set; } = new();
+    [Id(2)] public StateMachineVersion FromVersion { get; set; } = new(1, 0, 0);
+    [Id(3)] public StateMachineVersion ToVersion { get; set; } = new(1, 0, 0);
     [Id(4)] public MigrationStrategy Strategy { get; set; }
     [Id(5)] public Dictionary<string, object> GrainState { get; set; } = new();
     [Id(6)] public Dictionary<string, object> Metadata { get; set; } = new();

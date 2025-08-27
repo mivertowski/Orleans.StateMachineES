@@ -153,7 +153,7 @@ public class VersionCompatibilityTests
 
         // Assert
         incompatibleResult.CanDeploy.Should().BeFalse();
-        incompatibleResult.SuggestedStrategy.Should().Be(DeploymentStrategy.Blocked);
+        incompatibleResult.RecommendedStrategy.Should().Be(DeploymentStrategy.Blocked);
     }
 
     [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]

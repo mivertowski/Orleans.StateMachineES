@@ -13,6 +13,7 @@ using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Monitoring;
 using Stateless;
 using Xunit;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Orleans.StateMachineES.Tests;
@@ -149,9 +150,9 @@ public class BasicFunctionalityTests
     public void Versioning_StateMachineVersion_ShouldCompare()
     {
         // Arrange
-        var version1 = new Orleans.StateMachineES.Versioning.StateMachineVersion(1, 0, 0);
-        var version2 = new Orleans.StateMachineES.Versioning.StateMachineVersion(1, 1, 0);
-        var version3 = new Orleans.StateMachineES.Versioning.StateMachineVersion(2, 0, 0);
+        var version1 = new StateMachineVersion(1, 0, 0);
+        var version2 = new StateMachineVersion(1, 1, 0);
+        var version3 = new StateMachineVersion(2, 0, 0);
 
         // Assert
         version1.Should().BeLessThan(version2);

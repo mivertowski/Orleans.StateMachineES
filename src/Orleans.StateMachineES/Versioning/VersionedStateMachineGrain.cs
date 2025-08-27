@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.EventSourcing;
 using Stateless;
+using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -446,7 +447,7 @@ public class VersionedStateMachineState<TState> : EventSourcedStateMachineState<
     /// Current version of the state machine.
     /// </summary>
     [Id(0)]
-    public StateMachineVersion Version { get; set; } = new();
+    public StateMachineVersion Version { get; set; } = new(1, 0, 0);
     
     
     /// <summary>
@@ -474,7 +475,7 @@ public class VersionedStateMachineState<TState> : EventSourcedStateMachineState<
 [GenerateSerializer]
 public class VersionHistoryEntry
 {
-    [Id(0)] public StateMachineVersion Version { get; set; } = new();
+    [Id(0)] public StateMachineVersion Version { get; set; } = new(1, 0, 0);
     [Id(1)] public StateMachineVersion? PreviousVersion { get; set; }
     [Id(2)] public DateTime UpgradedAt { get; set; } = DateTime.UtcNow;
     [Id(3)] public MigrationStrategy Strategy { get; set; }
