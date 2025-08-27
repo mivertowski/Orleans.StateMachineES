@@ -88,64 +88,64 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <summary>
     ///     Gets the current state of the state machine asynchronously.
     /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the current state.</returns>
-    Task<TState> GetStateAsync();
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains the current state.</returns>
+    ValueTask<TState> GetStateAsync();
 
     /// <summary>
     ///     Determines if the state machine is currently in the specified state or one of its substates asynchronously.
     /// </summary>
     /// <param name="state">The state to test for.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result contains true if the current state is equal to, or a substate of,
+    ///     A ValueTask that represents the asynchronous operation. The task result contains true if the current state is equal to, or a substate of,
     ///     the supplied state; otherwise, false.
     /// </returns>
-    Task<bool> IsInStateAsync(TState state);
+    ValueTask<bool> IsInStateAsync(TState state);
 
     /// <summary>
     ///     Checks if the specified trigger can be fired in the current state asynchronously.
     /// </summary>
     /// <param name="trigger">The trigger to test.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result contains true if the trigger can be fired in the current state; otherwise, false.
+    ///     A ValueTask that represents the asynchronous operation. The task result contains true if the trigger can be fired in the current state; otherwise, false.
     /// </returns>
-    Task<bool> CanFireAsync(TTrigger trigger);
+    ValueTask<bool> CanFireAsync(TTrigger trigger);
 
     /// <summary>
     ///     Gets information about the state machine's configuration (states, transitions, actions) asynchronously.
     /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an <see cref="OrleansStateMachineInfo"/> object.</returns>
-    Task<OrleansStateMachineInfo> GetInfoAsync();
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains an <see cref="OrleansStateMachineInfo"/> object.</returns>
+    ValueTask<OrleansStateMachineInfo> GetInfoAsync();
 
     /// <summary>
     ///     Gets the triggers that are permitted to be fired in the current state, considering the provided arguments, asynchronously.
     /// </summary>
     /// <param name="args">Arguments to be passed to the guard functions.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of permitted triggers.</returns>
-    Task<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args);
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains an enumerable collection of permitted triggers.</returns>
+    ValueTask<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args);
 
     /// <summary>
     ///     Gets detailed information about the triggers permitted in the current state, considering the provided arguments, asynchronously.
     /// </summary>
     /// <param name="args">Arguments to be passed to the guard functions.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of <see cref="TriggerDetails{TState, TTrigger}"/>.</returns>
-    Task<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args);
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains an enumerable collection of <see cref="TriggerDetails{TState, TTrigger}"/>.</returns>
+    ValueTask<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args);
 
     /// <summary>
     ///     Gets the triggers that are permitted to be fired in the current state asynchronously (property-like access).
     /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains an enumerable collection of permitted triggers.</returns>
-    Task<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync();
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains an enumerable collection of permitted triggers.</returns>
+    ValueTask<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync();
 
     /// <summary>
     ///     Checks if the specified trigger can be fired in the current state asynchronously and returns any unmet guard conditions.
     /// </summary>
     /// <param name="trigger">The trigger to test.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result is a tuple containing:
+    ///     A ValueTask that represents the asynchronous operation. The task result is a tuple containing:
     ///     - bool: True if the trigger can be fired, false otherwise.
     ///     - ICollection&lt;string&gt;: A collection of descriptions for guard conditions that were not met (if any).
     /// </returns>
-    Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync(TTrigger trigger);
+    ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync(TTrigger trigger);
 
     /// <summary>
     ///     Checks if the specified trigger with one argument can be fired in the current state asynchronously.
@@ -154,9 +154,9 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="trigger">The trigger to test.</param>
     /// <param name="arg0">The first argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given argument; otherwise, false.
+    ///     A ValueTask that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given argument; otherwise, false.
     /// </returns>
-    Task<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0);
+    ValueTask<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0);
 
     /// <summary>
     ///     Checks if the specified trigger with one argument can be fired in the current state asynchronously and returns any unmet guard conditions.
@@ -165,11 +165,11 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="trigger">The trigger to test.</param>
     /// <param name="arg0">The first argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result is a tuple containing:
+    ///     A ValueTask that represents the asynchronous operation. The task result is a tuple containing:
     ///     - bool: True if the trigger can be fired, false otherwise.
     ///     - ICollection&lt;string&gt;: A collection of descriptions for guard conditions that were not met (if any).
     /// </returns>
-    Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0);
+    ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0);
 
     /// <summary>
     ///     Checks if the specified trigger with two arguments can be fired in the current state asynchronously.
@@ -180,9 +180,9 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="arg0">The first argument.</param>
     /// <param name="arg1">The second argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given arguments; otherwise, false.
+    ///     A ValueTask that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given arguments; otherwise, false.
     /// </returns>
-    Task<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1);
+    ValueTask<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1);
 
     /// <summary>
     ///     Checks if the specified trigger with two arguments can be fired in the current state asynchronously and returns any unmet guard conditions.
@@ -193,11 +193,11 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="arg0">The first argument.</param>
     /// <param name="arg1">The second argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result is a tuple containing:
+    ///     A ValueTask that represents the asynchronous operation. The task result is a tuple containing:
     ///     - bool: True if the trigger can be fired, false otherwise.
     ///     - ICollection&lt;string&gt;: A collection of descriptions for guard conditions that were not met (if any).
     /// </returns>
-    Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1);
+    ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1);
 
     /// <summary>
     ///     Checks if the specified trigger with three arguments can be fired in the current state asynchronously.
@@ -210,9 +210,9 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="arg1">The second argument.</param>
     /// <param name="arg2">The third argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given arguments; otherwise, false.
+    ///     A ValueTask that represents the asynchronous operation. The task result contains true if the trigger can be fired with the given arguments; otherwise, false.
     /// </returns>
-    Task<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2);
+    ValueTask<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2);
 
     /// <summary>
     ///     Checks if the specified trigger with three arguments can be fired in the current state asynchronously and returns any unmet guard conditions.
@@ -225,15 +225,15 @@ public interface IStateMachineGrain<TState, TTrigger>
     /// <param name="arg1">The second argument.</param>
     /// <param name="arg2">The third argument.</param>
     /// <returns>
-    ///     A task that represents the asynchronous operation. The task result is a tuple containing:
+    ///     A ValueTask that represents the asynchronous operation. The task result is a tuple containing:
     ///     - bool: True if the trigger can be fired, false otherwise.
     ///     - ICollection&lt;string&gt;: A collection of descriptions for guard conditions that were not met (if any).
     /// </returns>
-    Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2);
+    ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2);
 
     /// <summary>
     ///     Returns a string representation of the state machine's current state and configuration asynchronously.
     /// </summary>
-    /// <returns>A task that represents the asynchronous operation. The task result contains a string describing the state machine.</returns>
-    Task<string> ToStringAsync();
+    /// <returns>A ValueTask that represents the asynchronous operation. The task result contains a string describing the state machine.</returns>
+    ValueTask<string> ToStringAsync();
 }

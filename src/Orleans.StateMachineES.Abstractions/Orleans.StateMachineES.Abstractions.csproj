@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageId>Orleans.StateMachineES.Abstractions</PackageId>
+        <Version>1.0.1</Version>
+        <Authors>Orleans StateMachine ES</Authors>
+        <Description>Core abstractions for Orleans StateMachine Event Sourcing library. Contains interfaces and models for building event-sourced state machines in Orleans applications.</Description>
+        <PackageTags>Orleans;StateMachine;EventSourcing;Abstractions;Interfaces</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/ManagedCode/Orleans.StateMachine</RepositoryUrl>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+        <WarningsAsErrors />
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
+    </ItemGroup>
+
+</Project>

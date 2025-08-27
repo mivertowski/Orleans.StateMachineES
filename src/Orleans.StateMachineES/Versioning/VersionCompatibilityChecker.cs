@@ -1,16 +1,15 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 
 namespace Orleans.StateMachineES.Versioning;
 
 /// <summary>
 /// Service for checking version compatibility and determining upgrade paths for state machines.
 /// Analyzes breaking changes, compatibility matrices, and provides upgrade recommendations.
+/// This is the main facade that coordinates the CompatibilityRulesEngine and MigrationPathCalculator.
 /// </summary>
 public interface IVersionCompatibilityChecker
 {
@@ -45,18 +44,23 @@ public interface IVersionCompatibilityChecker
 
 /// <summary>
 /// Default implementation of version compatibility checker.
+/// Coordinates between the CompatibilityRulesEngine and MigrationPathCalculator.
 /// </summary>
 public class VersionCompatibilityChecker : IVersionCompatibilityChecker
 {
     private readonly IStateMachineDefinitionRegistry _registry;
     private readonly ILogger<VersionCompatibilityChecker> _logger;
+    private readonly CompatibilityRulesEngine _rulesEngine;
+    private readonly MigrationPathCalculator _pathCalculator;
 
     public VersionCompatibilityChecker(
         IStateMachineDefinitionRegistry registry,
         ILogger<VersionCompatibilityChecker> logger)
     {
-        _registry = registry;
-        _logger = logger;
+        _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _rulesEngine = new CompatibilityRulesEngine(logger);
+        _pathCalculator = new MigrationPathCalculator(logger);
     }
 
     public async Task<CompatibilityCheckResult> CheckCompatibilityAsync(
@@ -69,124 +73,74 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
 
         try
         {
-            // Basic version comparison
-            var versionCompatibility = AnalyzeVersionCompatibility(fromVersion, toVersion);
-            
-            // Check if both versions exist in registry using reflection
-            var registryType = _registry.GetType();
-            var method = registryType.GetMethod("GetDefinitionAsync");
-            
-            bool fromExists = false;
-            bool toExists = false;
-            
-            // Try to check if versions exist without knowing the exact generic types
-            try 
-            {
-                // Use the registry's GetAvailableVersionsAsync which doesn't require generic parameters
-                var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
-                fromExists = availableVersions.Any(v => v.CompareTo(fromVersion) == 0);
-                toExists = availableVersions.Any(v => v.CompareTo(toVersion) == 0);
-            }
-            catch
-            {
-                // If that fails, assume they don't exist
-                fromExists = false;
-                toExists = false;
-            }
-            
+            // Check if versions exist
+            var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
+            var fromExists = availableVersions.Any(v => v.CompareTo(fromVersion) == 0);
+            var toExists = availableVersions.Any(v => v.CompareTo(toVersion) == 0);
+
             if (!fromExists || !toExists)
             {
                 return CompatibilityCheckResult.Failure(
                     fromVersion,
                     toVersion,
-                    !fromExists ? $"Source version {fromVersion} not found" : $"Target version {toVersion} not found",
-                    CompatibilityIssueType.VersionNotFound);
+                    $"Version not found: {(!fromExists ? fromVersion : toVersion)}");
             }
 
-            // Check for migration path
-            var migrationPath = await _registry.GetMigrationPathAsync(grainTypeName, fromVersion, toVersion);
-            var hasMigrationPath = migrationPath != null;
+            // Build compatibility context
+            var context = await BuildCompatibilityContextAsync(grainTypeName, fromVersion, toVersion)
+                .ConfigureAwait(false);
 
-            // Analyze breaking changes
-            var breakingChanges = await AnalyzeBreakingChangesAsync(grainTypeName, fromVersion, toVersion);
+            // Evaluate rules
+            var result = await _rulesEngine.EvaluateCompatibilityAsync(context).ConfigureAwait(false);
 
-            // Determine overall compatibility
-            var isCompatible = versionCompatibility.IsCompatible && 
-                               (hasMigrationPath || breakingChanges.Count == 0);
-
-            if (isCompatible)
+            // Calculate migration path if needed
+            MigrationPath? migrationPath = null;
+            if (!result.IsCompatible || result.CompatibilityLevel == VersionCompatibilityLevel.RequiresMigration)
             {
-                return CompatibilityCheckResult.Success(
-                    fromVersion,
-                    toVersion,
-                    versionCompatibility.CompatibilityLevel,
-                    migrationPath,
-                    breakingChanges);
+                migrationPath = await _pathCalculator.CalculateOptimalPathAsync(
+                    grainTypeName, fromVersion, toVersion, availableVersions).ConfigureAwait(false);
             }
-            else
-            {
-                var primaryIssue = !versionCompatibility.IsCompatible
-                    ? CompatibilityIssueType.VersionIncompatible
-                    : CompatibilityIssueType.BreakingChanges;
 
-                return CompatibilityCheckResult.Failure(
-                    fromVersion,
-                    toVersion,
-                    "Versions are not compatible for direct upgrade",
-                    primaryIssue,
-                    breakingChanges);
-            }
+            return new CompatibilityCheckResult
+            {
+                FromVersion = fromVersion,
+                ToVersion = toVersion,
+                IsCompatible = result.IsCompatible,
+                CompatibilityLevel = result.CompatibilityLevel,
+                BreakingChanges = result.BreakingChanges,
+                Warnings = result.Warnings,
+                MigrationPath = migrationPath,
+                CheckedAt = DateTime.UtcNow
+            };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking compatibility for {GrainType} from {FromVersion} to {ToVersion}",
-                grainTypeName, fromVersion, toVersion);
-            
-            return CompatibilityCheckResult.Failure(
-                fromVersion,
-                toVersion,
-                $"Compatibility check failed: {ex.Message}",
-                CompatibilityIssueType.CheckFailed);
+            _logger.LogError(ex, "Error checking compatibility for {GrainType}", grainTypeName);
+            return CompatibilityCheckResult.Failure(fromVersion, toVersion, ex.Message);
         }
     }
 
     public async Task<CompatibilityMatrix> AnalyzeCompatibilityMatrixAsync(string grainTypeName)
     {
-        _logger.LogDebug("Analyzing compatibility matrix for {GrainType}", grainTypeName);
+        _logger.LogInformation("Analyzing compatibility matrix for {GrainType}", grainTypeName);
 
-        var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
-        var matrix = new CompatibilityMatrix
-        {
-            GrainTypeName = grainTypeName,
-            Versions = availableVersions.OrderBy(v => v).ToList(),
-            CompatibilityResults = new Dictionary<(StateMachineVersion From, StateMachineVersion To), CompatibilityCheckResult>()
-        };
+        var matrix = new CompatibilityMatrix(grainTypeName);
+        var versions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
+        var versionList = versions.ToList();
 
-        // Check compatibility between all version pairs
-        foreach (var fromVersion in availableVersions)
+        foreach (var fromVersion in versionList)
         {
-            foreach (var toVersion in availableVersions.Where(v => v > fromVersion))
+            foreach (var toVersion in versionList)
             {
-                var result = await CheckCompatibilityAsync(grainTypeName, fromVersion, toVersion);
-                matrix.CompatibilityResults[(fromVersion, toVersion)] = result;
+                if (fromVersion.CompareTo(toVersion) < 0)
+                {
+                    var result = await CheckCompatibilityAsync(grainTypeName, fromVersion, toVersion)
+                        .ConfigureAwait(false);
+                    
+                    matrix.AddEntry(fromVersion, toVersion, result);
+                }
             }
         }
-
-        // Calculate statistics
-        var totalChecks = matrix.CompatibilityResults.Count;
-        var compatibleChecks = matrix.CompatibilityResults.Values.Count(r => r.IsCompatible);
-        
-        matrix.Statistics = new CompatibilityStatistics
-        {
-            TotalVersions = availableVersions.Count,
-            TotalCompatibilityChecks = totalChecks,
-            CompatibleUpgrades = compatibleChecks,
-            IncompatibleUpgrades = totalChecks - compatibleChecks,
-            CompatibilityPercentage = totalChecks > 0 ? (double)compatibleChecks / totalChecks * 100 : 0
-        };
-
-        _logger.LogInformation("Compatibility matrix for {GrainType}: {CompatibleUpgrades}/{TotalChecks} compatible upgrades ({Percentage:F1}%)",
-            grainTypeName, compatibleChecks, totalChecks, matrix.Statistics.CompatibilityPercentage);
 
         return matrix;
     }
@@ -195,41 +149,38 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         string grainTypeName,
         StateMachineVersion currentVersion)
     {
-        _logger.LogDebug("Getting upgrade recommendations for {GrainType} version {CurrentVersion}",
+        _logger.LogDebug("Getting upgrade recommendations for {GrainType} from {Version}",
             grainTypeName, currentVersion);
 
-        var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
-        var newerVersions = availableVersions.Where(v => v > currentVersion).OrderBy(v => v).ToList();
-        
         var recommendations = new List<UpgradeRecommendation>();
+        var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
 
-        foreach (var targetVersion in newerVersions)
+        foreach (var targetVersion in availableVersions.Where(v => v.CompareTo(currentVersion) > 0))
         {
-            var compatibility = await CheckCompatibilityAsync(grainTypeName, currentVersion, targetVersion);
-            
+            var compatibility = await CheckCompatibilityAsync(grainTypeName, currentVersion, targetVersion)
+                .ConfigureAwait(false);
+
+            var paths = await _pathCalculator.CalculateAlternativePathsAsync(
+                grainTypeName, currentVersion, targetVersion, availableVersions, 3).ConfigureAwait(false);
+
             var recommendation = new UpgradeRecommendation
             {
-                FromVersion = currentVersion,
-                ToVersion = targetVersion,
+                CurrentVersion = currentVersion,
+                TargetVersion = targetVersion,
                 RecommendationType = DetermineRecommendationType(compatibility),
-                CompatibilityResult = compatibility,
+                CompatibilityLevel = compatibility.CompatibilityLevel,
+                MigrationPaths = paths,
                 EstimatedEffort = EstimateUpgradeEffort(compatibility),
-                RiskLevel = AssessRiskLevel(compatibility),
-                Benefits = await DetermineBenefitsAsync(grainTypeName, currentVersion, targetVersion),
-                Prerequisites = await DeterminePrerequisitesAsync(grainTypeName, currentVersion, targetVersion)
+                Benefits = GenerateBenefitsList(currentVersion, targetVersion),
+                Risks = compatibility.BreakingChanges.Select(bc => bc.Description).ToList()
             };
 
             recommendations.Add(recommendation);
         }
 
-        // Sort by recommendation type and risk level
-        recommendations.Sort((r1, r2) =>
-        {
-            var typeComparison = r1.RecommendationType.CompareTo(r2.RecommendationType);
-            return typeComparison != 0 ? typeComparison : r1.RiskLevel.CompareTo(r2.RiskLevel);
-        });
-
-        return recommendations;
+        return recommendations.OrderByDescending(r => r.RecommendationType)
+                             .ThenBy(r => r.EstimatedEffort)
+                             .ToList();
     }
 
     public async Task<DeploymentCompatibilityResult> ValidateDeploymentCompatibilityAsync(
@@ -237,197 +188,80 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         StateMachineVersion newVersion,
         IEnumerable<StateMachineVersion> existingVersions)
     {
-        _logger.LogDebug("Validating deployment compatibility for {GrainType} version {NewVersion}",
+        _logger.LogInformation("Validating deployment compatibility for {GrainType} version {NewVersion}",
             grainTypeName, newVersion);
 
-        var issues = new List<DeploymentIssue>();
-        var warnings = new List<string>();
-        var recommendations = new List<string>();
+        var result = new DeploymentCompatibilityResult
+        {
+            NewVersion = newVersion,
+            ExistingVersions = existingVersions.ToList(),
+            CanDeploy = true,
+            ValidationTime = DateTime.UtcNow
+        };
 
         foreach (var existingVersion in existingVersions)
         {
-            // Check backward compatibility
-            var backwardCompatibility = await CheckCompatibilityAsync(grainTypeName, existingVersion, newVersion);
+            // Check forward compatibility
+            var forwardCheck = await CheckCompatibilityAsync(grainTypeName, existingVersion, newVersion)
+                .ConfigureAwait(false);
             
-            // Check forward compatibility  
-            var forwardCompatibility = await CheckCompatibilityAsync(grainTypeName, newVersion, existingVersion);
-
-            // Analyze compatibility issues
-            if (!backwardCompatibility.IsCompatible)
+            if (!forwardCheck.IsCompatible)
             {
-                issues.Add(new DeploymentIssue
+                result.Issues.Add(new DeploymentIssue
                 {
-                    IssueType = DeploymentIssueType.BackwardIncompatibility,
-                    Description = $"New version {newVersion} is not backward compatible with existing version {existingVersion}",
-                    AffectedVersion = existingVersion,
-                    Severity = DeploymentIssueSeverity.High
+                    Type = DeploymentIssueType.IncompatibleVersion,
+                    Severity = DeploymentIssueSeverity.Error,
+                    Description = $"Version {existingVersion} cannot upgrade to {newVersion}",
+                    AffectedVersion = existingVersion
                 });
+                result.CanDeploy = false;
             }
 
-            if (newVersion.IsBreakingChangeFrom(existingVersion))
+            // Check backward compatibility if needed
+            if (existingVersion.CompareTo(newVersion) > 0)
             {
-                warnings.Add($"Version {newVersion} introduces breaking changes from {existingVersion}");
-                recommendations.Add($"Consider gradual migration strategy for instances running {existingVersion}");
+                var backwardCheck = await CheckCompatibilityAsync(grainTypeName, newVersion, existingVersion)
+                    .ConfigureAwait(false);
+                
+                if (!backwardCheck.IsCompatible)
+                {
+                    result.Issues.Add(new DeploymentIssue
+                    {
+                        Type = DeploymentIssueType.BackwardIncompatible,
+                        Severity = DeploymentIssueSeverity.Warning,
+                        Description = $"Version {newVersion} is not backward compatible with {existingVersion}",
+                        AffectedVersion = existingVersion
+                    });
+                }
             }
         }
 
-        var canDeploy = !issues.Any(i => i.Severity == DeploymentIssueSeverity.High);
+        // Determine deployment strategy
+        result.RecommendedStrategy = DetermineDeploymentStrategy(result);
 
-        return new DeploymentCompatibilityResult
-        {
-            GrainTypeName = grainTypeName,
-            NewVersion = newVersion,
-            ExistingVersions = existingVersions.ToList(),
-            CanDeploy = canDeploy,
-            Issues = issues,
-            Warnings = warnings,
-            Recommendations = recommendations,
-            SuggestedStrategy = DetermineDeploymentStrategy(newVersion, existingVersions, issues)
-        };
+        return result;
     }
 
-    #region Private Helper Methods
-
-    private (bool IsCompatible, VersionCompatibilityLevel CompatibilityLevel) AnalyzeVersionCompatibility(
-        StateMachineVersion fromVersion,
-        StateMachineVersion toVersion)
-    {
-        if (fromVersion >= toVersion)
-            return (false, VersionCompatibilityLevel.Incompatible);
-
-        if (fromVersion.IsBreakingChangeFrom(toVersion))
-            return (false, VersionCompatibilityLevel.Incompatible);
-
-        if (fromVersion.Major == toVersion.Major)
-        {
-            if (fromVersion.Minor == toVersion.Minor)
-                return (true, VersionCompatibilityLevel.FullyCompatible);
-            else
-                return (true, VersionCompatibilityLevel.BackwardCompatible);
-        }
-
-        return (false, VersionCompatibilityLevel.RequiresMigration);
-    }
-
-    private Task<List<BreakingChange>> AnalyzeBreakingChangesAsync(
+    private async Task<CompatibilityContext> BuildCompatibilityContextAsync(
         string grainTypeName,
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)
     {
-        var breakingChanges = new List<BreakingChange>();
-
-        try
+        // Build context for rules evaluation
+        // This would typically analyze the actual state machine definitions
+        // For now, we create a basic context
+        var context = new CompatibilityContext
         {
-            // We can't get the actual definitions without knowing the generic types
-            // So we'll just check for major version changes and use that as our heuristic
-            object? fromDefinition = null;
-            object? toDefinition = null;
+            FromVersion = fromVersion,
+            ToVersion = toVersion,
+            GrainTypeName = grainTypeName
+        };
 
-            if (fromDefinition != null && toDefinition != null)
-            {
-                // Use reflection to create properly typed introspector
-                var definitionType = fromDefinition.GetType();
-                var genericArgs = definitionType.GetGenericArguments();
-                
-                if (genericArgs.Length == 2)
-                {
-                    var stateType = genericArgs[0];
-                    var triggerType = genericArgs[1];
-                    
-                    // Create introspector for the specific types
-                    var introspectorType = typeof(StateMachineIntrospector<,>).MakeGenericType(stateType, triggerType);
-                    var loggerType = typeof(ILogger<>).MakeGenericType(introspectorType);
-                    var logger = _logger as ILogger ?? new LoggerFactory().CreateLogger(introspectorType);
-                    
-                    dynamic introspector = Activator.CreateInstance(introspectorType, logger)!;
-                    
-                    // Extract configurations
-                    dynamic config1 = introspector.ExtractConfiguration(fromDefinition);
-                    dynamic config2 = introspector.ExtractConfiguration(toDefinition);
-                    
-                    // Compare configurations
-                    dynamic comparison = introspector.CompareConfigurations(config1, config2);
-                    
-                    // Analyze the comparison for breaking changes
-                    if (comparison.RemovedStates?.Count > 0)
-                    {
-                        foreach (var state in comparison.RemovedStates)
-                        {
-                            breakingChanges.Add(new BreakingChange
-                            {
-                                ChangeType = BreakingChangeType.StateRemoved,
-                                Description = $"State '{state}' was removed",
-                                Impact = BreakingChangeImpact.High,
-                                Mitigation = "Ensure no instances are in the removed state before upgrading"
-                            });
-                        }
-                    }
-                    
-                    if (comparison.RemovedTransitions?.Count > 0)
-                    {
-                        foreach (var transition in comparison.RemovedTransitions)
-                        {
-                            breakingChanges.Add(new BreakingChange
-                            {
-                                ChangeType = BreakingChangeType.TransitionRemoved,
-                                Description = $"Transition removed from state '{transition.State}'",
-                                Impact = BreakingChangeImpact.Medium,
-                                Mitigation = "Update client code to not use removed transitions"
-                            });
-                        }
-                    }
-                    
-                    if (comparison.ModifiedTransitions?.Count > 0)
-                    {
-                        foreach (var transition in comparison.ModifiedTransitions)
-                        {
-                            if (transition.IsBreaking)
-                            {
-                                breakingChanges.Add(new BreakingChange
-                                {
-                                    ChangeType = BreakingChangeType.TransitionRemoved,
-                                    Description = $"Transition destination changed in state '{transition.State}'",
-                                    Impact = BreakingChangeImpact.Medium,
-                                    Mitigation = "Review workflow logic for the modified transition"
-                                });
-                            }
-                        }
-                    }
-                    
-                    if (comparison.GuardChanges?.Count > 0)
-                    {
-                        foreach (var guardChange in comparison.GuardChanges)
-                        {
-                            breakingChanges.Add(new BreakingChange
-                            {
-                                ChangeType = BreakingChangeType.GuardChanged,
-                                Description = $"Guard conditions changed in state '{guardChange.State}'",
-                                Impact = BreakingChangeImpact.Low,
-                                Mitigation = "Test guard conditions thoroughly"
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not perform deep analysis of breaking changes, using version comparison");
-        }
+        // TODO: Add logic to analyze actual state machine changes
+        // This would involve introspecting the state machine definitions
+        // and identifying state, trigger, and transition changes
 
-        // Always check major version changes
-        if (toVersion.Major > fromVersion.Major)
-        {
-            breakingChanges.Add(new BreakingChange
-            {
-                ChangeType = BreakingChangeType.MajorVersionIncrease,
-                Description = $"Major version increase from {fromVersion.Major} to {toVersion.Major}",
-                Impact = BreakingChangeImpact.High,
-                Mitigation = "Full migration and testing required"
-            });
-        }
-
-        return Task.FromResult(breakingChanges);
+        return context;
     }
 
     private UpgradeRecommendationType DetermineRecommendationType(CompatibilityCheckResult compatibility)
@@ -444,343 +278,161 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return UpgradeRecommendationType.ConsiderWithCaution;
     }
 
-    private UpgradeEffort EstimateUpgradeEffort(CompatibilityCheckResult compatibility)
+    private MigrationEffort EstimateUpgradeEffort(CompatibilityCheckResult compatibility)
     {
         if (!compatibility.IsCompatible)
-            return UpgradeEffort.VeryHigh;
+            return MigrationEffort.High;
 
-        if (compatibility.CompatibilityLevel == VersionCompatibilityLevel.FullyCompatible)
-            return UpgradeEffort.Low;
+        var criticalChanges = compatibility.BreakingChanges.Count(c => c.Impact == BreakingChangeImpact.Critical);
+        var highChanges = compatibility.BreakingChanges.Count(c => c.Impact == BreakingChangeImpact.High);
 
-        if (compatibility.BreakingChanges.Count == 0)
-            return UpgradeEffort.Medium;
+        if (criticalChanges > 0 || highChanges > 2)
+            return MigrationEffort.High;
 
-        return UpgradeEffort.High;
+        if (highChanges > 0 || compatibility.BreakingChanges.Count > 5)
+            return MigrationEffort.Medium;
+
+        return MigrationEffort.Low;
     }
 
-    private RiskLevel AssessRiskLevel(CompatibilityCheckResult compatibility)
-    {
-        if (!compatibility.IsCompatible)
-            return RiskLevel.VeryHigh;
-
-        if (compatibility.BreakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.High))
-            return RiskLevel.High;
-
-        if (compatibility.BreakingChanges.Count > 0)
-            return RiskLevel.Medium;
-
-        return RiskLevel.Low;
-    }
-
-    private async Task<List<string>> DetermineBenefitsAsync(
-        string grainTypeName,
-        StateMachineVersion fromVersion,
-        StateMachineVersion toVersion)
+    private List<string> GenerateBenefitsList(StateMachineVersion fromVersion, StateMachineVersion toVersion)
     {
         var benefits = new List<string>();
 
-        try
+        if (toVersion.Major > fromVersion.Major)
         {
-            // Try to get version metadata from registry
-            var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
-            
-            // We can't get the actual definitions without knowing the generic types
-            object? fromDef = null;
-            object? toDef = null;
-
-            if (fromDef != null && toDef != null)
-            {
-                // Analyze structural improvements
-                var fromInfo = fromDef.GetType().GetMethod("GetInfo")?.Invoke(fromDef, Array.Empty<object>());
-                var toInfo = toDef.GetType().GetMethod("GetInfo")?.Invoke(toDef, Array.Empty<object>());
-                
-                if (fromInfo != null && toInfo != null)
-                {
-                    var fromStates = fromInfo.GetType().GetProperty("States")?.GetValue(fromInfo) as IEnumerable;
-                    var toStates = toInfo.GetType().GetProperty("States")?.GetValue(toInfo) as IEnumerable;
-                    
-                    if (fromStates != null && toStates != null)
-                    {
-                        int fromStateCount = 0;
-                        int toStateCount = 0;
-                        
-                        foreach (var state in fromStates) fromStateCount++;
-                        foreach (var state in toStates) toStateCount++;
-                        
-                        if (toStateCount > fromStateCount)
-                        {
-                            benefits.Add($"Added {toStateCount - fromStateCount} new state(s) for enhanced workflow");
-                        }
-                    }
-                }
-            }
-
-            // Version-specific benefits based on semantic versioning
-            if (toVersion.Major > fromVersion.Major)
-            {
-                benefits.Add($"Major version upgrade to {toVersion.Major}.x with new capabilities");
-                benefits.Add("Architectural improvements and optimizations");
-                benefits.Add("Enhanced error handling and recovery");
-            }
-            else if (toVersion.Minor > fromVersion.Minor)
-            {
-                benefits.Add($"Minor version upgrade to {toVersion} with backward compatibility");
-                benefits.Add("New features without breaking existing workflows");
-                benefits.Add("Performance improvements and bug fixes");
-            }
-            else if (toVersion.Patch > fromVersion.Patch)
-            {
-                benefits.Add($"Patch update to {toVersion} with bug fixes");
-                benefits.Add("Stability improvements");
-                benefits.Add("Security patches if applicable");
-            }
-
-            // Check for pre-release to stable upgrade
-            if (!string.IsNullOrEmpty(fromVersion.PreRelease) && string.IsNullOrEmpty(toVersion.PreRelease))
-            {
-                benefits.Add("Upgrade from pre-release to stable version");
-                benefits.Add("Production-ready release with full support");
-            }
+            benefits.Add("Major new features and improvements");
+            benefits.Add("Performance optimizations");
         }
-        catch (Exception ex)
+        else if (toVersion.Minor > fromVersion.Minor)
         {
-            _logger.LogDebug(ex, "Could not determine specific benefits, using defaults");
+            benefits.Add("New functionality");
+            benefits.Add("Bug fixes");
         }
-
-        // Ensure we always have some benefits listed
-        if (benefits.Count == 0)
+        else if (toVersion.Patch > fromVersion.Patch)
         {
-            benefits.Add($"Updated to version {toVersion}");
-            benefits.Add("Latest improvements and optimizations");
-            benefits.Add("Continued support and maintenance");
+            benefits.Add("Bug fixes and security updates");
         }
 
         return benefits;
     }
 
-    private async Task<List<string>> DeterminePrerequisitesAsync(
-        string grainTypeName,
-        StateMachineVersion fromVersion,
-        StateMachineVersion toVersion)
+    private DeploymentStrategy DetermineDeploymentStrategy(DeploymentCompatibilityResult result)
     {
-        var prerequisites = new List<string>
-        {
-            "Backup current state and configuration",
-            "Verify current system health and stability",
-            $"Review release notes for version {toVersion}"
-        };
+        if (!result.CanDeploy)
+            return DeploymentStrategy.Blocked;
 
-        try
-        {
-            // Analyze version jump to determine specific prerequisites
-            if (toVersion.Major > fromVersion.Major)
-            {
-                prerequisites.Add("Plan for potential downtime during major version upgrade");
-                prerequisites.Add("Test upgrade path in non-production environment");
-                prerequisites.Add("Prepare rollback plan in case of issues");
-                prerequisites.Add("Update client applications for compatibility");
-                prerequisites.Add("Train operations team on new features");
-            }
-            else if (toVersion.Minor > fromVersion.Minor)
-            {
-                prerequisites.Add("Review new features and their impact");
-                prerequisites.Add("Update monitoring for new metrics if applicable");
-                prerequisites.Add("Plan gradual rollout strategy");
-            }
+        var hasErrors = result.Issues.Any(i => i.Severity == DeploymentIssueSeverity.Error);
+        var hasWarnings = result.Issues.Any(i => i.Severity == DeploymentIssueSeverity.Warning);
 
-            // Check for migration path requirements
-            var migrationPath = await _registry.GetMigrationPathAsync(grainTypeName, fromVersion, toVersion);
-            if (migrationPath != null)
-            {
-                if (migrationPath.Steps.Count > 1)
-                {
-                    prerequisites.Add($"Multi-step migration required ({migrationPath.Steps.Count} steps)");
-                    prerequisites.Add($"Estimated migration time: {migrationPath.EstimatedDuration.TotalMinutes:F1} minutes");
-                }
+        if (hasErrors)
+            return DeploymentStrategy.RequiresMigration;
 
-                foreach (var step in migrationPath.Steps)
-                {
-                    if (step.Type == MigrationStepType.Manual)
-                    {
-                        prerequisites.Add("Manual intervention required during migration");
-                        prerequisites.Add($"Manual step: {step.Description}");
-                    }
-                    else if (step.Type == MigrationStepType.EventReplay)
-                    {
-                        prerequisites.Add("Event replay required - ensure event store has sufficient history");
-                        prerequisites.Add("Plan for extended migration time due to event replay");
-                    }
-                    else if (step.Type == MigrationStepType.StateTransformation)
-                    {
-                        prerequisites.Add("State transformation required - validate transformation logic");
-                    }
-                }
-            }
+        if (hasWarnings)
+            return DeploymentStrategy.RollingUpgrade;
 
-            // Check breaking changes
-            var breakingChanges = await AnalyzeBreakingChangesAsync(grainTypeName, fromVersion, toVersion);
-            if (breakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.High))
-            {
-                prerequisites.Add("High-impact breaking changes detected - thorough testing required");
-                prerequisites.Add("Update all dependent systems before migration");
-            }
-
-            // Check for active instances
-            prerequisites.Add("Verify no critical workflows are in progress");
-            prerequisites.Add("Check for long-running transactions that might be affected");
-
-        }
-        catch (Exception ex)
-        {
-            _logger.LogDebug(ex, "Could not determine specific prerequisites, using defaults");
-        }
-
-        return prerequisites;
+        return DeploymentStrategy.DirectUpgrade;
     }
-
-    private DeploymentStrategy DetermineDeploymentStrategy(
-        StateMachineVersion newVersion,
-        IEnumerable<StateMachineVersion> existingVersions,
-        List<DeploymentIssue> issues)
-    {
-        if (issues.Any(i => i.Severity == DeploymentIssueSeverity.High))
-            return DeploymentStrategy.CannotDeploy;
-
-        if (existingVersions.Any(v => newVersion.IsBreakingChangeFrom(v)))
-            return DeploymentStrategy.BlueGreenDeployment;
-
-        return DeploymentStrategy.RollingUpdate;
-    }
-
-    #endregion
 }
 
-// Supporting types for compatibility checking
-
-[GenerateSerializer]
+/// <summary>
+/// Result of a compatibility check.
+/// </summary>
 public class CompatibilityCheckResult
 {
-    [Id(0)] public bool IsCompatible { get; set; }
-    [Id(1)] public StateMachineVersion FromVersion { get; set; } = new();
-    [Id(2)] public StateMachineVersion ToVersion { get; set; } = new();
-    [Id(3)] public VersionCompatibilityLevel CompatibilityLevel { get; set; }
-    [Id(4)] public MigrationPath? MigrationPath { get; set; }
-    [Id(5)] public List<BreakingChange> BreakingChanges { get; set; } = new();
-    [Id(6)] public string? ErrorMessage { get; set; }
-    [Id(7)] public CompatibilityIssueType? IssueType { get; set; }
-    [Id(8)] public DateTime CheckedAt { get; set; } = DateTime.UtcNow;
-
-    public static CompatibilityCheckResult Success(
-        StateMachineVersion fromVersion,
-        StateMachineVersion toVersion,
-        VersionCompatibilityLevel level,
-        MigrationPath? migrationPath = null,
-        List<BreakingChange>? breakingChanges = null)
-    {
-        return new CompatibilityCheckResult
-        {
-            IsCompatible = true,
-            FromVersion = fromVersion,
-            ToVersion = toVersion,
-            CompatibilityLevel = level,
-            MigrationPath = migrationPath,
-            BreakingChanges = breakingChanges ?? new List<BreakingChange>()
-        };
-    }
+    public StateMachineVersion FromVersion { get; set; } = null!;
+    public StateMachineVersion ToVersion { get; set; } = null!;
+    public bool IsCompatible { get; set; }
+    public VersionCompatibilityLevel CompatibilityLevel { get; set; }
+    public List<BreakingChange> BreakingChanges { get; set; } = new();
+    public List<string> Warnings { get; set; } = new();
+    public MigrationPath? MigrationPath { get; set; }
+    public DateTime CheckedAt { get; set; }
+    public string? FailureReason { get; set; }
 
     public static CompatibilityCheckResult Failure(
-        StateMachineVersion fromVersion,
-        StateMachineVersion toVersion,
-        string errorMessage,
-        CompatibilityIssueType issueType,
-        List<BreakingChange>? breakingChanges = null)
+        StateMachineVersion from,
+        StateMachineVersion to,
+        string reason)
     {
         return new CompatibilityCheckResult
         {
+            FromVersion = from,
+            ToVersion = to,
             IsCompatible = false,
-            FromVersion = fromVersion,
-            ToVersion = toVersion,
-            ErrorMessage = errorMessage,
-            IssueType = issueType,
-            BreakingChanges = breakingChanges ?? new List<BreakingChange>()
+            CompatibilityLevel = VersionCompatibilityLevel.Incompatible,
+            FailureReason = reason,
+            CheckedAt = DateTime.UtcNow
         };
     }
 }
 
+/// <summary>
+/// Level of version compatibility.
+/// </summary>
 public enum VersionCompatibilityLevel
 {
-    Incompatible,
+    FullyCompatible,
+    Compatible,
+    PartiallyCompatible,
     RequiresMigration,
-    BackwardCompatible,
-    FullyCompatible
+    Incompatible
 }
 
-public enum CompatibilityIssueType
-{
-    VersionNotFound,
-    VersionIncompatible,
-    BreakingChanges,
-    CheckFailed
-}
-
-[GenerateSerializer]
-public class BreakingChange
-{
-    [Id(0)] public BreakingChangeType ChangeType { get; set; }
-    [Id(1)] public string Description { get; set; } = "";
-    [Id(2)] public BreakingChangeImpact Impact { get; set; }
-    [Id(3)] public string Mitigation { get; set; } = "";
-}
-
-public enum BreakingChangeType
-{
-    StateRemoved,
-    TriggerRemoved,
-    TransitionRemoved,
-    GuardChanged,
-    MajorVersionIncrease
-}
-
-public enum BreakingChangeImpact
-{
-    Low,
-    Medium,
-    High,
-    Critical
-}
-
-[GenerateSerializer]
+/// <summary>
+/// Matrix of compatibility between versions.
+/// </summary>
 public class CompatibilityMatrix
 {
-    [Id(0)] public string GrainTypeName { get; set; } = "";
-    [Id(1)] public List<StateMachineVersion> Versions { get; set; } = new();
-    [Id(2)] public Dictionary<(StateMachineVersion From, StateMachineVersion To), CompatibilityCheckResult> CompatibilityResults { get; set; } = new();
-    [Id(3)] public CompatibilityStatistics Statistics { get; set; } = new();
+    private readonly Dictionary<(StateMachineVersion, StateMachineVersion), CompatibilityCheckResult> _entries;
+
+    public string GrainTypeName { get; }
+
+    public CompatibilityMatrix(string grainTypeName)
+    {
+        GrainTypeName = grainTypeName;
+        _entries = new Dictionary<(StateMachineVersion, StateMachineVersion), CompatibilityCheckResult>();
+    }
+
+    public void AddEntry(StateMachineVersion from, StateMachineVersion to, CompatibilityCheckResult result)
+    {
+        _entries[(from, to)] = result;
+    }
+
+    public CompatibilityCheckResult? GetEntry(StateMachineVersion from, StateMachineVersion to)
+    {
+        return _entries.TryGetValue((from, to), out var result) ? result : null;
+    }
+
+    public bool IsCompatible(StateMachineVersion from, StateMachineVersion to)
+    {
+        return GetEntry(from, to)?.IsCompatible ?? false;
+    }
+
+    public IEnumerable<CompatibilityCheckResult> GetAllEntries()
+    {
+        return _entries.Values;
+    }
 }
 
-[GenerateSerializer]
-public class CompatibilityStatistics
-{
-    [Id(0)] public int TotalVersions { get; set; }
-    [Id(1)] public int TotalCompatibilityChecks { get; set; }
-    [Id(2)] public int CompatibleUpgrades { get; set; }
-    [Id(3)] public int IncompatibleUpgrades { get; set; }
-    [Id(4)] public double CompatibilityPercentage { get; set; }
-}
-
-[GenerateSerializer]
+/// <summary>
+/// Upgrade recommendation.
+/// </summary>
 public class UpgradeRecommendation
 {
-    [Id(0)] public StateMachineVersion FromVersion { get; set; } = new();
-    [Id(1)] public StateMachineVersion ToVersion { get; set; } = new();
-    [Id(2)] public UpgradeRecommendationType RecommendationType { get; set; }
-    [Id(3)] public CompatibilityCheckResult CompatibilityResult { get; set; } = new();
-    [Id(4)] public UpgradeEffort EstimatedEffort { get; set; }
-    [Id(5)] public RiskLevel RiskLevel { get; set; }
-    [Id(6)] public List<string> Benefits { get; set; } = new();
-    [Id(7)] public List<string> Prerequisites { get; set; } = new();
+    public StateMachineVersion CurrentVersion { get; set; } = null!;
+    public StateMachineVersion TargetVersion { get; set; } = null!;
+    public UpgradeRecommendationType RecommendationType { get; set; }
+    public VersionCompatibilityLevel CompatibilityLevel { get; set; }
+    public List<MigrationPath> MigrationPaths { get; set; } = new();
+    public MigrationEffort EstimatedEffort { get; set; }
+    public List<string> Benefits { get; set; } = new();
+    public List<string> Risks { get; set; } = new();
 }
 
+/// <summary>
+/// Type of upgrade recommendation.
+/// </summary>
 public enum UpgradeRecommendationType
 {
     HighlyRecommended,
@@ -789,64 +441,60 @@ public enum UpgradeRecommendationType
     NotRecommended
 }
 
-public enum UpgradeEffort
-{
-    Low,
-    Medium,
-    High,
-    VeryHigh
-}
-
-public enum RiskLevel
-{
-    Low,
-    Medium,
-    High,
-    VeryHigh
-}
-
-[GenerateSerializer]
+/// <summary>
+/// Result of deployment compatibility validation.
+/// </summary>
 public class DeploymentCompatibilityResult
 {
-    [Id(0)] public string GrainTypeName { get; set; } = "";
-    [Id(1)] public StateMachineVersion NewVersion { get; set; } = new();
-    [Id(2)] public List<StateMachineVersion> ExistingVersions { get; set; } = new();
-    [Id(3)] public bool CanDeploy { get; set; }
-    [Id(4)] public List<DeploymentIssue> Issues { get; set; } = new();
-    [Id(5)] public List<string> Warnings { get; set; } = new();
-    [Id(6)] public List<string> Recommendations { get; set; } = new();
-    [Id(7)] public DeploymentStrategy SuggestedStrategy { get; set; }
+    public StateMachineVersion NewVersion { get; set; } = null!;
+    public List<StateMachineVersion> ExistingVersions { get; set; } = new();
+    public bool CanDeploy { get; set; }
+    public List<DeploymentIssue> Issues { get; set; } = new();
+    public DeploymentStrategy RecommendedStrategy { get; set; }
+    public DateTime ValidationTime { get; set; }
 }
 
-[GenerateSerializer]
+/// <summary>
+/// Deployment issue.
+/// </summary>
 public class DeploymentIssue
 {
-    [Id(0)] public DeploymentIssueType IssueType { get; set; }
-    [Id(1)] public string Description { get; set; } = "";
-    [Id(2)] public StateMachineVersion? AffectedVersion { get; set; }
-    [Id(3)] public DeploymentIssueSeverity Severity { get; set; }
+    public DeploymentIssueType Type { get; set; }
+    public DeploymentIssueSeverity Severity { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public StateMachineVersion? AffectedVersion { get; set; }
 }
 
+/// <summary>
+/// Type of deployment issue.
+/// </summary>
 public enum DeploymentIssueType
 {
-    BackwardIncompatibility,
-    ForwardIncompatibility,
-    ConflictingVersions,
-    MissingDependencies
+    IncompatibleVersion,
+    BackwardIncompatible,
+    MissingMigration,
+    PerformanceRegression
 }
 
+/// <summary>
+/// Severity of deployment issue.
+/// </summary>
 public enum DeploymentIssueSeverity
 {
-    Low,
-    Medium,
-    High,
+    Info,
+    Warning,
+    Error,
     Critical
 }
 
+/// <summary>
+/// Deployment strategy.
+/// </summary>
 public enum DeploymentStrategy
 {
-    RollingUpdate,
+    DirectUpgrade,
+    RollingUpgrade,
     BlueGreenDeployment,
-    CanaryDeployment,
-    CannotDeploy
+    RequiresMigration,
+    Blocked
 }

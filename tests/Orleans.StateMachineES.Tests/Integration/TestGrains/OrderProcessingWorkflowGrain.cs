@@ -125,7 +125,7 @@ public class OrderProcessingWorkflowGrain : StateMachineGrain<OrderState, string
 
     public Task<OrderState> GetOrderStateAsync()
     {
-        return GetStateAsync();
+        return GetStateAsync().AsTask();
     }
 
     public Task<List<OrderHistoryEntry>> GetOrderHistoryAsync()

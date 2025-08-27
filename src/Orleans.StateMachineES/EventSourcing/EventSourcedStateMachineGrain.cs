@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Orleans.StateMachineES.EventSourcing.Events;
 using Orleans.StateMachineES.EventSourcing.Configuration;
 using Orleans.StateMachineES.EventSourcing.Exceptions;
+using Orleans.StateMachineES.Extensions;
 using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -378,78 +379,78 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// <summary>
     /// Gets the current state asynchronously.
     /// </summary>
-    public Task<TState> GetStateAsync()
+    public ValueTask<TState> GetStateAsync()
     {
-        return Task.FromResult(StateMachine.State);
+        return ValueTaskExtensions.FromResult(StateMachine.State);
     }
 
     /// <summary>
     /// Determines whether the state machine is in the specified state.
     /// </summary>
-    public Task<bool> IsInStateAsync(TState state)
+    public ValueTask<bool> IsInStateAsync(TState state)
     {
-        return Task.FromResult(StateMachine.IsInState(state));
+        return ValueTaskExtensions.FromResult(StateMachine.IsInState(state));
     }
 
     /// <summary>
     /// Determines whether the specified trigger can be fired.
     /// </summary>
-    public Task<bool> CanFireAsync(TTrigger trigger)
+    public ValueTask<bool> CanFireAsync(TTrigger trigger)
     {
-        return Task.FromResult(StateMachine.CanFire(trigger));
+        return ValueTaskExtensions.FromResult(StateMachine.CanFire(trigger));
     }
 
     /// <summary>
     /// Gets information about the state machine.
     /// </summary>
-    public Task<OrleansStateMachineInfo> GetInfoAsync()
+    public ValueTask<OrleansStateMachineInfo> GetInfoAsync()
     {
-        return Task.FromResult(new OrleansStateMachineInfo(StateMachine.GetInfo()));
+        return ValueTaskExtensions.FromResult(new OrleansStateMachineInfo(StateMachine.GetInfo()));
     }
 
     /// <summary>
     /// Gets the permitted triggers for the current state.
     /// </summary>
-    public Task<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args)
+    public ValueTask<IEnumerable<TTrigger>> GetPermittedTriggersAsync(params object[] args)
     {
         // Materialize the collection to avoid serialization issues with LINQ iterators
         var triggers = StateMachine.GetPermittedTriggers(args).ToList();
-        return Task.FromResult<IEnumerable<TTrigger>>(triggers);
+        return ValueTaskExtensions.FromResult<IEnumerable<TTrigger>>(triggers);
     }
 
     /// <summary>
     /// Gets detailed information about permitted triggers for the current state.
     /// </summary>
-    public Task<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args)
+    public ValueTask<IEnumerable<TriggerDetails<TState, TTrigger>>> GetDetailedPermittedTriggersAsync(params object[] args)
     {
         // Materialize the collection to avoid serialization issues with LINQ iterators
         var details = StateMachine.GetDetailedPermittedTriggers(args).ToList();
-        return Task.FromResult<IEnumerable<TriggerDetails<TState, TTrigger>>>(details);
+        return ValueTaskExtensions.FromResult<IEnumerable<TriggerDetails<TState, TTrigger>>>(details);
     }
 
     /// <summary>
     /// Gets the permitted triggers property for the current state.
     /// </summary>
-    public Task<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync()
+    public ValueTask<IEnumerable<TTrigger>> GetPermittedTriggersPropertyAsync()
     {
         // Materialize the collection to avoid serialization issues with LINQ iterators
         var triggers = StateMachine.PermittedTriggers.ToList();
-        return Task.FromResult<IEnumerable<TTrigger>>(triggers);
+        return ValueTaskExtensions.FromResult<IEnumerable<TTrigger>>(triggers);
     }
 
     /// <summary>
     /// Determines whether the specified trigger can be fired and returns unmet guard conditions.
     /// </summary>
-    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync(TTrigger trigger)
+    public ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync(TTrigger trigger)
     {
         var result = StateMachine.CanFire(trigger, out var unmetGuards);
-        return Task.FromResult((result, unmetGuards));
+        return ValueTaskExtensions.FromResult((result, unmetGuards));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with one argument can be fired.
     /// </summary>
-    public Task<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
+    public ValueTask<bool> CanFireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -458,13 +459,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             TriggerParametersCache[trigger] = cached;
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
-        return Task.FromResult(StateMachine.CanFire(tp, arg0));
+        return ValueTaskExtensions.FromResult(StateMachine.CanFire(tp, arg0));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with one argument can be fired and returns unmet guard conditions.
     /// </summary>
-    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0)
+    public ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -474,13 +475,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
         var result = StateMachine.CanFire(tp, arg0, out var unmet);
-        return Task.FromResult((result, unmet));
+        return ValueTaskExtensions.FromResult((result, unmet));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with two arguments can be fired.
     /// </summary>
-    public Task<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
+    public ValueTask<bool> CanFireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -489,13 +490,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             TriggerParametersCache[trigger] = cached;
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
-        return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1));
+        return ValueTaskExtensions.FromResult(StateMachine.CanFire(tp, arg0, arg1));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with two arguments can be fired and returns unmet guard conditions.
     /// </summary>
-    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
+    public ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -505,13 +506,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
         var result = StateMachine.CanFire(tp, arg0, arg1, out var unmet);
-        return Task.FromResult((result, unmet));
+        return ValueTaskExtensions.FromResult((result, unmet));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with three arguments can be fired.
     /// </summary>
-    public Task<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+    public ValueTask<bool> CanFireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -520,13 +521,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             TriggerParametersCache[trigger] = cached;
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
-        return Task.FromResult(StateMachine.CanFire(tp, arg0, arg1, arg2));
+        return ValueTaskExtensions.FromResult(StateMachine.CanFire(tp, arg0, arg1, arg2));
     }
 
     /// <summary>
     /// Determines whether the specified trigger with three arguments can be fired and returns unmet guard conditions.
     /// </summary>
-    public Task<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
+    public ValueTask<(bool, ICollection<string>)> CanFireWithUnmetGuardsAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
         // Get or create cached trigger parameters
         if (!TriggerParametersCache.TryGetValue(trigger, out var cached))
@@ -536,15 +537,15 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
         }
         var tp = (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
         var result = StateMachine.CanFire(tp, arg0, arg1, arg2, out var unmet);
-        return Task.FromResult((result, unmet));
+        return ValueTaskExtensions.FromResult((result, unmet));
     }
 
     /// <summary>
     /// Returns a string representation of the state machine.
     /// </summary>
-    public Task<string> ToStringAsync()
+    public ValueTask<string> ToStringAsync()
     {
-        return Task.FromResult(StateMachine.ToString() ?? "StateMachine");
+        return ValueTaskExtensions.FromResult(StateMachine.ToString() ?? "StateMachine");
     }
 
     /// <summary>

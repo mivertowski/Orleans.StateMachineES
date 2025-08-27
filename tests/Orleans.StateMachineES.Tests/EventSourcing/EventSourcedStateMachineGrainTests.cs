@@ -257,7 +257,7 @@ public enum DoorTrigger
 
 public interface ITestEventSourcedGrain : IGrainWithStringKey
 {
-    Task<DoorState> GetStateAsync();
+    ValueTask<DoorState> GetStateAsync();
     Task OpenAsync();
     Task CloseAsync();
     Task LockAsync(string password);
@@ -267,7 +267,7 @@ public interface ITestEventSourcedGrain : IGrainWithStringKey
     void SetCorrelationId(string correlationId);
     Task<IEnumerable<DoorTrigger>> GetPermittedTriggersAsync();
     Task<bool> CanFireAsync(DoorTrigger trigger);
-    Task<Orleans.StateMachineES.Models.OrleansStateMachineInfo> GetInfoAsync();
+    ValueTask<Orleans.StateMachineES.Models.OrleansStateMachineInfo> GetInfoAsync();
     Task DeactivateAsync();
 }
 

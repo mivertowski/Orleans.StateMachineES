@@ -225,7 +225,7 @@ public class HierarchicalStateMachineGrainTests
 // Test grain implementation with complex hierarchy
 public interface IDeviceControllerGrain : IGrainWithStringKey
 {
-    Task<DeviceState> GetStateAsync();
+    ValueTask<DeviceState> GetStateAsync();
     Task PowerOnAsync();
     Task PowerOffAsync();
     Task StartProcessingAsync();
@@ -238,7 +238,7 @@ public interface IDeviceControllerGrain : IGrainWithStringKey
     Task<IReadOnlyList<DeviceState>> GetAncestorStatesAsync(DeviceState state);
     Task<IReadOnlyList<DeviceState>> GetDescendantStatesAsync(DeviceState parentState);
     Task<bool> IsInStateOrSubstateAsync(DeviceState state);
-    Task<bool> IsInStateAsync(DeviceState state);
+    ValueTask<bool> IsInStateAsync(DeviceState state);
     Task<IReadOnlyList<DeviceState>> GetCurrentStatePathAsync();
     Task<HierarchicalStateInfo<DeviceState>> GetHierarchicalInfoAsync();
     

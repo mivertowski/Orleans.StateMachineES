@@ -367,19 +367,21 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
             foreach (var step in migrationPath.Steps)
             {
                 // Execute migration step
-                summary.ChangesApplied.Add($"Applied migration step: {step.Name}");
+                summary.ChangesApplied.Add($"Applied migration step: {step.Description}");
                 
                 switch (step.Type)
                 {
-                    case MigrationStepType.Automatic:
+                    case MigrationType.MinorUpgrade:
+                    case MigrationType.PatchUpdate:
                         // No action needed for automatic steps
                         break;
                     
-                    case MigrationStepType.StateTransformation:
+                    case MigrationType.StateAddition:
+                    case MigrationType.StateRemoval:
                         summary.StatesMigrated++;
                         break;
                     
-                    case MigrationStepType.EventReplay:
+                    case MigrationType.DataMigration:
                         summary.EventsReplayed += 10; // Simulated
                         break;
                 }

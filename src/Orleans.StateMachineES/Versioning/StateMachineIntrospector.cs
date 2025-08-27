@@ -342,13 +342,6 @@ public class GuardChange<TState, TTrigger>
 /// <summary>
 /// Type of guard change.
 /// </summary>
-public enum GuardChangeType
-{
-    Added,
-    Removed,
-    Modified,
-    CountChanged
-}
 
 /// <summary>
 /// Prediction of a state transition.

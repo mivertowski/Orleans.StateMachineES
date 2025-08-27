@@ -162,7 +162,7 @@ public enum ProcessingTrigger
 
 public interface ITestTimerGrain : IGrainWithStringKey
 {
-    Task<ProcessingState> GetStateAsync();
+    ValueTask<ProcessingState> GetStateAsync();
     Task StartProcessingAsync();
     Task StartMonitoringAsync();
     Task StartLongRunningAsync();
