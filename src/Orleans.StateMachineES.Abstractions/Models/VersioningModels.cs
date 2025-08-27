@@ -173,7 +173,12 @@ public enum RiskLevel
     /// <summary>
     /// Critical risk migration.
     /// </summary>
-    Critical = 3
+    Critical = 3,
+    
+    /// <summary>
+    /// Very high risk migration.
+    /// </summary>
+    VeryHigh = 4
 }
 
 /// <summary>

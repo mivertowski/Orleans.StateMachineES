@@ -413,6 +413,64 @@ public class CompatibilityMatrix
     {
         return _entries.Values;
     }
+
+    /// <summary>
+    /// Gets all versions involved in the compatibility matrix.
+    /// </summary>
+    public IEnumerable<StateMachineVersion> Versions 
+    { 
+        get 
+        {
+            return _entries.Keys.SelectMany(k => new[] { k.Item1, k.Item2 }).Distinct();
+        } 
+    }
+
+    /// <summary>
+    /// Gets compatibility statistics for this matrix.
+    /// </summary>
+    public CompatibilityStatistics Statistics 
+    { 
+        get 
+        {
+            var versions = Versions.ToList();
+            var totalCompatible = _entries.Count(e => e.Value.IsCompatible);
+            var totalIncompatible = _entries.Count - totalCompatible;
+            
+            return new CompatibilityStatistics
+            {
+                TotalVersions = versions.Count,
+                TotalCompatible = totalCompatible,
+                TotalIncompatible = totalIncompatible,
+                CompatibilityPercentage = _entries.Count > 0 ? (double)totalCompatible / _entries.Count * 100 : 0
+            };
+        } 
+    }
+}
+
+/// <summary>
+/// Statistics about compatibility in a compatibility matrix.
+/// </summary>
+public class CompatibilityStatistics
+{
+    /// <summary>
+    /// Total number of versions in the matrix.
+    /// </summary>
+    public int TotalVersions { get; set; }
+
+    /// <summary>
+    /// Number of compatible version pairs.
+    /// </summary>
+    public int TotalCompatible { get; set; }
+
+    /// <summary>
+    /// Number of incompatible version pairs.
+    /// </summary>
+    public int TotalIncompatible { get; set; }
+
+    /// <summary>
+    /// Percentage of compatible version pairs.
+    /// </summary>
+    public double CompatibilityPercentage { get; set; }
 }
 
 /// <summary>
@@ -428,6 +486,12 @@ public class UpgradeRecommendation
     public MigrationEffort EstimatedEffort { get; set; }
     public List<string> Benefits { get; set; } = new();
     public List<string> Risks { get; set; } = new();
+    public RiskLevel RiskLevel { get; set; }
+    
+    /// <summary>
+    /// Alias for TargetVersion to maintain test compatibility.
+    /// </summary>
+    public StateMachineVersion ToVersion => TargetVersion;
 }
 
 /// <summary>
