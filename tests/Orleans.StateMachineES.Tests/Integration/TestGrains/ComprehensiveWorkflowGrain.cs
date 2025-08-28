@@ -89,6 +89,19 @@ public class ComprehensiveWorkflowGrain :
         // The DefinitionRegistry might not be properly initialized in test environment
         await Task.CompletedTask;
     }
+    
+    protected override Task<StateMachine<WorkflowState, WorkflowTrigger>?> BuildVersionedStateMachineAsync(StateMachineVersion version)
+    {
+        // When registry is not available, build the state machine directly
+        if (version.Major == 1 && version.Minor == 0)
+        {
+            return Task.FromResult<StateMachine<WorkflowState, WorkflowTrigger>?>(BuildStateMachineV1());
+        }
+        else
+        {
+            return Task.FromResult<StateMachine<WorkflowState, WorkflowTrigger>?>(BuildStateMachine());
+        }
+    }
 
     private StateMachine<WorkflowState, WorkflowTrigger> BuildStateMachineV1()
     {

@@ -9,7 +9,7 @@ using Stateless;
 namespace Orleans.StateMachineES.Tests.Unit.Core;
 
 // Test state and trigger enums
-public enum TestState
+public enum UnitTestState
 {
     Idle,
     Active,
@@ -17,7 +17,7 @@ public enum TestState
     Completed
 }
 
-public enum TestTrigger
+public enum UnitTestTrigger
 {
     Start,
     Process,
@@ -25,7 +25,7 @@ public enum TestTrigger
 }
 
 // Test grain interface
-public interface IUnitTestGrain : IStateMachineGrain<TestState, TestTrigger>, IGrainWithStringKey
+public interface IUnitTestGrain : IStateMachineGrain<UnitTestState, UnitTestTrigger>, IGrainWithStringKey
 {
     Task StartAsync();
     Task ProcessAsync();
@@ -34,38 +34,38 @@ public interface IUnitTestGrain : IStateMachineGrain<TestState, TestTrigger>, IG
 
 // Test grain implementation
 [GrainType("UnitTestGrain")]
-public class UnitTestGrain : StateMachineGrain<TestState, TestTrigger>, IUnitTestGrain
+public class UnitTestGrain : StateMachineGrain<UnitTestState, UnitTestTrigger>, IUnitTestGrain
 {
-    protected override StateMachine<TestState, TestTrigger> BuildStateMachine()
+    protected override StateMachine<UnitTestState, UnitTestTrigger> BuildStateMachine()
     {
-        var machine = new StateMachine<TestState, TestTrigger>(TestState.Idle);
+        var machine = new StateMachine<UnitTestState, UnitTestTrigger>(UnitTestState.Idle);
         
-        machine.Configure(TestState.Idle)
-            .Permit(TestTrigger.Start, TestState.Active);
+        machine.Configure(UnitTestState.Idle)
+            .Permit(UnitTestTrigger.Start, UnitTestState.Active);
             
-        machine.Configure(TestState.Active)
-            .Permit(TestTrigger.Process, TestState.Processing);
+        machine.Configure(UnitTestState.Active)
+            .Permit(UnitTestTrigger.Process, UnitTestState.Processing);
             
-        machine.Configure(TestState.Processing)
-            .Permit(TestTrigger.Complete, TestState.Completed);
+        machine.Configure(UnitTestState.Processing)
+            .Permit(UnitTestTrigger.Complete, UnitTestState.Completed);
             
-        machine.Configure(TestState.Completed);
+        machine.Configure(UnitTestState.Completed);
         
         return machine;
     }
     
     public Task StartAsync()
     {
-        return FireAsync(TestTrigger.Start);
+        return FireAsync(UnitTestTrigger.Start);
     }
     
     public Task ProcessAsync()
     {
-        return FireAsync(TestTrigger.Process);
+        return FireAsync(UnitTestTrigger.Process);
     }
     
     public Task CompleteAsync()
     {
-        return FireAsync(TestTrigger.Complete);
+        return FireAsync(UnitTestTrigger.Complete);
     }
 }

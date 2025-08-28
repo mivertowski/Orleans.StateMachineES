@@ -44,7 +44,8 @@ public class ComprehensiveIntegrationTests
         _logger = _testApp.Cluster.ServiceProvider.GetRequiredService<ILogger<ComprehensiveIntegrationTests>>();
     }
 
-    [Fact(Skip = "Requires comprehensive workflow grain implementation - disabled for v1.0 release")]
+    [Fact(Skip = "Long-running comprehensive test - manually run with: dotnet test --filter FullWorkflow_EventSourcedVersionedHierarchicalTimerSaga")]
+    [Trait("Category", "LongRunning")]
     public async Task FullWorkflow_EventSourcedVersionedHierarchicalTimerSaga_ShouldWork()
     {
         // This test combines ALL features into one comprehensive workflow

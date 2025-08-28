@@ -17,8 +17,7 @@ using Xunit.Abstractions;
 namespace Orleans.StateMachineES.Tests.Versioning;
 
 [Collection(nameof(TestClusterApplication))]
-[Trait("Category", "Integration")] 
-[Trait("Skip", "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+[Trait("Category", "Integration")]
 public class VersionCompatibilityTests
 {
     private readonly ITestOutputHelper _outputHelper;
@@ -30,7 +29,7 @@ public class VersionCompatibilityTests
         _outputHelper = outputHelper;
     }
 
-    [Fact(Skip = "Versioning integration in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task VersionCompatibility_ShouldIdentifyCompatibleUpgrade()
     {
         // Arrange
@@ -51,7 +50,7 @@ public class VersionCompatibilityTests
         result.BreakingChanges.Should().BeEmpty();
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task VersionCompatibility_ShouldIdentifyIncompatibleUpgrade()
     {
         // Arrange
@@ -72,7 +71,7 @@ public class VersionCompatibilityTests
         result.BreakingChanges.Should().Contain(bc => bc.ChangeType == BreakingChangeType.MajorVersionIncrease);
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task VersionCompatibility_ShouldAnalyzeCompatibilityMatrix()
     {
         // Arrange
@@ -91,7 +90,7 @@ public class VersionCompatibilityTests
         matrix.Statistics.TotalVersions.Should().BeGreaterThan(0);
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task VersionCompatibility_ShouldProvideUpgradeRecommendations()
     {
         // Arrange
@@ -121,7 +120,7 @@ public class VersionCompatibilityTests
         }
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task VersionCompatibility_ShouldValidateDeploymentCompatibility()
     {
         // Arrange
@@ -156,7 +155,7 @@ public class VersionCompatibilityTests
         incompatibleResult.RecommendedStrategy.Should().Be(DeploymentStrategy.Blocked);
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task ShadowEvaluator_ShouldCompareVersions()
     {
         // Arrange
@@ -306,7 +305,7 @@ public class MigrationHooksTests
         _outputHelper = outputHelper;
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public void MigrationHookManager_ShouldRegisterAndOrderHooks()
     {
         // Arrange
@@ -331,7 +330,7 @@ public class MigrationHooksTests
         registeredHooks[2].HookName.Should().Be("Hook3"); // Priority 30
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task MigrationHookManager_ShouldExecuteBeforeMigrationHooks()
     {
         // Arrange
@@ -363,7 +362,7 @@ public class MigrationHooksTests
         context.ExecutedHooks.Should().Contain("Hook2_BeforeMigration");
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task MigrationHookManager_ShouldAbortOnHookFailure()
     {
         // Arrange
@@ -396,7 +395,7 @@ public class MigrationHooksTests
         hook3.BeforeMigrationCalled.Should().BeFalse(); // Should not execute after failure
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task BuiltInHooks_ShouldValidateStateCompatibility()
     {
         // Arrange
@@ -421,7 +420,7 @@ public class MigrationHooksTests
         context.Metadata.Should().ContainKey("StateValidation");
     }
 
-    [Fact(Skip = "Versioning integration refactor in progress - will be re-enabled in v1.0.2")]
+    [Fact]
     public async Task BuiltInHooks_ShouldBackupAndRestoreState()
     {
         // Arrange

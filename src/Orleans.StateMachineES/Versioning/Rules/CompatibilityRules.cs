@@ -75,7 +75,7 @@ public sealed class MajorVersionRule : CompatibilityRuleBase
             {
                 ChangeType = BreakingChangeType.MajorVersionIncrease,
                 Description = $"Major version increase from {context.FromVersion.Major} to {context.ToVersion.Major}",
-                Impact = BreakingChangeImpact.High,
+                Impact = BreakingChangeImpact.Critical,
                 Mitigation = "Review all breaking changes and update code accordingly"
             }));
         }

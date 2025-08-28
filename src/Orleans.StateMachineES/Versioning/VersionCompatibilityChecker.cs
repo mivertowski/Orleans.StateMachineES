@@ -171,7 +171,8 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
                 MigrationPaths = paths,
                 EstimatedEffort = EstimateUpgradeEffort(compatibility),
                 Benefits = GenerateBenefitsList(currentVersion, targetVersion),
-                Risks = compatibility.BreakingChanges.Select(bc => bc.Description).ToList()
+                Risks = compatibility.BreakingChanges.Select(bc => bc.Description).ToList(),
+                RiskLevel = DetermineRiskLevel(currentVersion, targetVersion, compatibility)
             };
 
             recommendations.Add(recommendation);
@@ -290,6 +291,36 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
             return MigrationEffort.Medium;
 
         return MigrationEffort.Low;
+    }
+
+    private RiskLevel DetermineRiskLevel(StateMachineVersion fromVersion, StateMachineVersion toVersion, CompatibilityCheckResult compatibility)
+    {
+        // Major version changes are high risk
+        if (toVersion.Major > fromVersion.Major)
+            return RiskLevel.High;
+
+        // Critical breaking changes are very high risk
+        if (compatibility.BreakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.Critical))
+            return RiskLevel.VeryHigh;
+
+        // High impact breaking changes are high risk
+        if (compatibility.BreakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.High))
+            return RiskLevel.High;
+
+        // Medium impact or many breaking changes are medium risk
+        if (compatibility.BreakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.Medium) || 
+            compatibility.BreakingChanges.Count > 3)
+            return RiskLevel.Medium;
+
+        // Minor version changes with few breaking changes are low risk
+        if (toVersion.Minor > fromVersion.Minor && compatibility.BreakingChanges.Count <= 3)
+            return RiskLevel.Low;
+
+        // Patch versions are low risk
+        if (toVersion.Patch > fromVersion.Patch)
+            return RiskLevel.Low;
+
+        return RiskLevel.Low;
     }
 
     private List<string> GenerateBenefitsList(StateMachineVersion fromVersion, StateMachineVersion toVersion)
