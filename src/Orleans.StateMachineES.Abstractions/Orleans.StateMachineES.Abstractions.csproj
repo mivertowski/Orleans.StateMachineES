@@ -12,6 +12,8 @@
         <PackageTags>Orleans;StateMachine;EventSourcing;Abstractions;Interfaces</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
+        <PackageReadmeFile></PackageReadmeFile>
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <WarningsAsErrors />
     </PropertyGroup>

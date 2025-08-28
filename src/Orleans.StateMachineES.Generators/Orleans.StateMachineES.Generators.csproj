@@ -13,6 +13,11 @@
     <Description>Roslyn source generators for Orleans.StateMachineES typed triggers and states</Description>
     <Authors>Michael Ivertowski</Authors>
     <Version>1.0.1</Version>
+    <PackageReadmeFile></PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
+    <PackageTags>Orleans;StateMachine;SourceGenerator;CodeGeneration</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
