@@ -1428,7 +1428,7 @@ SmartLightState.ColorMode.GetDescription();
 
 <ItemGroup>
   <!-- Reference the generator package -->
-  <PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.0" />
+  <PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.1" />
 </ItemGroup>
 ```
 

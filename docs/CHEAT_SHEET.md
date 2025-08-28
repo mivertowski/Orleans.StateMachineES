@@ -799,7 +799,7 @@ siloBuilder
 
 <!-- Package references with verified compatibility -->
 <ItemGroup>
-    <PackageReference Include="Orleans.StateMachineES" Version="1.0.0" />
+    <PackageReference Include="Orleans.StateMachineES" Version="1.0.1" />
     <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />
     <!-- For testing -->
     <PackageReference Include="xunit" Version="2.8.0" />

@@ -136,7 +136,7 @@ This v1.0.0 release establishes Orleans.StateMachineES as the **premier solution
 ## Installation
 
 ```xml
-<PackageReference Include="Orleans.StateMachineES" Version="1.0.0" />
+<PackageReference Include="Orleans.StateMachineES" Version="1.0.1" />
 ```
 
 ## Links
