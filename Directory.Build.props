@@ -15,15 +15,15 @@
         <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
         <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
         <Product>Orleans Event Sourced StateMachine</Product>
-        <Version>1.0.1</Version>
-        <PackageVersion>1.0.1</PackageVersion>
+        <Version>1.0.2</Version>
+        <PackageVersion>1.0.2</PackageVersion>
 
     </PropertyGroup>
     <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
         <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
     </PropertyGroup>
     <ItemGroup>        
-        <None Include="$(SolutionDir)\README.md" Pack="true" Visible="false" PackagePath="\"/>
+        <None Include="$(MSBuildThisFileDirectory)\README.md" Pack="true" Visible="false" PackagePath="\"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="DotNet.ReproducibleBuilds" Version="1.2.25">

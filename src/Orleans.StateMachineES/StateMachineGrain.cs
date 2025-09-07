@@ -24,6 +24,22 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     protected StateMachine<TState, TTrigger>? StateMachine { get; private set; }
 
     /// <summary>
+    /// Thread-local flag to detect if we're currently executing within a state callback.
+    /// </summary>
+    [ThreadStatic]
+    private static bool _isInStateCallback;
+
+    /// <summary>
+    /// Gets whether we're currently executing within a state callback (OnEntry, OnExit, etc.).
+    /// </summary>
+    protected static bool IsInStateCallback => _isInStateCallback;
+
+    /// <summary>
+    /// Sets the callback execution context flag.
+    /// </summary>
+    protected internal static void SetCallbackContext(bool isInCallback) => _isInStateCallback = isInCallback;
+
+    /// <summary>
     /// Activates the state machine.
     /// </summary>
     public async Task ActivateAsync()
@@ -45,6 +61,14 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// <param name="trigger">The trigger to fire.</param>
     public virtual async Task FireAsync(TTrigger trigger)
     {
+        // Check if we're being called from within a state callback
+        if (IsInStateCallback)
+        {
+            throw new InvalidOperationException(
+                $"FireAsync cannot be called from within state callbacks (OnEntry, OnExit, etc.). " +
+                $"Trigger: {trigger}. Move state transitions to grain methods that execute after callbacks complete.");
+        }
+
         await StateMachine.FireAsync(trigger).ConfigureAwait(false);
     }
 
@@ -53,6 +77,14 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// </summary>
     public async Task FireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
+        // Check if we're being called from within a state callback
+        if (IsInStateCallback)
+        {
+            throw new InvalidOperationException(
+                $"FireAsync cannot be called from within state callbacks (OnEntry, OnExit, etc.). " +
+                $"Trigger: {trigger}. Move state transitions to grain methods that execute after callbacks complete.");
+        }
+
         var tp = StateMachine.SetTriggerParameters<TArg0>(trigger);
         await StateMachine.FireAsync(tp, arg0).ConfigureAwait(false);
     }
@@ -62,6 +94,14 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// </summary>
     public async Task FireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
+        // Check if we're being called from within a state callback
+        if (IsInStateCallback)
+        {
+            throw new InvalidOperationException(
+                $"FireAsync cannot be called from within state callbacks (OnEntry, OnExit, etc.). " +
+                $"Trigger: {trigger}. Move state transitions to grain methods that execute after callbacks complete.");
+        }
+
         var tp = StateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
         await StateMachine.FireAsync(tp, arg0, arg1).ConfigureAwait(false);
     }
@@ -71,6 +111,14 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// </summary>
     public async Task FireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
+        // Check if we're being called from within a state callback
+        if (IsInStateCallback)
+        {
+            throw new InvalidOperationException(
+                $"FireAsync cannot be called from within state callbacks (OnEntry, OnExit, etc.). " +
+                $"Trigger: {trigger}. Move state transitions to grain methods that execute after callbacks complete.");
+        }
+
         var tp = StateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
         await StateMachine.FireAsync(tp, arg0, arg1, arg2).ConfigureAwait(false);
     }

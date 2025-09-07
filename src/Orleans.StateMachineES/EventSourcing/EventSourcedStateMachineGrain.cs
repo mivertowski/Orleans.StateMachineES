@@ -820,20 +820,35 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             {
                 _logger?.LogDebug("Replaying {Count} events", events.Count());
                 
+                int eventIndex = 0;
                 foreach (var evt in events)
                 {
+                    eventIndex++;
+                    
                     if (evt is StateTransitionEvent<TState, TTrigger> transitionEvent)
                     {
-                        // Rebuild dedupe key set
-                        if (!string.IsNullOrEmpty(transitionEvent.DedupeKey))
+                        try
                         {
-                            AddDedupeKey(transitionEvent.DedupeKey);
-                        }
+                            // Rebuild dedupe key set
+                            if (!string.IsNullOrEmpty(transitionEvent.DedupeKey))
+                            {
+                                AddDedupeKey(transitionEvent.DedupeKey);
+                            }
 
-                        // Update state tracking
-                        State.CurrentState = transitionEvent.ToState;
-                        State.LastTransitionTimestamp = transitionEvent.Timestamp;
-                        State.TransitionCount++;
+                            // Update state tracking
+                            State.CurrentState = transitionEvent.ToState;
+                            State.LastTransitionTimestamp = transitionEvent.Timestamp;
+                            State.TransitionCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            throw new EventReplayException(
+                                $"Failed to replay event #{eventIndex} of {events.Count()}. " +
+                                $"Event: {transitionEvent.FromState} -> {transitionEvent.ToState} via {transitionEvent.Trigger}. " +
+                                $"Timestamp: {transitionEvent.Timestamp:O}",
+                                eventIndex,
+                                transitionEvent);
+                        }
                     }
                 }
                 

@@ -7,21 +7,10 @@
     <AssemblyName>Orleans.StateMachineES</AssemblyName>
     <RootNamespace>Orleans.StateMachineES</RootNamespace>
     <PackageId>Orleans.StateMachineES</PackageId>
-    <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
-    <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning</PackageTags>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Production-ready state machine implementation for Microsoft Orleans with comprehensive event sourcing, enterprise features, and performance optimizations. Includes ValueTask optimizations, object pooling, and advanced memory management.</Description>
-    <Authors>Michael Ivertowski</Authors>
-    <Version>1.0.1</Version>
-    <PackageReleaseNotes>⚡ v1.0.1 Performance Optimization Release - Comprehensive performance improvements: ValueTask zero-allocation, object pooling, FrozenCollections, string interning. Features: Event sourcing, Saga orchestration, State machine versioning, Advanced monitoring, Hierarchical states, Timer management.</PackageReleaseNotes>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning;Analyzers</PackageTags>
+    <PackageReleaseNotes>v1.0.2: Added compile-time safety with Roslyn analyzers for async operations, runtime validation, enhanced error messages, and comprehensive async patterns documentation. See RELEASE_NOTES_v1.0.2.md for details.</PackageReleaseNotes>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="README.md" />
-    <None Include="../../RELEASE_NOTES_v1.0.md" Pack="true" PackagePath="RELEASE_NOTES_v1.0.md" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.1.2" />

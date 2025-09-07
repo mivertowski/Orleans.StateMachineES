@@ -21,6 +21,15 @@ A robust, production-ready integration of the [Stateless](https://github.com/dot
 
 These enterprise-grade optimizations maintain full backward compatibility while providing substantial performance gains in high-throughput scenarios.
 
+## ⚠️ Important: Async Operations in State Callbacks
+
+**The underlying Stateless library does not support async operations in state callbacks (OnEntry, OnExit).** This is a fundamental design limitation. See our comprehensive [Async Patterns Guide](docs/ASYNC_PATTERNS.md) for correct patterns and best practices.
+
+### Compile-Time Safety
+Orleans.StateMachineES includes Roslyn analyzers that detect common async mistakes:
+- **OSMES001**: Warns about async lambdas in state callbacks
+- **OSMES002**: Errors on FireAsync calls within callbacks
+
 ## Fork Intention
 
 This fork extends the original ManagedCode.Orleans.StateMachine library with enterprise-grade event sourcing and advanced distributed state machine features. The goal is to provide a comprehensive solution for building event-driven, distributed state machines in Orleans with full audit trails, replay capabilities, and production-ready features.
