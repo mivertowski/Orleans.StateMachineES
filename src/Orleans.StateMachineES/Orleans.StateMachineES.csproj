@@ -9,7 +9,7 @@
     <PackageId>Orleans.StateMachineES</PackageId>
     <Description>Production-ready state machine implementation for Microsoft Orleans with comprehensive event sourcing, enterprise features, and performance optimizations. Includes ValueTask optimizations, object pooling, and advanced memory management.</Description>
     <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning;Analyzers</PackageTags>
-    <PackageReleaseNotes>v1.0.2: Added compile-time safety with Roslyn analyzers for async operations, runtime validation, enhanced error messages, and comprehensive async patterns documentation. See RELEASE_NOTES_v1.0.2.md for details.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.0.3: Enhanced Roslyn analyzers with 3 new diagnostics (OSMES003-005) for BuildStateMachine validation, unreachable state detection, and duplicate configuration warnings. Improved developer experience with comprehensive documentation and .editorconfig support.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

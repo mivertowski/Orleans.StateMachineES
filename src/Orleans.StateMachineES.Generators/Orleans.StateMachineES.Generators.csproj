@@ -10,9 +10,9 @@
     <AssemblyName>Orleans.StateMachineES.Generators</AssemblyName>
     <RootNamespace>Orleans.StateMachineES.Generators</RootNamespace>
     <PackageId>Orleans.StateMachineES.Generators</PackageId>
-    <Description>Roslyn source generators for Orleans.StateMachineES typed triggers and states</Description>
+    <Description>Roslyn analyzers and source generators for Orleans.StateMachineES providing compile-time safety and code generation</Description>
     <Authors>Michael Ivertowski</Authors>
-    <Version>1.0.1</Version>
+    <Version>1.0.3</Version>
     <PackageReadmeFile></PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
     <PackageReference Include="System.Text.Json" Version="8.0.5" GeneratePathProperty="true" PrivateAssets="all" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" GeneratePathProperty="true" PrivateAssets="all" />

@@ -840,7 +840,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                             State.LastTransitionTimestamp = transitionEvent.Timestamp;
                             State.TransitionCount++;
                         }
-                        catch (Exception ex)
+                        catch (Exception)
                         {
                             throw new EventReplayException(
                                 $"Failed to replay event #{eventIndex} of {events.Count()}. " +

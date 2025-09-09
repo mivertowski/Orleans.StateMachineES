@@ -1,0 +1,50 @@
+# Orleans.StateMachineES Analyzer Configuration
+# This file configures the severity levels for Orleans.StateMachineES analyzers
+# Copy this to your project root as .editorconfig or merge with existing .editorconfig
+
+root = true
+
+[*.cs]
+# Orleans.StateMachineES Analyzers
+
+# OSMES001: Async lambda in state callback
+# Detects async lambdas in OnEntry/OnExit callbacks that won't be awaited
+# Default: Warning
+dotnet_diagnostic.OSMES001.severity = warning
+
+# OSMES002: FireAsync within callback
+# Detects FireAsync calls within state callbacks that can cause deadlocks
+# Default: Error
+dotnet_diagnostic.OSMES002.severity = error
+
+# OSMES003: Missing BuildStateMachine implementation
+# Detects classes deriving from StateMachineGrain without proper BuildStateMachine
+# Default: Error
+dotnet_diagnostic.OSMES003.severity = error
+
+# OSMES004: Unreachable state
+# Detects states that have no incoming transitions and aren't initial states
+# Default: Warning
+dotnet_diagnostic.OSMES004.severity = warning
+
+# OSMES005: Duplicate state configuration
+# Detects states that are configured multiple times in BuildStateMachine
+# Default: Warning
+dotnet_diagnostic.OSMES005.severity = warning
+
+# Customization Examples:
+# To disable a specific analyzer:
+# dotnet_diagnostic.OSMES001.severity = none
+
+# To treat warnings as errors in CI/CD:
+# dotnet_diagnostic.OSMES001.severity = error
+# dotnet_diagnostic.OSMES004.severity = error
+# dotnet_diagnostic.OSMES005.severity = error
+
+# To suppress in specific files or folders:
+# [**/Generated/**.cs]
+# dotnet_diagnostic.OSMES001.severity = none
+# dotnet_diagnostic.OSMES002.severity = none
+# dotnet_diagnostic.OSMES003.severity = none
+# dotnet_diagnostic.OSMES004.severity = none
+# dotnet_diagnostic.OSMES005.severity = none
