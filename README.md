@@ -9,12 +9,13 @@
 
 A robust, production-ready integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), featuring comprehensive event sourcing capabilities and enterprise-grade distributed state machine functionality.
 
-## ⚡ Performance Enhancements (v1.0.1)
+## ⚡ Performance Enhancements (v1.0.3)
 
-**New in v1.0.1**: Comprehensive performance optimizations delivering measurable improvements:
+**New in v1.0.3**: Advanced optimizations and comprehensive compile-time safety:
 
+- **TriggerParameterCache**: ~100x performance improvement for parameterized triggers
 - **ValueTask Zero-Allocation**: Eliminates Task allocations in hot-path async operations
-- **Object Pooling**: Reduces GC pressure through ArrayPool-based memory management  
+- **Object Pooling**: Thread-safe pooling with CompareExchange lock-free concurrency
 - **FrozenCollections**: 40%+ faster lookup performance for static collections
 - **String Interning**: Optimized memory usage for frequently-used state names
 - **ConfigureAwait(false)**: Enhanced thread pool utilization
@@ -25,10 +26,26 @@ These enterprise-grade optimizations maintain full backward compatibility while 
 
 **The underlying Stateless library does not support async operations in state callbacks (OnEntry, OnExit).** This is a fundamental design limitation. See our comprehensive [Async Patterns Guide](docs/ASYNC_PATTERNS.md) for correct patterns and best practices.
 
-### Compile-Time Safety
-Orleans.StateMachineES includes Roslyn analyzers that detect common async mistakes:
-- **OSMES001**: Warns about async lambdas in state callbacks
-- **OSMES002**: Errors on FireAsync calls within callbacks
+### Compile-Time Safety (v1.0.3)
+Orleans.StateMachineES includes 10 comprehensive Roslyn analyzers that detect anti-patterns at compile time:
+
+**Async Safety**:
+- **OSMES001**: Warning - Async lambdas in state callbacks (OnEntry, OnExit, etc.)
+- **OSMES002**: Error - FireAsync called within state callback
+
+**State Configuration**:
+- **OSMES003**: Warning - Missing initial state configuration
+- **OSMES004**: Warning - Unreachable state detected
+- **OSMES006**: Warning - State has no trigger handlers (consider OnUnhandledTrigger)
+- **OSMES009**: Error - State machine missing initial state assignment
+
+**Design Quality**:
+- **OSMES005**: Info - Multiple entry callbacks on same state
+- **OSMES007**: Warning - Circular transitions with no exit path
+- **OSMES008**: Warning - Guard condition too complex (cyclomatic complexity > 10)
+- **OSMES010**: Warning - Invalid enum value cast (unsafe numeric cast)
+
+These analyzers help prevent runtime issues during development with clear, actionable error messages.
 
 ## Fork Intention
 
@@ -44,7 +61,7 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🌊 **Orleans Streams Integration** - Publish state transitions to streams
 - ⏰ **Timers & Reminders** - State-driven timeouts with Orleans timers and reminders
 - 🔄 **Repeating Actions** - Support for repeating timers with heartbeat patterns
-- 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships  
+- 🏗️ **Hierarchical States** - Support for nested states with parent-child relationships
 - 🎭 **Distributed Sagas** - Multi-grain workflows with compensation and correlation tracking
 - 🔍 **Distributed Tracing** - OpenTelemetry integration with activity sources and metrics
 - 📊 **State Machine Visualization** - Interactive diagrams and analysis tools (DOT, Mermaid, PlantUML, HTML)
@@ -54,8 +71,11 @@ This fork extends the original ManagedCode.Orleans.StateMachine library with ent
 - 🏥 **Health Checks** - ASP.NET Core health check integration with custom providers
 - 🎨 **Visualization Batch Service** - Analyze and visualize multiple state machines simultaneously
 - 🔧 **Component Inheritance** - Create reusable state machine components (Validation, Retry, Approval)
+- 🛡️ **Circuit Breaker** - Production-ready resilience pattern (Closed/Open/HalfOpen states)
 - 🏗️ **Enterprise-Grade** - Production-ready with comprehensive error handling
-- ⚙️ **Roslyn Source Generator** - Generate state machines from YAML/JSON specifications at compile-time
+- ⚙️ **Roslyn Analyzers** - 10 compile-time analyzers for complete state machine safety
+- ⚡ **Performance Optimized** - TriggerParameterCache, thread-safe pooling, zero-allocation paths
+- 📝 **Roslyn Source Generator** - Generate state machines from YAML/JSON specifications at compile-time
 - 🎛️ **Orthogonal Regions** - Support for parallel state machines with independent regions and cross-region synchronization
 
 ### Original Features
@@ -77,7 +97,8 @@ dotnet add package Orleans.StateMachineES
 
 ### NuGet Package
 ```xml
-<PackageReference Include="Orleans.StateMachineES" Version="1.0.1" />
+<PackageReference Include="Orleans.StateMachineES" Version="1.0.3" />
+<PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.3" />
 ```
 
 ## Quick Start
@@ -1735,7 +1756,130 @@ var component = grain.GetComponent("component-id");
 var allComponents = grain.GetComponents();
 ```
 
+## Circuit Breaker Pattern (v1.0.3)
+
+Production-ready resilience pattern to prevent cascading failures:
+
+### Basic Usage
+
+```csharp
+using Orleans.StateMachineES.Composition.Components;
+
+public class ResilientPaymentGrain : StateMachineGrain<PaymentState, PaymentTrigger>
+{
+    private CircuitBreakerComponent<PaymentState, PaymentTrigger>? _circuitBreaker;
+
+    protected override StateMachine<PaymentState, PaymentTrigger> BuildStateMachine()
+    {
+        var machine = new StateMachine<PaymentState, PaymentTrigger>(PaymentState.Idle);
+
+        // Configure your state machine
+        machine.Configure(PaymentState.Idle)
+            .Permit(PaymentTrigger.ProcessPayment, PaymentState.Processing);
+
+        machine.Configure(PaymentState.Processing)
+            .Permit(PaymentTrigger.Success, PaymentState.Completed)
+            .Permit(PaymentTrigger.Failure, PaymentState.Failed);
+
+        // Add circuit breaker
+        var options = new CircuitBreakerOptions
+        {
+            FailureThreshold = 5,              // Open after 5 consecutive failures
+            SuccessThreshold = 2,              // Close after 2 successes in HalfOpen
+            OpenDuration = TimeSpan.FromSeconds(30),
+            ThrowWhenOpen = true,              // Throw CircuitBreakerOpenException
+            MonitoredTriggers = new[] { PaymentTrigger.ProcessPayment }
+        };
+
+        _circuitBreaker = new CircuitBreakerComponent<PaymentState, PaymentTrigger>(options);
+
+        return machine;
+    }
+
+    public async Task ProcessPaymentAsync()
+    {
+        // Circuit breaker automatically protects this call
+        if (_circuitBreaker != null)
+        {
+            var canProceed = await _circuitBreaker.BeforeFireAsync(
+                PaymentTrigger.ProcessPayment, StateMachine);
+
+            if (!canProceed)
+            {
+                throw new InvalidOperationException("Circuit breaker is open - payment service unavailable");
+            }
+        }
+
+        try
+        {
+            await FireAsync(PaymentTrigger.ProcessPayment);
+            await _circuitBreaker?.AfterFireSuccessAsync(PaymentTrigger.ProcessPayment);
+        }
+        catch (Exception ex)
+        {
+            await _circuitBreaker?.AfterFireFailureAsync(PaymentTrigger.ProcessPayment, ex);
+            throw;
+        }
+    }
+
+    // Check circuit breaker state
+    public CircuitState GetCircuitState() => _circuitBreaker?.State ?? CircuitState.Closed;
+}
 ```
+
+### Circuit Breaker States
+
+```
+Closed ──> Open ──> HalfOpen ──> Closed
+  │          │          │           ↑
+  │          │          └───────────┘
+  │          └─── (timeout) ───> HalfOpen
+  └─── (failures >= threshold) ──> Open
+```
+
+- **Closed**: Normal operation, requests flow through
+- **Open**: Too many failures, requests are blocked
+- **HalfOpen**: Testing recovery, limited requests allowed
+
+### Configuration Options
+
+```csharp
+var options = new CircuitBreakerOptions
+{
+    // Thresholds
+    FailureThreshold = 5,              // Failures before opening circuit
+    SuccessThreshold = 2,              // Successes to close from HalfOpen
+
+    // Timing
+    OpenDuration = TimeSpan.FromSeconds(30),  // Time before trying HalfOpen
+    HalfOpenTimeout = TimeSpan.FromSeconds(5), // Max time in HalfOpen
+
+    // Behavior
+    ThrowWhenOpen = true,              // Throw exception or return false
+    MonitoredTriggers = new[] {        // Specific triggers to monitor
+        PaymentTrigger.ProcessPayment,
+        PaymentTrigger.RefundPayment
+    },
+
+    // Callbacks
+    OnCircuitOpened = (state, failures) =>
+        Console.WriteLine($"Circuit opened after {failures} failures"),
+    OnCircuitClosed = (state) =>
+        Console.WriteLine("Circuit closed - service recovered"),
+    OnCircuitHalfOpened = (state) =>
+        Console.WriteLine("Circuit half-open - testing recovery")
+};
+```
+
+### Features
+
+- **Automatic Failure Tracking**: Counts consecutive failures
+- **Three-State Pattern**: Closed → Open → HalfOpen state transitions
+- **Thread-Safe**: Uses SemaphoreSlim for concurrent access
+- **Configurable Recovery**: Customizable thresholds and timeouts
+- **Event Callbacks**: Hook into state transitions
+- **Selective Monitoring**: Monitor specific triggers only
+- **Production Ready**: Comprehensive error handling and logging
 
 ## Requirements
 
