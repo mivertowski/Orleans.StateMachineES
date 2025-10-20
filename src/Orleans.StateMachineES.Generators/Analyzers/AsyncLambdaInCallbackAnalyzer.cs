@@ -76,81 +76,19 @@ namespace Orleans.StateMachineES.Generators.Analyzers
 
         private static bool IsStateCallbackMethod(InvocationExpressionSyntax invocation, SyntaxNodeAnalysisContext context)
         {
-            var methodName = GetMethodName(invocation);
-            
+            var methodName = AnalyzerHelpers.GetMethodName(invocation);
+
             // Check for the callback method names
-            if (!IsCallbackMethodName(methodName))
+            if (!AnalyzerHelpers.IsCallbackMethodName(methodName))
                 return false;
 
             // Verify this is on a StateConfiguration object
-            var symbolInfo = context.SemanticModel.GetSymbolInfo(invocation);
-            if (symbolInfo.Symbol is not IMethodSymbol methodSymbol)
-                return false;
-
-            var containingType = methodSymbol.ContainingType;
-            if (containingType == null)
-                return false;
-
-            // Check if this is a Stateless StateConfiguration type
-            return containingType.Name.Contains("StateConfiguration") ||
-                   containingType.ToDisplayString().Contains("Stateless");
-        }
-
-        private static bool IsCallbackMethodName(string methodName)
-        {
-            return methodName switch
-            {
-                "OnEntry" => true,
-                "OnExit" => true,
-                "OnEntryFrom" => true,
-                "OnExitTo" => true,
-                "OnActivate" => true,
-                "OnDeactivate" => true,
-                "OnUnhandledTrigger" => true,
-                _ => false
-            };
-        }
-
-        private static string GetMethodName(InvocationExpressionSyntax invocation)
-        {
-            return invocation.Expression switch
-            {
-                MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.Text,
-                IdentifierNameSyntax identifier => identifier.Identifier.Text,
-                _ => string.Empty
-            };
+            return AnalyzerHelpers.IsStateConfigurationMethod(invocation, context.SemanticModel);
         }
 
         private static bool IsAsyncLambda(ExpressionSyntax expression, SyntaxNodeAnalysisContext context)
         {
-            // Check for async lambda expressions
-            if (expression is ParenthesizedLambdaExpressionSyntax parenLambda)
-            {
-                return parenLambda.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword);
-            }
-            
-            if (expression is SimpleLambdaExpressionSyntax simpleLambda)
-            {
-                return simpleLambda.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword);
-            }
-            
-            // Check for async anonymous methods
-            if (expression is AnonymousMethodExpressionSyntax anonymousMethod)
-            {
-                return anonymousMethod.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword);
-            }
-
-            // Check if it's a method group that points to an async method
-            if (expression is IdentifierNameSyntax identifier)
-            {
-                var symbol = context.SemanticModel.GetSymbolInfo(identifier).Symbol;
-                if (symbol is IMethodSymbol method)
-                {
-                    return method.IsAsync;
-                }
-            }
-
-            return false;
+            return AnalyzerHelpers.IsAsyncLambda(expression, context.SemanticModel);
         }
     }
 }
