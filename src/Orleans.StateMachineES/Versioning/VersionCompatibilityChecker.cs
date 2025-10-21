@@ -240,6 +240,15 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return result;
     }
 
+    /// <summary>
+    /// Builds compatibility context for evaluation.
+    /// </summary>
+    /// <remarks>
+    /// Currently performs basic context initialization. Future enhancement:
+    /// Use ImprovedStateMachineIntrospector to analyze actual state machine changes
+    /// (states, triggers, transitions, guards) by comparing version definitions
+    /// from the registry.
+    /// </remarks>
     private CompatibilityContext BuildCompatibilityContextAsync(
         string grainTypeName,
         StateMachineVersion fromVersion,
@@ -247,17 +256,14 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
     {
         // Build context for rules evaluation
         // This would typically analyze the actual state machine definitions
-        // For now, we create a basic context
+        // For now, we create a basic context with version metadata
         var context = new CompatibilityContext
         {
             FromVersion = fromVersion,
             ToVersion = toVersion,
-            GrainTypeName = grainTypeName
+            GrainTypeName = grainTypeName,
+            MigrationComplexity = MigrationComplexity.Low
         };
-
-        // TODO: Add logic to analyze actual state machine changes
-        // This would involve introspecting the state machine definitions
-        // and identifying state, trigger, and transition changes
 
         return context;
     }

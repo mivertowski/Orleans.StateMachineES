@@ -96,10 +96,10 @@ public abstract class HierarchicalStateMachineGrain<TState, TTrigger, TGrainStat
     /// <returns>Collection of direct child states.</returns>
     public Task<IReadOnlyList<TState>> GetSubstatesAsync(TState parentState)
     {
-        var substates = _substates.TryGetValue(parentState, out var children) 
-            ? children.AsReadOnly() 
-            : Array.Empty<TState>().ToList().AsReadOnly();
-        return Task.FromResult<IReadOnlyList<TState>>(substates);
+        var substates = _substates.TryGetValue(parentState, out var children)
+            ? children.AsReadOnly()
+            : (IReadOnlyList<TState>)[];
+        return Task.FromResult(substates);
     }
 
     /// <summary>
@@ -307,5 +307,5 @@ public class HierarchicalStateInfo<TState> where TState : notnull
     /// Root states that have no parent.
     /// </summary>
     [Id(2)]
-    public IReadOnlyList<TState> RootStates { get; set; } = Array.Empty<TState>();
+    public IReadOnlyList<TState> RootStates { get; set; } = [];
 }

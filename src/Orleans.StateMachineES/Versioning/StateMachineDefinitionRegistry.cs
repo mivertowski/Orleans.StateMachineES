@@ -170,7 +170,7 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
     public Task<IReadOnlyList<StateMachineVersion>> GetAvailableVersionsAsync(string grainTypeName)
     {
         if (!_definitions.TryGetValue(grainTypeName, out var grainDefinitions))
-            return Task.FromResult<IReadOnlyList<StateMachineVersion>>(Array.Empty<StateMachineVersion>());
+            return Task.FromResult<IReadOnlyList<StateMachineVersion>>([]);
 
         var versions = grainDefinitions.Keys.OrderByDescending(v => v).ToList();
         return Task.FromResult<IReadOnlyList<StateMachineVersion>>(versions);
