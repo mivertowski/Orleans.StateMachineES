@@ -20,7 +20,7 @@ public class CircularTransitionAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "Circular state transitions detected with no exit path";
     private static readonly LocalizableString MessageFormat =
-        "States {0} form a circular transition chain with no exit path. Consider adding terminal states or exit transitions";
+        "States {0} form a circular transition chain with no exit path. Consider adding terminal states or exit transitions.";
     private static readonly LocalizableString Description =
         "Circular state transitions (e.g., A→B→C→A) without any exit path can lead to infinite loops. " +
         "Ensure at least one state in the cycle has a transition to a state outside the cycle.";
@@ -104,18 +104,18 @@ public class CircularTransitionAnalyzer : DiagnosticAnalyzer
             var stateName = AnalyzerHelpers.ExtractStateFromConfigureCall(invocation);
             if (!string.IsNullOrEmpty(stateName))
             {
-                if (!transitions.ContainsKey(stateName))
+                if (!transitions.ContainsKey(stateName!))
                 {
-                    transitions[stateName] = new HashSet<string>();
+                    transitions[stateName!] = new HashSet<string>();
                 }
 
-                if (!stateLocations.ContainsKey(stateName))
+                if (!stateLocations.ContainsKey(stateName!))
                 {
-                    stateLocations[stateName] = invocation.GetLocation();
+                    stateLocations[stateName!] = invocation.GetLocation();
                 }
 
                 // Analyze chained Permit calls to find target states
-                AnalyzeChainedPermits(invocation, stateName, transitions);
+                AnalyzeChainedPermits(invocation, stateName!, transitions);
             }
         }
     }
@@ -137,7 +137,7 @@ public class CircularTransitionAnalyzer : DiagnosticAnalyzer
                     var targetState = AnalyzerHelpers.ExtractTargetStateFromPermit(parentInvocation);
                     if (!string.IsNullOrEmpty(targetState) && targetState != fromState)
                     {
-                        transitions[fromState].Add(targetState);
+                        transitions[fromState].Add(targetState!);
                     }
                 }
 

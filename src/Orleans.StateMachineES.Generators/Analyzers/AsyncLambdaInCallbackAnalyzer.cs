@@ -63,12 +63,12 @@ namespace Orleans.StateMachineES.Generators.Analyzers
             {
                 if (IsAsyncLambda(argument.Expression, context))
                 {
-                    var methodName = GetMethodName(invocation);
+                    var methodName = AnalyzerHelpers.GetMethodName(invocation);
                     var diagnostic = Diagnostic.Create(
                         Rule,
                         argument.GetLocation(),
                         methodName);
-                    
+
                     context.ReportDiagnostic(diagnostic);
                 }
             }

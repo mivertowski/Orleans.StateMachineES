@@ -90,14 +90,14 @@ namespace Orleans.StateMachineES.Generators.Analyzers
                     {
                         var stateArg = invocation.ArgumentList.Arguments[0].Expression;
                         var stateName = ExtractStateName(stateArg);
-                        
+
                         if (!string.IsNullOrEmpty(stateName))
                         {
-                            if (!stateConfigurations.ContainsKey(stateName))
+                            if (!stateConfigurations.ContainsKey(stateName!))
                             {
-                                stateConfigurations[stateName] = new List<Location>();
+                                stateConfigurations[stateName!] = new List<Location>();
                             }
-                            stateConfigurations[stateName].Add(invocation.GetLocation());
+                            stateConfigurations[stateName!].Add(invocation.GetLocation());
                         }
                     }
                 }

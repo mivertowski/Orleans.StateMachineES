@@ -12,6 +12,7 @@ namespace Orleans.StateMachineES.Memory;
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
 public sealed class TriggerParameterCache<TState, TTrigger>
+    where TTrigger : notnull
 {
     private readonly StateMachine<TState, TTrigger> _stateMachine;
     private readonly Dictionary<TTrigger, object> _cache = new();

@@ -19,7 +19,7 @@ public class MissingInitialStateAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "State machine has no initial state";
     private static readonly LocalizableString MessageFormat =
-        "BuildStateMachine method does not specify an initial state. Add initial state to StateMachine constructor";
+        "BuildStateMachine method does not specify an initial state. Add initial state to StateMachine constructor.";
     private static readonly LocalizableString Description =
         "State machines must have a clearly defined initial state. " +
         "Specify the initial state in the StateMachine<TState, TTrigger> constructor call.";

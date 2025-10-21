@@ -19,7 +19,7 @@ public class InvalidEnumValueAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "Potentially invalid enum value used for state or trigger";
     private static readonly LocalizableString MessageFormat =
-        "Value '{0}' may not be a valid enum member. Use named enum values instead of numeric casts";
+        "Value '{0}' may not be a valid enum member. Use named enum values instead of numeric casts.";
     private static readonly LocalizableString Description =
         "Using numeric values cast to enums can lead to runtime errors if the value is not defined in the enum. " +
         "Always use named enum members for type safety.";

@@ -14,7 +14,7 @@ namespace Orleans.StateMachineES.Composition.Components;
 /// </summary>
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
-public class CircuitBreakerComponent<TState, TTrigger> : IComposableStateMachine<TState, TTrigger>
+public class CircuitBreakerComponent<TState, TTrigger>
     where TState : notnull
     where TTrigger : notnull
 {
