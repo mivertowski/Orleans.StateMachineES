@@ -133,28 +133,12 @@ namespace Orleans.StateMachineES.Generators.Analyzers
 
         private static string GetMethodName(InvocationExpressionSyntax invocation)
         {
-            return invocation.Expression switch
-            {
-                MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.Text,
-                IdentifierNameSyntax identifier => identifier.Identifier.Text,
-                _ => string.Empty
-            };
+            return AnalyzerHelpers.GetMethodName(invocation);
         }
 
         private static bool IsCallbackMethodName(string methodName)
         {
-            return methodName switch
-            {
-                "OnEntry" => true,
-                "OnExit" => true,
-                "OnEntryFrom" => true,
-                "OnExitTo" => true,
-                "OnActivate" => true,
-                "OnDeactivate" => true,
-                "OnUnhandledTrigger" => true,
-                "InternalTransition" => true,
-                _ => false
-            };
+            return AnalyzerHelpers.IsCallbackMethodName(methodName);
         }
     }
 }

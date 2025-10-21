@@ -102,12 +102,22 @@ public sealed class ObjectPool<T> where T : class
         // Apply reset action to clean up the object
         _resetAction?.Invoke(item);
 
-        // Only add to pool if under the limit
-        if (_currentCount < _maxPoolSize)
+        // Use CompareExchange loop to atomically check and increment count
+        int currentCount, newCount;
+        do
         {
-            _pool.Add(item);
-            Interlocked.Increment(ref _currentCount);
+            currentCount = _currentCount;
+            if (currentCount >= _maxPoolSize)
+            {
+                // Pool is full, don't add the item
+                return;
+            }
+            newCount = currentCount + 1;
         }
+        while (Interlocked.CompareExchange(ref _currentCount, newCount, currentCount) != currentCount);
+
+        // Successfully reserved a slot, add to pool
+        _pool.Add(item);
     }
 
     /// <summary>
