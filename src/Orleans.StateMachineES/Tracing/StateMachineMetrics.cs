@@ -57,7 +57,11 @@ public static class StateMachineMetrics
     private static readonly Counter<long> GrainActivationsTotal = Meter.CreateCounter<long>(
         "grain_activations_total",
         description: "Total number of state machine grain activations");
-    
+
+    private static readonly Counter<long> GrainDeactivationsTotal = Meter.CreateCounter<long>(
+        "grain_deactivations_total",
+        description: "Total number of state machine grain deactivations");
+
     // Histograms - Track distributions of values
     private static readonly Histogram<double> StateTransitionDuration = Meter.CreateHistogram<double>(
         "statemachine_transition_duration_seconds",
@@ -366,9 +370,13 @@ public static class StateMachineMetrics
     /// <param name="reason">The reason for deactivation.</param>
     public static void RecordGrainDeactivation(string grainType, string reason)
     {
-        // Note: grainType and reason could be used for more detailed metrics in the future
-        _ = grainType; // Suppress unused parameter warning
-        _ = reason;    // Suppress unused parameter warning
+        var tags = new KeyValuePair<string, object?>[]
+        {
+            new("grain_type", grainType),
+            new("reason", reason)
+        };
+
+        GrainDeactivationsTotal.Add(1, tags);
         DecrementActiveGrains();
     }
     

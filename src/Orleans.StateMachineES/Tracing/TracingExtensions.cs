@@ -48,9 +48,9 @@ public static class TracingExtensions
                         .AddSource(StateMachineActivitySource.SourceName)
                         .SetSampler(config.Sampler ?? new AlwaysOnSampler());
                     
-                    // Orleans instrumentation would require additional package
-                    // For now, we'll skip this and rely on the state machine specific tracing
-                    // TODO: Add Orleans.TelemetryConsumers package if Orleans-specific instrumentation is needed
+                    // Orleans instrumentation requires Orleans.TelemetryConsumers package.
+                    // Currently relying on state machine-specific tracing via StateMachineActivitySource.
+                    // Add the package reference and .AddOrleans() call here for Orleans runtime metrics.
                     
                     // Add ASP.NET Core instrumentation if configured
                     if (config.IncludeAspNetCoreInstrumentation)

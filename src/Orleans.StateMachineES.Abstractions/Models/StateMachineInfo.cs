@@ -20,19 +20,19 @@ public sealed class StateMachineInfo
     /// Gets the list of all configured states.
     /// </summary>
     [Id(1)]
-    public IReadOnlyList<string> States { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> States { get; init; } = [];
 
     /// <summary>
     /// Gets the list of triggers permitted in the current state.
     /// </summary>
     [Id(2)]
-    public IReadOnlyList<string> PermittedTriggers { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> PermittedTriggers { get; init; } = [];
 
     /// <summary>
     /// Gets detailed information about state transitions.
     /// </summary>
     [Id(3)]
-    public IReadOnlyList<StateTransition> Transitions { get; init; } = Array.Empty<StateTransition>();
+    public IReadOnlyList<StateTransition> Transitions { get; init; } = [];
 
     /// <summary>
     /// Gets the hierarchical relationships between states.
@@ -111,7 +111,7 @@ public sealed class TriggerDetails<TState, TTrigger>
     /// Gets the possible destination states for this trigger.
     /// </summary>
     [Id(1)]
-    public IReadOnlyList<TState> PossibleDestinations { get; init; } = Array.Empty<TState>();
+    public IReadOnlyList<TState> PossibleDestinations { get; init; } = [];
 
     /// <summary>
     /// Gets whether this trigger has guard conditions.

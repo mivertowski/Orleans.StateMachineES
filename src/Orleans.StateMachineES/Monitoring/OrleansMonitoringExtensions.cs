@@ -148,7 +148,7 @@ public class StateMachineMonitoringOptions
     /// List of grain types to monitor automatically.
     /// If empty, all state machine grains are monitored.
     /// </summary>
-    public string[] MonitoredGrainTypes { get; set; } = Array.Empty<string>();
+    public string[] MonitoredGrainTypes { get; set; } = [];
 
     /// <summary>
     /// Whether to expose monitoring endpoints via HTTP.

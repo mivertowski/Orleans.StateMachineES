@@ -63,7 +63,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task ActivateAsync()
     {
-        await StateMachine.ActivateAsync();
+        await StateMachine.ActivateAsync().ConfigureAwait(false);
         _logger?.LogDebug("State machine activated for grain {GrainId}", this.GetPrimaryKeyString());
     }
 
@@ -72,7 +72,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task DeactivateAsync()
     {
-        await StateMachine.DeactivateAsync();
+        await StateMachine.DeactivateAsync().ConfigureAwait(false);
         _logger?.LogDebug("State machine deactivated for grain {GrainId}", this.GetPrimaryKeyString());
     }
 
@@ -81,7 +81,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task FireAsync(TTrigger trigger)
     {
-        await _transitionSemaphore.WaitAsync();
+        await _transitionSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var dedupeKey = GenerateDedupeKey(trigger);
@@ -92,7 +92,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             }
 
             var fromState = StateMachine.State;
-            
+
             // Validate transition is allowed
             if (!StateMachine.CanFire(trigger))
             {
@@ -101,10 +101,10 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                     $"Cannot fire trigger '{trigger}' from state '{fromState}'. Permitted triggers: {string.Join(", ", permitedTriggers)}");
             }
 
-            await StateMachine.FireAsync(trigger);
+            await StateMachine.FireAsync(trigger).ConfigureAwait(false);
             var toState = StateMachine.State;
 
-            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey);
+            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey).ConfigureAwait(false);
             
             _logger?.LogInformation("State transition: {FromState} -> {ToState} via {Trigger}", 
                 fromState, toState, trigger);
@@ -125,7 +125,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task FireAsync<TArg0>(TTrigger trigger, TArg0 arg0)
     {
-        await _transitionSemaphore.WaitAsync();
+        await _transitionSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var dedupeKey = GenerateDedupeKey(trigger, arg0!);
@@ -146,11 +146,11 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                     $"Cannot fire trigger '{trigger}' with argument from state '{fromState}'");
             }
 
-            await StateMachine.FireAsync(tp, arg0);
+            await StateMachine.FireAsync(tp, arg0).ConfigureAwait(false);
             var toState = StateMachine.State;
 
             var metadata = new Dictionary<string, object> { ["arg0"] = arg0! };
-            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata);
+            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata).ConfigureAwait(false);
             
             _logger?.LogInformation("State transition: {FromState} -> {ToState} via {Trigger} with args", 
                 fromState, toState, trigger);
@@ -171,7 +171,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task FireAsync<TArg0, TArg1>(TTrigger trigger, TArg0 arg0, TArg1 arg1)
     {
-        await _transitionSemaphore.WaitAsync();
+        await _transitionSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var dedupeKey = GenerateDedupeKey(trigger, arg0!, arg1!);
@@ -192,11 +192,11 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                     $"Cannot fire trigger '{trigger}' with arguments from state '{fromState}'");
             }
 
-            await StateMachine.FireAsync(tp, arg0, arg1);
+            await StateMachine.FireAsync(tp, arg0, arg1).ConfigureAwait(false);
             var toState = StateMachine.State;
 
             var metadata = new Dictionary<string, object> { ["arg0"] = arg0!, ["arg1"] = arg1! };
-            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata);
+            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata).ConfigureAwait(false);
             
             _logger?.LogInformation("State transition: {FromState} -> {ToState} via {Trigger} with args", 
                 fromState, toState, trigger);
@@ -217,7 +217,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     public virtual async Task FireAsync<TArg0, TArg1, TArg2>(TTrigger trigger, TArg0 arg0, TArg1 arg1, TArg2 arg2)
     {
-        await _transitionSemaphore.WaitAsync();
+        await _transitionSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var dedupeKey = GenerateDedupeKey(trigger, arg0!, arg1!, arg2!);
@@ -238,11 +238,11 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                     $"Cannot fire trigger '{trigger}' with arguments from state '{fromState}'");
             }
 
-            await StateMachine.FireAsync(tp, arg0, arg1, arg2);
+            await StateMachine.FireAsync(tp, arg0, arg1, arg2).ConfigureAwait(false);
             var toState = StateMachine.State;
 
             var metadata = new Dictionary<string, object> { ["arg0"] = arg0!, ["arg1"] = arg1!, ["arg2"] = arg2! };
-            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata);
+            await RecordTransitionEvent(fromState, toState, trigger, dedupeKey, metadata).ConfigureAwait(false);
             
             _logger?.LogInformation("State transition: {FromState} -> {ToState} via {Trigger} with args", 
                 fromState, toState, trigger);
@@ -296,12 +296,12 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             // Auto-confirm if configured
             if (Options.AutoConfirmEvents)
             {
-                await ConfirmEvents();
-                
+                await ConfirmEvents().ConfigureAwait(false);
+
                 // Check if snapshot is needed
                 if (Options.EnableSnapshots && _eventsSinceSnapshot >= Options.SnapshotInterval)
                 {
-                    await TakeSnapshotAsync();
+                    await TakeSnapshotAsync().ConfigureAwait(false);
                     _eventsSinceSnapshot = 0;
                 }
             }
@@ -309,7 +309,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             // Publish to stream if configured
             if (Options.PublishToStream && _eventStream != null)
             {
-                await PublishToStreamAsync(transitionEvent);
+                await PublishToStreamAsync(transitionEvent).ConfigureAwait(false);
             }
 
             // Add dedupe key to tracking
@@ -352,8 +352,8 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
         {
             if (_eventStream != null)
             {
-                await _eventStream.OnNextAsync(evt);
-                _logger?.LogDebug("Published event to stream for transition {FromState} -> {ToState}", 
+                await _eventStream.OnNextAsync(evt).ConfigureAwait(false);
+                _logger?.LogDebug("Published event to stream for transition {FromState} -> {ToState}",
                     evt.FromState, evt.ToState);
             }
         }
@@ -605,7 +605,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// <inheritdoc/>
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
-        await base.OnActivateAsync(cancellationToken);
+        await base.OnActivateAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
@@ -633,7 +633,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             }
 
             // Build and initialize the state machine
-            await InitializeStateMachineAsync();
+            await InitializeStateMachineAsync().ConfigureAwait(false);
 
             _logger?.LogInformation("State machine grain {GrainId} activated successfully", this.GetPrimaryKeyString());
         }
@@ -650,7 +650,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     protected virtual async Task InitializeStateMachineAsync()
     {
         // Replay events first to rebuild state
-        await ReplayEventsAsync();
+        await ReplayEventsAsync().ConfigureAwait(false);
 
         // If we have a persisted state, create machine with that state as initial
         if (State.CurrentState != null && !EqualityComparer<TState>.Default.Equals(State.CurrentState, default(TState)!))
@@ -766,7 +766,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             _logger?.LogDebug("Starting event replay for grain {GrainId}", this.GetPrimaryKeyString());
 
             // Get the events from the journal
-            var events = await RetrieveConfirmedEvents(0, Version);
+            var events = await RetrieveConfirmedEvents(0, Version).ConfigureAwait(false);
             
             if (events != null && events.Any())
             {
@@ -856,19 +856,19 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
             // Ensure all events are confirmed before deactivation
             if (Options.AutoConfirmEvents)
             {
-                await ConfirmEvents();
+                await ConfirmEvents().ConfigureAwait(false);
             }
 
             // Take a final snapshot if needed
             if (Options.EnableSnapshots && _eventsSinceSnapshot > 0)
             {
-                await TakeSnapshotAsync();
+                await TakeSnapshotAsync().ConfigureAwait(false);
             }
 
             // Cleanup
             _transitionSemaphore?.Dispose();
 
-            await base.OnDeactivateAsync(reason, cancellationToken);
+            await base.OnDeactivateAsync(reason, cancellationToken).ConfigureAwait(false);
             
             _logger?.LogInformation("State machine grain {GrainId} deactivated successfully", 
                 this.GetPrimaryKeyString());
