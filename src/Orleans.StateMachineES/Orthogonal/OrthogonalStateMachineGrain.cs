@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.StateMachineES.Interfaces;
 using Stateless;
 
@@ -22,9 +16,9 @@ public abstract class OrthogonalStateMachineGrain<TState, TTrigger> : StateMachi
     where TState : Enum
     where TTrigger : Enum
 {
-    private readonly Dictionary<string, OrthogonalRegion<TState, TTrigger>> _regions = new();
-    private readonly Dictionary<TTrigger, List<string>> _triggerToRegionsMap = new();
-    private readonly Dictionary<string, TState> _regionStates = new();
+    private readonly Dictionary<string, OrthogonalRegion<TState, TTrigger>> _regions = [];
+    private readonly Dictionary<TTrigger, List<string>> _triggerToRegionsMap = [];
+    private readonly Dictionary<string, TState> _regionStates = [];
     protected ILogger<OrthogonalStateMachineGrain<TState, TTrigger>>? Logger { get; private set; }
 
     /// <summary>
@@ -89,7 +83,7 @@ public abstract class OrthogonalStateMachineGrain<TState, TTrigger> : StateMachi
     {
         if (!_triggerToRegionsMap.ContainsKey(trigger))
         {
-            _triggerToRegionsMap[trigger] = new List<string>();
+            _triggerToRegionsMap[trigger] = [];
         }
 
         foreach (var regionName in regionNames)
@@ -329,27 +323,19 @@ public abstract class OrthogonalStateMachineGrain<TState, TTrigger> : StateMachi
 /// <summary>
 /// Represents an orthogonal region within a state machine.
 /// </summary>
-public class OrthogonalRegion<TState, TTrigger>
+public class OrthogonalRegion<TState, TTrigger>(
+    string name,
+    TState initialState,
+    Action<StateMachine<TState, TTrigger>> configure)
     where TState : Enum
     where TTrigger : Enum
 {
-    private readonly StateMachine<TState, TTrigger> _stateMachine;
-    private readonly Action<StateMachine<TState, TTrigger>> _configure;
+    private readonly StateMachine<TState, TTrigger> _stateMachine = new(initialState);
+    private readonly Action<StateMachine<TState, TTrigger>> _configure = configure ?? throw new ArgumentNullException(nameof(configure));
 
-    public string Name { get; }
-    public TState InitialState { get; }
+    public string Name { get; } = name ?? throw new ArgumentNullException(nameof(name));
+    public TState InitialState { get; } = initialState;
     public TState CurrentState => _stateMachine.State;
-
-    public OrthogonalRegion(
-        string name,
-        TState initialState,
-        Action<StateMachine<TState, TTrigger>> configure)
-    {
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        InitialState = initialState;
-        _configure = configure ?? throw new ArgumentNullException(nameof(configure));
-        _stateMachine = new StateMachine<TState, TTrigger>(initialState);
-    }
 
     public Task InitializeAsync()
     {
@@ -387,7 +373,7 @@ public class OrthogonalStateSummary<TState>
     where TState : Enum
 {
     public TState MainState { get; set; } = default!;
-    public Dictionary<string, TState> RegionStates { get; set; } = new();
+    public Dictionary<string, TState> RegionStates { get; set; } = [];
     public TState CompositeState { get; set; } = default!;
     public DateTime Timestamp { get; set; }
 }

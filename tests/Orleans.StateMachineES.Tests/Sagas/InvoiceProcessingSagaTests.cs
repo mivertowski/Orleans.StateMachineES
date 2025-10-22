@@ -1,34 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Sagas;
-using System.Linq;
 using Orleans.StateMachineES.Tests.Cluster;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
-using Orleans.Runtime;
-using Orleans.Storage;
-using Stateless;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Orleans.StateMachineES.Tests.Sagas;
 
 [Collection(nameof(TestClusterApplication))]
-public class InvoiceProcessingSagaTests
+public class InvoiceProcessingSagaTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public InvoiceProcessingSagaTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task InvoiceProcessingSaga_ShouldCompleteSuccessfully_WhenAllStepsSucceed()
@@ -42,10 +25,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-001",
             Amount = 1500.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 2, UnitPrice = 750.00m }
-            }
+            ]
         };
 
         // Act
@@ -77,10 +60,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-FAIL-CONTROL", // This will trigger control check failure
             Amount = 1500.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 2, UnitPrice = 750.00m }
-            }
+            ]
         };
 
         // Act
@@ -115,10 +98,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-TECHNICAL-FAIL", // This will trigger technical failures with retries
             Amount = 1500.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 2, UnitPrice = 750.00m }
-            }
+            ]
         };
 
         // Act
@@ -150,10 +133,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-001",
             Amount = 500.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 1, UnitPrice = 500.00m }
-            }
+            ]
         };
 
         // Act
@@ -179,10 +162,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-001",
             Amount = 2500.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 5, UnitPrice = 500.00m }
-            }
+            ]
         };
 
         // Act
@@ -225,10 +208,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-TIMEOUT", // This will trigger timeout simulation
             Amount = 1000.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 2, UnitPrice = 500.00m }
-            }
+            ]
         };
 
         // Act
@@ -257,10 +240,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-001",
             Amount = 750.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 1, UnitPrice = 750.00m }
-            }
+            ]
         };
 
         // Act - Execute the same saga twice with same correlation ID
@@ -288,10 +271,10 @@ public class InvoiceProcessingSagaTests
             InvoiceId = Guid.NewGuid().ToString("N"),
             CustomerId = "CUST-001",
             Amount = 1200.00m,
-            Items = new List<InvoiceItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-001", Quantity = 2, UnitPrice = 600.00m }
-            }
+            ]
         };
 
         // Act
@@ -311,19 +294,16 @@ public class InvoiceProcessingSagaTests
 
 // Test grain interfaces and implementations
 
+[Alias("Orleans.StateMachineES.Tests.Sagas.IInvoiceProcessingSagaGrain")]
 public interface IInvoiceProcessingSagaGrain : ISagaCoordinatorGrain<InvoiceData>
 {
 }
 
 [StorageProvider(ProviderName = "Default")]
-public class InvoiceProcessingSagaGrain : 
-    SagaOrchestratorGrain<InvoiceData>, 
+public class InvoiceProcessingSagaGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<InvoiceData>> state) : 
+    SagaOrchestratorGrain<InvoiceData>(state), 
     IInvoiceProcessingSagaGrain
 {
-    public InvoiceProcessingSagaGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<InvoiceData>> state) 
-        : base(state)
-    {
-    }
     protected override void ConfigureSagaSteps()
     {
         AddStep(new PostInvoiceStep())
@@ -483,7 +463,7 @@ public class InvoiceData
     [Id(0)] public string InvoiceId { get; set; } = string.Empty;
     [Id(1)] public string CustomerId { get; set; } = string.Empty;
     [Id(2)] public decimal Amount { get; set; }
-    [Id(3)] public List<InvoiceItem> Items { get; set; } = new();
+    [Id(3)] public List<InvoiceItem> Items { get; set; } = [];
     [Id(4)] public DateTime InvoiceDate { get; set; } = DateTime.UtcNow;
     [Id(5)] public string Currency { get; set; } = "USD";
 }

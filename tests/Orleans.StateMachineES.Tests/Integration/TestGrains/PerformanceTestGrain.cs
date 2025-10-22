@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Providers;
 using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Configuration;
@@ -77,6 +71,7 @@ public enum PerformanceTrigger
 }
 
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Tests.Integration.TestGrains.PerformanceTestState")]
 public class PerformanceTestState : EventSourcedStateMachineState<PerformanceState>
 {
     [Id(0)] public new int TransitionCount { get; set; }
@@ -245,6 +240,7 @@ public enum ResilientTrigger
 }
 
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Tests.Integration.TestGrains.ResilientWorkflowState")]
 public class ResilientWorkflowState : EventSourcedStateMachineState<ResilientState>
 {
     [Id(0)] public int EventCount { get; set; }

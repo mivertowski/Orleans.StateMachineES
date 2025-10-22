@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.Interfaces;
-using Orleans;
 
 namespace Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 
@@ -23,8 +20,11 @@ public enum TestOrleansContextTriggers
     Deactivate
 }
 
+[Alias("Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces.ITestOrleansContextGrain")]
 public interface ITestOrleansContextGrain : IGrainWithStringKey, IStateMachineGrain<TestOrleansContextStates, TestOrleansContextTriggers>
 {
+    [Alias("GetExecutionLog")]
     Task<List<string>> GetExecutionLog();
+    [Alias("ClearLog")]
     Task ClearLog();
 }

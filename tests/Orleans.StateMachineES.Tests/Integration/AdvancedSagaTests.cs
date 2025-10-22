@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Microsoft.Extensions.Logging;
 using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Sagas.Advanced;
 using Orleans.StateMachineES.Tests.Cluster;
@@ -18,16 +13,10 @@ namespace Orleans.StateMachineES.Tests.Integration;
 /// Comprehensive tests for advanced saga patterns including parallel execution and conditional branching.
 /// </summary>
 [Collection(nameof(TestClusterApplication))]
-public class AdvancedSagaTests
+public class AdvancedSagaTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly TestClusterApplication _testApp;
-    private readonly ITestOutputHelper _outputHelper;
-
-    public AdvancedSagaTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly TestClusterApplication _testApp = testApp;
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
 
     [Fact]
     public async Task ParallelSagaOrchestrator_SimpleLinearWorkflow_ShouldExecuteSequentially()
@@ -38,7 +27,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "step1", "step2", "step3" },
+            Steps = ["step1", "step2", "step3"],
             ProcessingTime = TimeSpan.FromMilliseconds(50)
         };
 
@@ -65,7 +54,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "parallel1", "parallel2", "parallel3" },
+            Steps = ["parallel1", "parallel2", "parallel3"],
             ProcessingTime = TimeSpan.FromMilliseconds(100)
         };
 
@@ -93,7 +82,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "init", "process1", "process2", "merge", "finalize" },
+            Steps = ["init", "process1", "process2", "merge", "finalize"],
             ProcessingTime = TimeSpan.FromMilliseconds(50)
         };
 
@@ -122,7 +111,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "always", "conditional", "never" },
+            Steps = ["always", "conditional", "never"],
             SkipConditionalSteps = true
         };
 
@@ -146,7 +135,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "step1", "failing-step", "step3" },
+            Steps = ["step1", "failing-step", "step3"],
             SimulateFailure = true
         };
 
@@ -179,7 +168,7 @@ public class AdvancedSagaTests
         var sagaData = new TestSagaData
         {
             WorkflowId = sagaId,
-            Steps = new List<string> { "retry-step" },
+            Steps = ["retry-step"],
             RetryCount = 2, // Should succeed on 3rd attempt
             ProcessingTime = TimeSpan.FromMilliseconds(10)
         };
@@ -338,7 +327,7 @@ public class AdvancedSagaTests
             var sagaData = new TestSagaData
             {
                 WorkflowId = sagaId,
-                Steps = Enumerable.Range(1, StepsPerSaga).Select(j => $"step-{j}").ToList(),
+                Steps = [.. Enumerable.Range(1, StepsPerSaga).Select(j => $"step-{j}")],
                 ProcessingTime = TimeSpan.FromMilliseconds(20)
             };
 

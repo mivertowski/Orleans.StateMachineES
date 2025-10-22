@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Orleans.StateMachineES;
 using Orleans.StateMachineES.Extensions;
 using Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Stateless;
@@ -9,7 +6,7 @@ namespace Orleans.StateMachineES.Tests.Cluster.Grains;
 
 public class TestOrleansContextGrain : StateMachineGrain<TestOrleansContextStates, TestOrleansContextTriggers>, ITestOrleansContextGrain
 {
-    private readonly List<string> _executionLog = new();
+    private readonly List<string> _executionLog = [];
 
     public Task<List<string>> GetExecutionLog()
     {

@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Tests.Cluster;
 using Orleans.StateMachineES.Tests.Integration;
@@ -18,16 +14,10 @@ namespace Orleans.StateMachineES.Tests.Performance;
 /// Tests throughput, latency, and scalability characteristics.
 /// </summary>
 [Collection(nameof(TestClusterApplication))]
-public class StateMachineBenchmarks
+public class StateMachineBenchmarks(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly TestClusterApplication _testApp;
-    private readonly ITestOutputHelper _outputHelper;
-
-    public StateMachineBenchmarks(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly TestClusterApplication _testApp = testApp;
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
 
     [Fact]
     public async Task Benchmark_SingleGrainThroughput_ShouldMeasurePerformance()

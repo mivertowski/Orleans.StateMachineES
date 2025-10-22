@@ -1,10 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -25,8 +19,8 @@ public sealed class CompatibilityRulesEngine
     public CompatibilityRulesEngine(ILogger? logger = null)
     {
         _logger = logger;
-        _rules = new List<ICompatibilityRule>();
-        _ruleStats = new Dictionary<string, RuleEvaluationStats>();
+        _rules = [];
+        _ruleStats = [];
         
         InitializeDefaultRules();
     }
@@ -139,7 +133,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Determines the overall compatibility based on rule results.
     /// </summary>
-    private bool DetermineOverallCompatibility(CompatibilityResult result)
+    private static bool DetermineOverallCompatibility(CompatibilityResult result)
     {
         // Incompatible if any critical breaking changes
         if (result.BreakingChanges.Any(bc => bc.Impact == BreakingChangeImpact.Critical))
@@ -160,7 +154,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Determines the compatibility level based on evaluation results.
     /// </summary>
-    private VersionCompatibilityLevel DetermineCompatibilityLevel(CompatibilityResult result)
+    private static VersionCompatibilityLevel DetermineCompatibilityLevel(CompatibilityResult result)
     {
         if (!result.IsCompatible)
             return VersionCompatibilityLevel.Incompatible;
@@ -194,9 +188,9 @@ public sealed class CompatibilityRulesEngine
             {
                 Order = stepOrder++,
                 Type = MapToMigrationType(group.Key),
-                Description = GenerateStepDescription(group.Key, group.ToList()),
-                RequiredActions = GenerateRequiredActions(group.Key, group.ToList()),
-                EstimatedEffort = EstimateEffort(group.ToList()),
+                Description = GenerateStepDescription(group.Key, [.. group]),
+                RequiredActions = GenerateRequiredActions(group.Key, [.. group]),
+                EstimatedEffort = EstimateEffort([.. group]),
                 AutomationAvailable = CheckAutomationAvailability(group.Key)
             };
 
@@ -209,7 +203,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Gets the migration priority for a change type.
     /// </summary>
-    private int GetMigrationPriority(BreakingChangeType changeType)
+    private static int GetMigrationPriority(BreakingChangeType changeType)
     {
         return changeType switch
         {
@@ -226,7 +220,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Maps breaking change type to migration type.
     /// </summary>
-    private MigrationType MapToMigrationType(BreakingChangeType changeType)
+    private static MigrationType MapToMigrationType(BreakingChangeType changeType)
     {
         return changeType switch
         {
@@ -244,7 +238,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Generates a description for a migration step.
     /// </summary>
-    private string GenerateStepDescription(BreakingChangeType changeType, List<BreakingChange> changes)
+    private static string GenerateStepDescription(BreakingChangeType changeType, List<BreakingChange> changes)
     {
         var count = changes.Count;
         var plural = count > 1 ? "s" : "";
@@ -264,7 +258,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Generates required actions for a migration step.
     /// </summary>
-    private List<string> GenerateRequiredActions(BreakingChangeType changeType, List<BreakingChange> changes)
+    private static List<string> GenerateRequiredActions(BreakingChangeType changeType, List<BreakingChange> changes)
     {
         var actions = new List<string>();
 
@@ -289,7 +283,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Estimates the effort required for migration.
     /// </summary>
-    private MigrationEffort EstimateEffort(List<BreakingChange> changes)
+    private static MigrationEffort EstimateEffort(List<BreakingChange> changes)
     {
         var maxImpact = changes.Max(c => c.Impact);
         var changeCount = changes.Count;
@@ -306,7 +300,7 @@ public sealed class CompatibilityRulesEngine
     /// <summary>
     /// Checks if automation is available for a change type.
     /// </summary>
-    private bool CheckAutomationAvailability(BreakingChangeType changeType)
+    private static bool CheckAutomationAvailability(BreakingChangeType changeType)
     {
         // These change types have automation support
         return changeType switch

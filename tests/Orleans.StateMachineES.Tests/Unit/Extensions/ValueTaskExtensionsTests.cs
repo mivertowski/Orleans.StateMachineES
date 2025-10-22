@@ -1,5 +1,3 @@
-using System;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Extensions;
 using Xunit;
@@ -321,8 +319,7 @@ public class ValueTaskExtensionsTests
         caughtException.Message.Should().Be("Original error");
     }
 
-    private class CustomTestException : Exception
+    private class CustomTestException(string message) : Exception(message)
     {
-        public CustomTestException(string message) : base(message) { }
     }
 }

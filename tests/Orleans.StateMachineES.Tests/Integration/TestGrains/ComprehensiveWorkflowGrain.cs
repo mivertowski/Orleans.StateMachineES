@@ -1,16 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
-using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Events;
-using Orleans.StateMachineES.Hierarchical;
-using Orleans.StateMachineES.Interfaces;
-using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Timers;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
@@ -33,8 +23,8 @@ public class ComprehensiveWorkflowGrain :
     VersionedStateMachineGrain<WorkflowState, WorkflowTrigger, ComprehensiveWorkflowState>,
     IComprehensiveWorkflowGrain
 {
-    private readonly List<AuditEntry> _auditTrail = new();
-    private readonly List<CompensationExecution> _compensationHistory = new();
+    private readonly List<AuditEntry> _auditTrail = [];
+    private readonly List<CompensationExecution> _compensationHistory = [];
     private ILogger<ComprehensiveWorkflowGrain>? _logger;
     private WorkflowData? _workflowData;
 
@@ -103,7 +93,7 @@ public class ComprehensiveWorkflowGrain :
         }
     }
 
-    private StateMachine<WorkflowState, WorkflowTrigger> BuildStateMachineV1()
+    private static StateMachine<WorkflowState, WorkflowTrigger> BuildStateMachineV1()
     {
         // Simpler version without hierarchical states
         var machine = new StateMachine<WorkflowState, WorkflowTrigger>(WorkflowState.Idle);
@@ -149,10 +139,10 @@ public class ComprehensiveWorkflowGrain :
     public async Task<List<StateTransitionEvent<WorkflowState, WorkflowTrigger>>> GetEventHistoryAsync()
     {
         // In a real implementation, this would query the event journal
-        var events = new List<StateTransitionEvent<WorkflowState, WorkflowTrigger>>();
-        
-        // Simulate some events
-        events.Add(new StateTransitionEvent<WorkflowState, WorkflowTrigger>(
+        var events = new List<StateTransitionEvent<WorkflowState, WorkflowTrigger>>
+        {
+            // Simulate some events
+            new(
             WorkflowState.Idle,
             WorkflowState.Processing,
             WorkflowTrigger.Start,
@@ -161,7 +151,8 @@ public class ComprehensiveWorkflowGrain :
             null,
             "1.0.0",
             null
-        ));
+        )
+        };
         
         return await Task.FromResult(events);
     }
@@ -291,9 +282,10 @@ public class ComprehensiveWorkflowGrain :
 }
 
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Tests.Integration.TestGrains.ComprehensiveWorkflowState")]
 public class ComprehensiveWorkflowState : VersionedStateMachineState<WorkflowState>
 {
     [Id(0)] public string WorkflowId { get; set; } = "";
-    [Id(1)] public Dictionary<string, object> BusinessData { get; set; } = new();
-    [Id(2)] public List<string> ExecutedSteps { get; set; } = new();
+    [Id(1)] public Dictionary<string, object> BusinessData { get; set; } = [];
+    [Id(2)] public List<string> ExecutedSteps { get; set; } = [];
 }

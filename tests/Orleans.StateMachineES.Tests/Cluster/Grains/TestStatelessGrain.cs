@@ -1,4 +1,3 @@
-using Orleans.StateMachineES;
 using Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Stateless;
 

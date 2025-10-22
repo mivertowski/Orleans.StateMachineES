@@ -1,9 +1,4 @@
-using System.Threading.Tasks;
-using Orleans;
-using Orleans.Runtime;
-using Orleans.StateMachineES;
 using Orleans.StateMachineES.Interfaces;
-using Orleans.StateMachineES.Models;
 using Stateless;
 
 namespace Orleans.StateMachineES.Tests.Unit.Core;
@@ -25,10 +20,14 @@ public enum UnitTestTrigger
 }
 
 // Test grain interface
+[Alias("Orleans.StateMachineES.Tests.Unit.Core.IUnitTestGrain")]
 public interface IUnitTestGrain : IStateMachineGrain<UnitTestState, UnitTestTrigger>, IGrainWithStringKey
 {
+    [Alias("StartAsync")]
     Task StartAsync();
+    [Alias("ProcessAsync")]
     Task ProcessAsync();
+    [Alias("CompleteAsync")]
     Task CompleteAsync();
 }
 

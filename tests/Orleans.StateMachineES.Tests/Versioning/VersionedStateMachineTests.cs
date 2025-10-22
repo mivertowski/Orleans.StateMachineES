@@ -1,14 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Tests.Cluster;
 using Orleans.StateMachineES.Versioning;
-using Orleans.StateMachineES;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
 using Stateless;
 using Xunit;
@@ -18,16 +10,10 @@ using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMach
 namespace Orleans.StateMachineES.Tests.Versioning;
 
 [Collection(nameof(TestClusterApplication))]
-public class VersionedStateMachineTests
+public class VersionedStateMachineTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public VersionedStateMachineTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task VersionedGrain_ShouldInitialize_WithLatestVersion()
@@ -222,13 +208,20 @@ public class VersionedStateMachineTests
 
 // Test grain interfaces and implementations for versioning
 
+[Alias("Orleans.StateMachineES.Tests.Versioning.IOrderWorkflowGrain")]
 public interface IOrderWorkflowGrain : IVersionedStateMachine<OrderState, OrderTrigger>, IGrainWithStringKey
 {
+    [Alias("PlaceOrderAsync")]
     Task PlaceOrderAsync(string orderId, decimal amount);
+    [Alias("ProcessPaymentAsync")]
     Task ProcessPaymentAsync();
+    [Alias("FulfillOrderAsync")]
     Task FulfillOrderAsync();
+    [Alias("GetCurrentStateAsync")]
     Task<OrderState> GetCurrentStateAsync();
+    [Alias("InitializeWithVersionAsync")]
     Task InitializeWithVersionAsync(StateMachineVersion version);
+    [Alias("GetVersionHistoryAsync")]
     Task<IReadOnlyList<VersionHistoryEntry>> GetVersionHistoryAsync();
 }
 
@@ -316,7 +309,7 @@ public class OrderWorkflowGrain :
         });
     }
 
-    private StateMachine<OrderState, OrderTrigger> BuildOrderWorkflowV1()
+    private static StateMachine<OrderState, OrderTrigger> BuildOrderWorkflowV1()
     {
         var machine = new StateMachine<OrderState, OrderTrigger>(OrderState.Draft);
 
@@ -352,7 +345,7 @@ public class OrderWorkflowGrain :
         return machine;
     }
 
-    private StateMachine<OrderState, OrderTrigger> BuildOrderWorkflowV2()
+    private static StateMachine<OrderState, OrderTrigger> BuildOrderWorkflowV2()
     {
         // V2.0 - Major refactor (breaking changes)
         var machine = new StateMachine<OrderState, OrderTrigger>(OrderState.Draft);

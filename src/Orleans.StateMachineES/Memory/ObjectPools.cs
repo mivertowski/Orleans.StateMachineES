@@ -1,11 +1,7 @@
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Orleans.StateMachineES.EventSourcing.Events;
-using Orleans.StateMachineES.Models;
 
 namespace Orleans.StateMachineES.Memory;
 
@@ -29,21 +25,21 @@ public static class ObjectPools
     /// Pool for List&lt;string&gt; instances used for storing triggers, states, and error messages.
     /// </summary>
     public static readonly ObjectPool<List<string>> StringListPool = new(
-        () => new List<string>(), 
+        () => [], 
         list => list.Clear());
 
     /// <summary>
     /// Pool for Dictionary&lt;string, object&gt; instances used for metadata and properties.
     /// </summary>
     public static readonly ObjectPool<Dictionary<string, object>> StringObjectDictionaryPool = new(
-        () => new Dictionary<string, object>(), 
+        () => [], 
         dict => dict.Clear());
 
     /// <summary>
     /// Pool for StringBuilder-like operations using List&lt;char&gt; for efficient string building.
     /// </summary>
     public static readonly ObjectPool<List<char>> CharListPool = new(
-        () => new List<char>(), 
+        () => [], 
         list => list.Clear());
 
     /// <summary>
@@ -59,26 +55,19 @@ public static class ObjectPools
 /// Thread-safe and optimized for high-throughput scenarios.
 /// </summary>
 /// <typeparam name="T">The type of objects to pool.</typeparam>
-public sealed class ObjectPool<T> where T : class
+/// <remarks>
+/// Initializes a new instance of the ObjectPool class.
+/// </remarks>
+/// <param name="factory">Factory function to create new instances.</param>
+/// <param name="resetAction">Optional action to reset objects before returning to pool.</param>
+/// <param name="maxPoolSize">Maximum number of objects to keep in pool.</param>
+public sealed class ObjectPool<T>(Func<T> factory, Action<T>? resetAction = null, int maxPoolSize = 100) where T : class
 {
-    private readonly ConcurrentBag<T> _pool = new();
-    private readonly Func<T> _factory;
-    private readonly Action<T>? _resetAction;
-    private readonly int _maxPoolSize;
+    private readonly ConcurrentBag<T> _pool = [];
+    private readonly Func<T> _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+    private readonly Action<T>? _resetAction = resetAction;
+    private readonly int _maxPoolSize = maxPoolSize;
     private int _currentCount;
-
-    /// <summary>
-    /// Initializes a new instance of the ObjectPool class.
-    /// </summary>
-    /// <param name="factory">Factory function to create new instances.</param>
-    /// <param name="resetAction">Optional action to reset objects before returning to pool.</param>
-    /// <param name="maxPoolSize">Maximum number of objects to keep in pool.</param>
-    public ObjectPool(Func<T> factory, Action<T>? resetAction = null, int maxPoolSize = 100)
-    {
-        _factory = factory ?? throw new ArgumentNullException(nameof(factory));
-        _resetAction = resetAction;
-        _maxPoolSize = maxPoolSize;
-    }
 
     /// <summary>
     /// Gets an object from the pool or creates a new one if none available.

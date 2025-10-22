@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -81,23 +76,17 @@ public static class AspNetCoreHealthCheckExtensions
 /// <summary>
 /// ASP.NET Core health check integration for state machines.
 /// </summary>
-public class StateMachineHealthCheckIntegration : IHealthCheck
+/// <remarks>
+/// Initializes a new instance of the health check integration.
+/// </remarks>
+/// <param name="healthCheck">State machine health check service.</param>
+/// <param name="logger">Logger instance.</param>
+public class StateMachineHealthCheckIntegration(
+    IStateMachineHealthCheck healthCheck,
+    ILogger<StateMachineHealthCheckIntegration> logger) : IHealthCheck
 {
-    private readonly IStateMachineHealthCheck _healthCheck;
-    private readonly ILogger<StateMachineHealthCheckIntegration> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the health check integration.
-    /// </summary>
-    /// <param name="healthCheck">State machine health check service.</param>
-    /// <param name="logger">Logger instance.</param>
-    public StateMachineHealthCheckIntegration(
-        IStateMachineHealthCheck healthCheck,
-        ILogger<StateMachineHealthCheckIntegration> logger)
-    {
-        _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IStateMachineHealthCheck _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
+    private readonly ILogger<StateMachineHealthCheckIntegration> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <inheritdoc />
     public async Task<HealthCheckResult> CheckHealthAsync(
@@ -159,27 +148,20 @@ public class StateMachineHealthCheckIntegration : IHealthCheck
 /// <summary>
 /// ASP.NET Core health check integration for specific grains.
 /// </summary>
-public class StateMachineGrainHealthCheckIntegration : IHealthCheck
+/// <remarks>
+/// Initializes a new instance of the grain health check integration.
+/// </remarks>
+/// <param name="healthCheck">State machine health check service.</param>
+/// <param name="configuration">Grain health check configuration.</param>
+/// <param name="logger">Logger instance.</param>
+public class StateMachineGrainHealthCheckIntegration(
+    IStateMachineHealthCheck healthCheck,
+    GrainHealthCheckConfiguration configuration,
+    ILogger<StateMachineGrainHealthCheckIntegration> logger) : IHealthCheck
 {
-    private readonly IStateMachineHealthCheck _healthCheck;
-    private readonly GrainHealthCheckConfiguration _configuration;
-    private readonly ILogger<StateMachineGrainHealthCheckIntegration> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the grain health check integration.
-    /// </summary>
-    /// <param name="healthCheck">State machine health check service.</param>
-    /// <param name="configuration">Grain health check configuration.</param>
-    /// <param name="logger">Logger instance.</param>
-    public StateMachineGrainHealthCheckIntegration(
-        IStateMachineHealthCheck healthCheck,
-        GrainHealthCheckConfiguration configuration,
-        ILogger<StateMachineGrainHealthCheckIntegration> logger)
-    {
-        _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IStateMachineHealthCheck _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
+    private readonly GrainHealthCheckConfiguration _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+    private readonly ILogger<StateMachineGrainHealthCheckIntegration> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <inheritdoc />
     public async Task<HealthCheckResult> CheckHealthAsync(
@@ -250,19 +232,14 @@ public class StateMachineGrainHealthCheckIntegration : IHealthCheck
 /// <summary>
 /// Configuration for grain-specific health checks.
 /// </summary>
-public class GrainHealthCheckConfiguration
+/// <remarks>
+/// Initializes a new instance of the configuration.
+/// </remarks>
+/// <param name="grainChecks">The grains to monitor.</param>
+public class GrainHealthCheckConfiguration(IEnumerable<GrainHealthCheck> grainChecks)
 {
     /// <summary>
     /// The grains to monitor.
     /// </summary>
-    public IEnumerable<GrainHealthCheck> GrainChecks { get; }
-
-    /// <summary>
-    /// Initializes a new instance of the configuration.
-    /// </summary>
-    /// <param name="grainChecks">The grains to monitor.</param>
-    public GrainHealthCheckConfiguration(IEnumerable<GrainHealthCheck> grainChecks)
-    {
-        GrainChecks = grainChecks ?? throw new ArgumentNullException(nameof(grainChecks));
-    }
+    public IEnumerable<GrainHealthCheck> GrainChecks { get; } = grainChecks ?? throw new ArgumentNullException(nameof(grainChecks));
 }

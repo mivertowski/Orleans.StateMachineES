@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Visualization;
 using Stateless;
@@ -14,7 +11,7 @@ public class StateMachineVisualizerTests
     private enum TestState { Idle, Active, Processing, Completed, Failed }
     private enum TestTrigger { Start, Process, Complete, Fail, Reset }
 
-    private StateMachine<TestState, TestTrigger> CreateTestStateMachine()
+    private static StateMachine<TestState, TestTrigger> CreateTestStateMachine()
     {
         var machine = new StateMachine<TestState, TestTrigger>(TestState.Idle);
         
@@ -37,7 +34,7 @@ public class StateMachineVisualizerTests
         return machine;
     }
 
-    private StateMachine<TestState, TestTrigger> CreateComplexStateMachine()
+    private static StateMachine<TestState, TestTrigger> CreateComplexStateMachine()
     {
         var machine = new StateMachine<TestState, TestTrigger>(TestState.Idle);
         
@@ -314,10 +311,10 @@ public class StateMachineVisualizerTests
             Name = "TestState",
             IsInitial = true,
             IsCurrent = false,
-            EntryActions = new List<string> { "Entry1", "Entry2" },
-            ExitActions = new List<string> { "Exit1" },
+            EntryActions = ["Entry1", "Entry2"],
+            ExitActions = ["Exit1"],
             InternalTransitions = 3,
-            Substates = new List<string> { "SubA", "SubB" }
+            Substates = ["SubA", "SubB"]
         };
 
         // Assert
@@ -338,8 +335,8 @@ public class StateMachineVisualizerTests
         {
             Name = "TestTrigger",
             UsageCount = 5,
-            SourceStates = new() { "State1", "State2" },
-            TargetStates = new() { "State3" },
+            SourceStates = ["State1", "State2"],
+            TargetStates = ["State3"],
             HasGuards = true,
             HasParameters = false
         };

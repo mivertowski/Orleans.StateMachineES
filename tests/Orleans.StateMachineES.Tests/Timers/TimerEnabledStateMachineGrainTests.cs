@@ -1,35 +1,20 @@
 using Orleans.StateMachineES.Timers;
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Orleans.Timers;
 using Orleans.StateMachineES.Tests.Cluster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
-using Orleans.TestingHost;
 using Stateless;
-using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Orleans.StateMachineES.Tests.Timers;
 
 [Collection(nameof(TestClusterApplication))]
-public class TimerEnabledStateMachineGrainTests
+public class TimerEnabledStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public TimerEnabledStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task TimerGrain_ShouldTransitionOnTimeout()
@@ -160,17 +145,28 @@ public enum ProcessingTrigger
     Cancel
 }
 
+[Alias("Orleans.StateMachineES.Tests.Timers.ITestTimerGrain")]
 public interface ITestTimerGrain : IGrainWithStringKey
 {
+    [Alias("GetStateAsync")]
     ValueTask<ProcessingState> GetStateAsync();
+    [Alias("StartProcessingAsync")]
     Task StartProcessingAsync();
+    [Alias("StartMonitoringAsync")]
     Task StartMonitoringAsync();
+    [Alias("StartLongRunningAsync")]
     Task StartLongRunningAsync();
+    [Alias("CompleteAsync")]
     Task CompleteAsync();
+    [Alias("FailAsync")]
     Task FailAsync();
+    [Alias("GetHeartbeatCountAsync")]
     Task<int> GetHeartbeatCountAsync();
+    [Alias("DeactivateAsync")]
     Task DeactivateAsync();
+    [Alias("GetActiveTimerCountAsync")]
     Task<int> GetActiveTimerCountAsync();
+    [Alias("IsTimerRegistrationSuccessfulAsync")]
     Task<bool> IsTimerRegistrationSuccessfulAsync();
 }
 
@@ -367,6 +363,7 @@ public class TestTimerGrain : TimerEnabledStateMachineGrain<ProcessingState, Pro
 }
 
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Tests.Timers.TestTimerGrainState")]
 public class TestTimerGrainState : TimerEnabledStateMachineState<ProcessingState>
 {
     [Id(0)]

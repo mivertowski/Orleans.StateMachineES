@@ -1,16 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.EventSourcing;
-using Orleans.StateMachineES.Interfaces;
-using Orleans.StateMachineES.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Stateless;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
@@ -33,7 +23,7 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
     protected ILogger<VersionedStateMachineGrain<TState, TTrigger, TGrainState>>? VersionLogger { get; private set; }
     protected IStateMachineDefinitionRegistry? DefinitionRegistry { get; private set; }
     
-    private readonly Dictionary<StateMachineVersion, StateMachine<TState, TTrigger>> _versionedMachines = new();
+    private readonly Dictionary<StateMachineVersion, StateMachine<TState, TTrigger>> _versionedMachines = [];
     private StateMachine<TState, TTrigger>? _currentMachine;
 
 
@@ -194,7 +184,7 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
             CurrentVersion = State.Version,
             MinSupportedVersion = minSupported ?? State.Version,
             MaxSupportedVersion = maxSupported ?? State.Version,
-            AvailableVersions = availableVersions.ToList(),
+            AvailableVersions = [.. availableVersions],
             SupportsAutomaticUpgrade = true,
             RequiresMigration = availableVersions.Any(v => v > State.Version),
             Metadata = new Dictionary<string, object>
@@ -460,6 +450,7 @@ public abstract class VersionedStateMachineGrain<TState, TTrigger, TGrainState> 
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.VersionedStateMachineState`1")]
 public class VersionedStateMachineState<TState> : EventSourcedStateMachineState<TState>
     where TState : struct, Enum
 {
@@ -474,25 +465,26 @@ public class VersionedStateMachineState<TState> : EventSourcedStateMachineState<
     /// History of version upgrades.
     /// </summary>
     [Id(2)]
-    public List<VersionHistoryEntry> VersionHistory { get; set; } = new();
+    public List<VersionHistoryEntry> VersionHistory { get; set; } = [];
     
     /// <summary>
     /// Shadow evaluation results cache.
     /// </summary>
     [Id(3)]
-    public Dictionary<string, object> ShadowEvaluationCache { get; set; } = new();
+    public Dictionary<string, object> ShadowEvaluationCache { get; set; } = [];
     
     /// <summary>
     /// Version-specific metadata.
     /// </summary>
     [Id(4)]
-    public Dictionary<string, object> VersionMetadata { get; set; } = new();
+    public Dictionary<string, object> VersionMetadata { get; set; } = [];
 }
 
 /// <summary>
 /// Entry in the version history tracking upgrades.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.VersionHistoryEntry")]
 public class VersionHistoryEntry
 {
     [Id(0)] public StateMachineVersion Version { get; set; } = new(1, 0, 0);
@@ -501,5 +493,5 @@ public class VersionHistoryEntry
     [Id(3)] public MigrationStrategy Strategy { get; set; }
     [Id(4)] public string Reason { get; set; } = "";
     [Id(5)] public MigrationSummary? MigrationSummary { get; set; }
-    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = [];
 }

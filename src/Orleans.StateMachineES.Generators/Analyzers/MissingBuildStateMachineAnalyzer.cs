@@ -24,7 +24,7 @@ namespace Orleans.StateMachineES.Generators.Analyzers
         
         private const string Category = "Implementation";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+        private static readonly DiagnosticDescriptor Rule = new(
             DiagnosticId,
             Title,
             MessageFormat,

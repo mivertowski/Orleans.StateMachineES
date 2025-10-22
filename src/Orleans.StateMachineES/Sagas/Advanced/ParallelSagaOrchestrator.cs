@@ -1,12 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.Concurrency;
 
 namespace Orleans.StateMachineES.Sagas.Advanced;
 
@@ -351,9 +344,7 @@ public abstract class ParallelSagaOrchestrator<TSagaData> : Grain, IParallelSaga
             SagaData = context.SagaData,
             CompletedSteps = completedSteps,
             FailedSteps = failedSteps,
-            ExecutionContexts = _executionContexts.Values
-                .Where(ctx => ctx.Context.CorrelationId == context.CorrelationId)
-                .ToList()
+            ExecutionContexts = [.. _executionContexts.Values.Where(ctx => ctx.Context.CorrelationId == context.CorrelationId)]
         };
 
         try
@@ -371,12 +362,17 @@ public abstract class ParallelSagaOrchestrator<TSagaData> : Grain, IParallelSaga
 /// <summary>
 /// Interface for parallel saga orchestrator with advanced workflow capabilities.
 /// </summary>
+[Alias("Orleans.StateMachineES.Sagas.Advanced.IParallelSagaOrchestrator`1")]
 public interface IParallelSagaOrchestrator<TSagaData> : IGrain
     where TSagaData : class
 {
+    [Alias("ExecuteAsync")]
     Task<ParallelSagaResult> ExecuteAsync(TSagaData sagaData, string correlationId);
+    [Alias("ExecuteStepAsync")]
     Task<SagaStepResult> ExecuteStepAsync(string stepName, TSagaData sagaData, SagaContext context);
+    [Alias("CompensateAsync")]
     Task<CompensationResult> CompensateAsync(TSagaData sagaData, string correlationId, Exception? error);
+    [Alias("GetExecutionHistoryAsync")]
     Task<List<SagaStepExecutionInfo>> GetExecutionHistoryAsync(string correlationId);
 }
 
@@ -384,6 +380,7 @@ public interface IParallelSagaOrchestrator<TSagaData> : IGrain
 /// Result of parallel saga execution with detailed information.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.Advanced.ParallelSagaResult")]
 public class ParallelSagaResult
 {
     [Id(0)] public string CorrelationId { get; set; } = "";
@@ -391,8 +388,8 @@ public class ParallelSagaResult
     [Id(2)] public DateTime StartedAt { get; set; }
     [Id(3)] public DateTime? CompletedAt { get; set; }
     [Id(4)] public int TotalSteps { get; set; }
-    [Id(5)] public List<string> SuccessfulSteps { get; set; } = new();
-    [Id(6)] public List<string> FailedSteps { get; set; } = new();
+    [Id(5)] public List<string> SuccessfulSteps { get; set; } = [];
+    [Id(6)] public List<string> FailedSteps { get; set; } = [];
     [Id(7)] public string? ErrorMessage { get; set; }
     
     public TimeSpan? Duration => CompletedAt?.Subtract(StartedAt);
@@ -411,7 +408,7 @@ public class ParallelSagaExecutionContext<TSagaData>
     public string CorrelationId { get; set; } = "";
     public string BusinessTransactionId { get; set; } = "";
     public DateTime StartedAt { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = [];
 }
 
 /// <summary>
@@ -434,6 +431,7 @@ public class SagaStepExecutionContext<TSagaData>
 /// Information about saga step execution.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.Advanced.SagaStepExecutionInfo")]
 public class SagaStepExecutionInfo
 {
     [Id(0)] public string StepName { get; set; } = "";
@@ -465,9 +463,9 @@ public class SagaConditionContext<TSagaData>
     where TSagaData : class
 {
     public TSagaData SagaData { get; set; } = default!;
-    public HashSet<string> CompletedSteps { get; set; } = new();
-    public HashSet<string> FailedSteps { get; set; } = new();
-    public List<SagaStepExecutionContext<TSagaData>> ExecutionContexts { get; set; } = new();
+    public HashSet<string> CompletedSteps { get; set; } = [];
+    public HashSet<string> FailedSteps { get; set; } = [];
+    public List<SagaStepExecutionContext<TSagaData>> ExecutionContexts { get; set; } = [];
     
     public bool IsStepCompleted(string stepName) => CompletedSteps.Contains(stepName);
     public bool IsStepFailed(string stepName) => FailedSteps.Contains(stepName);

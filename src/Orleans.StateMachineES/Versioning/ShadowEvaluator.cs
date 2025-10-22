@@ -1,12 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Stateless;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
@@ -18,21 +11,15 @@ namespace Orleans.StateMachineES.Versioning;
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 /// <typeparam name="TTrigger">The type of triggers in the state machine.</typeparam>
-public class ShadowEvaluator<TState, TTrigger>
+public class ShadowEvaluator<TState, TTrigger>(ILogger<ShadowEvaluator<TState, TTrigger>> logger, IServiceProvider? serviceProvider = null)
     where TState : struct, Enum
     where TTrigger : struct, Enum
 {
-    private readonly ILogger<ShadowEvaluator<TState, TTrigger>> _logger;
-    private readonly StateMachineIntrospector<TState, TTrigger> _introspector;
-
-    public ShadowEvaluator(ILogger<ShadowEvaluator<TState, TTrigger>> logger, IServiceProvider? serviceProvider = null)
-    {
-        _logger = logger;
-        _introspector = serviceProvider?.GetService<StateMachineIntrospector<TState, TTrigger>>() ??
+    private readonly ILogger<ShadowEvaluator<TState, TTrigger>> _logger = logger;
+    private readonly StateMachineIntrospector<TState, TTrigger> _introspector = serviceProvider?.GetService<StateMachineIntrospector<TState, TTrigger>>() ??
                        new StateMachineIntrospector<TState, TTrigger>(
-                           serviceProvider?.GetService<ILogger<StateMachineIntrospector<TState, TTrigger>>>() ?? 
+                           serviceProvider?.GetService<ILogger<StateMachineIntrospector<TState, TTrigger>>>() ??
                            new LoggerFactory().CreateLogger<StateMachineIntrospector<TState, TTrigger>>());
-    }
 
     /// <summary>
     /// Evaluates a trigger against multiple state machine versions and compares results.
@@ -81,8 +68,8 @@ public class ShadowEvaluator<TState, TTrigger>
             CurrentVersion = currentVersion,
             EvaluationResults = results,
             TotalDuration = duration,
-            HasDivergentBehavior = DetectDivergentBehavior(results),
-            ConsensusResult = DetermineConsensus(results),
+            HasDivergentBehavior = ShadowEvaluator<TState, TTrigger>.DetectDivergentBehavior(results),
+            ConsensusResult = ShadowEvaluator<TState, TTrigger>.DetermineConsensus(results),
             Metadata = new Dictionary<string, object>
             {
                 ["EvaluatedVersions"] = versionedMachines.Count,
@@ -201,7 +188,7 @@ public class ShadowEvaluator<TState, TTrigger>
     /// <summary>
     /// Detects if different versions would produce different behaviors.
     /// </summary>
-    private bool DetectDivergentBehavior(List<ShadowEvaluationResult<TState>> results)
+    private static bool DetectDivergentBehavior(List<ShadowEvaluationResult<TState>> results)
     {
         if (results.Count <= 1) return false;
 
@@ -224,7 +211,7 @@ public class ShadowEvaluator<TState, TTrigger>
     /// <summary>
     /// Determines consensus result from multiple evaluations.
     /// </summary>
-    private ShadowConsensusResult<TState> DetermineConsensus(List<ShadowEvaluationResult<TState>> results)
+    private static ShadowConsensusResult<TState> DetermineConsensus(List<ShadowEvaluationResult<TState>> results)
     {
         if (results.Count == 0)
         {
@@ -276,17 +263,18 @@ public class ShadowEvaluator<TState, TTrigger>
 /// Result of comparing shadow evaluations across multiple versions.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.ShadowComparisonResult`1")]
 public class ShadowComparisonResult<TState>
     where TState : struct, Enum
 {
     [Id(0)] public TState CurrentState { get; set; }
     [Id(1)] public object Trigger { get; set; } = new();
     [Id(2)] public StateMachineVersion CurrentVersion { get; set; } = new(1, 0, 0);
-    [Id(3)] public List<ShadowEvaluationResult<TState>> EvaluationResults { get; set; } = new();
+    [Id(3)] public List<ShadowEvaluationResult<TState>> EvaluationResults { get; set; } = [];
     [Id(4)] public TimeSpan TotalDuration { get; set; }
     [Id(5)] public bool HasDivergentBehavior { get; set; }
     [Id(6)] public ShadowConsensusResult<TState> ConsensusResult { get; set; } = new();
-    [Id(7)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(7)] public Dictionary<string, object> Metadata { get; set; } = [];
 
     /// <summary>
     /// Gets the results grouped by predicted outcome.
@@ -299,7 +287,7 @@ public class ShadowComparisonResult<TState>
         {
             var key = result.PredictedState?.ToString() ?? "null";
             if (!grouped.ContainsKey(key))
-                grouped[key] = new List<StateMachineVersion>();
+                grouped[key] = [];
             
             grouped[key].Add(result.EvaluatedVersion);
         }
@@ -312,6 +300,7 @@ public class ShadowComparisonResult<TState>
 /// Consensus result from shadow evaluations.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.ShadowConsensusResult`1")]
 public class ShadowConsensusResult<TState>
     where TState : struct, Enum
 {
@@ -320,7 +309,7 @@ public class ShadowConsensusResult<TState>
     [Id(2)] public TState? ConsensusPrediction { get; set; }
     [Id(3)] public int SuccessfulCount { get; set; }
     [Id(4)] public int FailureCount { get; set; }
-    [Id(5)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(5)] public Dictionary<string, object> Metadata { get; set; } = [];
 }
 
 /// <summary>

@@ -12,25 +12,19 @@ namespace Orleans.StateMachineES.Composition;
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 /// <typeparam name="TTrigger">The type of triggers that cause state transitions.</typeparam>
-public abstract class ComposedStateMachineGrain<TState, TTrigger> : 
+/// <remarks>
+/// Initializes a new instance of the composed state machine grain.
+/// </remarks>
+/// <param name="logger">Logger instance.</param>
+public abstract class ComposedStateMachineGrain<TState, TTrigger>(ILogger<ComposedStateMachineGrain<TState, TTrigger>> logger) : 
     StateMachineGrain<TState, TTrigger>
     where TState : Enum
     where TTrigger : Enum
 {
     private StateMachineComposer<TState, TTrigger>? _composer;
-    private readonly List<IComposableStateMachine<TState, TTrigger>> _components;
+    private readonly List<IComposableStateMachine<TState, TTrigger>> _components = [];
     private CompositionContext? _compositionContext;
-    private readonly ILogger<ComposedStateMachineGrain<TState, TTrigger>> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the composed state machine grain.
-    /// </summary>
-    /// <param name="logger">Logger instance.</param>
-    protected ComposedStateMachineGrain(ILogger<ComposedStateMachineGrain<TState, TTrigger>> logger)
-    {
-        _logger = logger;
-        _components = new List<IComposableStateMachine<TState, TTrigger>>();
-    }
+    private readonly ILogger<ComposedStateMachineGrain<TState, TTrigger>> _logger = logger;
 
     /// <summary>
     /// Gets the composition strategy to use.

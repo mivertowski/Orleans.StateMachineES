@@ -133,7 +133,7 @@ public class RetryComponent<TState, TTrigger> : ComposableStateMachineBase<TStat
             BackoffStrategy.Fixed => _retryDelay,
             BackoffStrategy.Linear => TimeSpan.FromMilliseconds(_retryDelay.TotalMilliseconds * _currentAttempt),
             BackoffStrategy.Exponential => TimeSpan.FromMilliseconds(_retryDelay.TotalMilliseconds * Math.Pow(2, _currentAttempt - 1)),
-            BackoffStrategy.Jittered => AddJitter(_retryDelay),
+            BackoffStrategy.Jittered => RetryComponent<TState, TTrigger>.AddJitter(_retryDelay),
             _ => _retryDelay
         };
     }
@@ -141,7 +141,7 @@ public class RetryComponent<TState, TTrigger> : ComposableStateMachineBase<TStat
     /// <summary>
     /// Adds jitter to the retry delay to avoid thundering herd.
     /// </summary>
-    private TimeSpan AddJitter(TimeSpan baseDelay)
+    private static TimeSpan AddJitter(TimeSpan baseDelay)
     {
         var random = new Random();
         var jitter = random.Next(0, (int)(baseDelay.TotalMilliseconds * 0.3));

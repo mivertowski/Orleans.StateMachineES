@@ -1,14 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Orleans;
-
 namespace Orleans.StateMachineES.Sagas;
 
 /// <summary>
 /// Interface for saga coordinator grains that orchestrate distributed transactions.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
+[Alias("Orleans.StateMachineES.Sagas.ISagaCoordinatorGrain`1")]
 public interface ISagaCoordinatorGrain<TSagaData> : IGrainWithStringKey
     where TSagaData : class
 {
@@ -18,25 +14,29 @@ public interface ISagaCoordinatorGrain<TSagaData> : IGrainWithStringKey
     /// <param name="sagaData">The data to process through the saga.</param>
     /// <param name="correlationId">Optional correlation ID for tracking.</param>
     /// <returns>The result of the saga execution.</returns>
+    [Alias("ExecuteAsync")]
     Task<SagaExecutionResult> ExecuteAsync(TSagaData sagaData, string? correlationId = null);
-    
+
     /// <summary>
     /// Compensates the saga by rolling back completed steps.
     /// </summary>
     /// <param name="reason">The reason for compensation.</param>
     /// <returns>The result of the compensation process.</returns>
+    [Alias("CompensateAsync")]
     Task<CompensationResult> CompensateAsync(string reason);
-    
+
     /// <summary>
     /// Gets the current status of the saga.
     /// </summary>
     /// <returns>The saga status information.</returns>
+    [Alias("GetStatusAsync")]
     Task<SagaStatusInfo> GetStatusAsync();
-    
+
     /// <summary>
     /// Gets the execution history of the saga.
     /// </summary>
     /// <returns>The complete execution history.</returns>
+    [Alias("GetHistoryAsync")]
     Task<SagaExecutionHistory> GetHistoryAsync();
 }
 
@@ -44,6 +44,7 @@ public interface ISagaCoordinatorGrain<TSagaData> : IGrainWithStringKey
 /// Overall result of saga execution.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaExecutionResult")]
 public class SagaExecutionResult
 {
     /// <summary>
@@ -93,6 +94,7 @@ public class SagaExecutionResult
 /// Current status information of a saga.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaStatusInfo")]
 public class SagaStatusInfo
 {
     /// <summary>
@@ -160,6 +162,7 @@ public class SagaStatusInfo
 /// Complete execution history of a saga.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaExecutionHistory")]
 public class SagaExecutionHistory
 {
     /// <summary>
@@ -215,6 +218,7 @@ public class SagaExecutionHistory
 /// Record of a saga step execution.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaStepExecution")]
 public class SagaStepExecution
 {
     /// <summary>
@@ -270,6 +274,7 @@ public class SagaStepExecution
 /// Record of a compensation execution.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.CompensationExecution")]
 public class CompensationExecution
 {
     /// <summary>

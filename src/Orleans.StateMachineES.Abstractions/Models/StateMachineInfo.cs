@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using Orleans;
-
 namespace Orleans.StateMachineES.Abstractions.Models;
 
 /// <summary>
 /// Represents information about a state machine configuration.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Abstractions.Models.StateMachineInfo")]
 public sealed class StateMachineInfo
 {
     /// <summary>
@@ -52,6 +49,7 @@ public sealed class StateMachineInfo
 /// Represents a state transition in a state machine.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Abstractions.Models.StateTransition")]
 public sealed class StateTransition
 {
     /// <summary>
@@ -97,6 +95,7 @@ public sealed class StateTransition
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Abstractions.Models.TriggerDetails`2")]
 public sealed class TriggerDetails<TState, TTrigger>
     where TState : notnull
     where TTrigger : notnull

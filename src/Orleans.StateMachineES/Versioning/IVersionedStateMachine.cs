@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Orleans;
 using Orleans.StateMachineES.Interfaces;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
@@ -52,21 +48,23 @@ public interface IVersionedStateMachine<TState, TTrigger> : IStateMachineGrain<T
 /// Information about version compatibility for a state machine grain.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.VersionCompatibilityInfo")]
 public class VersionCompatibilityInfo
 {
     [Id(0)] public StateMachineVersion CurrentVersion { get; set; } = new(1, 0, 0);
     [Id(1)] public StateMachineVersion MinSupportedVersion { get; set; } = new(1, 0, 0);
     [Id(2)] public StateMachineVersion MaxSupportedVersion { get; set; } = new(1, 0, 0);
-    [Id(3)] public List<StateMachineVersion> AvailableVersions { get; set; } = new();
+    [Id(3)] public List<StateMachineVersion> AvailableVersions { get; set; } = [];
     [Id(4)] public bool SupportsAutomaticUpgrade { get; set; }
     [Id(5)] public bool RequiresMigration { get; set; }
-    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = [];
 }
 
 /// <summary>
 /// Result of a version upgrade operation.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.VersionUpgradeResult")]
 public class VersionUpgradeResult
 {
     [Id(0)] public bool IsSuccess { get; set; }
@@ -77,7 +75,7 @@ public class VersionUpgradeResult
     [Id(5)] public DateTime UpgradeTime { get; set; } = DateTime.UtcNow;
     [Id(6)] public TimeSpan UpgradeDuration { get; set; }
     [Id(7)] public MigrationSummary? MigrationSummary { get; set; }
-    [Id(8)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(8)] public Dictionary<string, object> Metadata { get; set; } = [];
 
     public static VersionUpgradeResult Success(StateMachineVersion oldVersion, StateMachineVersion newVersion, TimeSpan duration, MigrationSummary? summary = null)
     {
@@ -108,14 +106,15 @@ public class VersionUpgradeResult
 /// Summary of what was migrated during a version upgrade.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.MigrationSummary")]
 public class MigrationSummary
 {
     [Id(0)] public int StatesMigrated { get; set; }
     [Id(1)] public int TransitionsUpdated { get; set; }
     [Id(2)] public int GuardsModified { get; set; }
     [Id(3)] public int EventsReplayed { get; set; }
-    [Id(4)] public List<string> ChangesApplied { get; set; } = new();
-    [Id(5)] public Dictionary<string, object> Statistics { get; set; } = new();
+    [Id(4)] public List<string> ChangesApplied { get; set; } = [];
+    [Id(5)] public Dictionary<string, object> Statistics { get; set; } = [];
 }
 
 /// <summary>
@@ -148,6 +147,7 @@ public enum MigrationStrategy
 /// Result of evaluating a state machine trigger in shadow mode.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.ShadowEvaluationResult`1")]
 public class ShadowEvaluationResult<TState>
     where TState : struct, Enum
 {
@@ -158,7 +158,7 @@ public class ShadowEvaluationResult<TState>
     [Id(4)] public Exception? Exception { get; set; }
     [Id(5)] public StateMachineVersion EvaluatedVersion { get; set; } = new(1, 0, 0);
     [Id(6)] public TimeSpan EvaluationDuration { get; set; }
-    [Id(7)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(7)] public Dictionary<string, object> Metadata { get; set; } = [];
 
     public static ShadowEvaluationResult<TState> Success(TState currentState, TState predictedState, StateMachineVersion version, TimeSpan duration)
     {

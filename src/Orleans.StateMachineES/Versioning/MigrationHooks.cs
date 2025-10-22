@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
@@ -48,6 +44,7 @@ public interface IMigrationHook
 /// Context information passed to migration hooks.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.MigrationContext")]
 public class MigrationContext
 {
     [Id(0)] public string GrainId { get; set; } = "";
@@ -55,11 +52,11 @@ public class MigrationContext
     [Id(2)] public StateMachineVersion FromVersion { get; set; } = new(1, 0, 0);
     [Id(3)] public StateMachineVersion ToVersion { get; set; } = new(1, 0, 0);
     [Id(4)] public MigrationStrategy Strategy { get; set; }
-    [Id(5)] public Dictionary<string, object> GrainState { get; set; } = new();
-    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(5)] public Dictionary<string, object> GrainState { get; set; } = [];
+    [Id(6)] public Dictionary<string, object> Metadata { get; set; } = [];
     [Id(7)] public DateTime StartTime { get; set; } = DateTime.UtcNow;
-    [Id(8)] public List<string> ExecutedHooks { get; set; } = new();
-    [Id(9)] public Dictionary<string, object> HookResults { get; set; } = new();
+    [Id(8)] public List<string> ExecutedHooks { get; set; } = [];
+    [Id(9)] public Dictionary<string, object> HookResults { get; set; } = [];
 
     /// <summary>
     /// Gets a strongly typed state value.
@@ -93,15 +90,10 @@ public class MigrationContext
 /// <summary>
 /// Manages and executes migration hooks during state machine upgrades.
 /// </summary>
-public class MigrationHookManager
+public class MigrationHookManager(ILogger<MigrationHookManager> logger)
 {
-    private readonly List<IMigrationHook> _hooks = new();
-    private readonly ILogger<MigrationHookManager> _logger;
-
-    public MigrationHookManager(ILogger<MigrationHookManager> logger)
-    {
-        _logger = logger;
-    }
+    private readonly List<IMigrationHook> _hooks = [];
+    private readonly ILogger<MigrationHookManager> _logger = logger;
 
     /// <summary>
     /// Registers a migration hook.
@@ -318,7 +310,7 @@ public static class BuiltInMigrationHooks
                     context.Metadata["MajorVersionValidation"] = "Additional validation required for major version change";
                     
                     // Validate critical fields exist
-                    var requiredFields = context.GetStateValue<List<string>>("RequiredFields") ?? new List<string>();
+                    var requiredFields = context.GetStateValue<List<string>>("RequiredFields") ?? [];
                     foreach (var field in requiredFields)
                     {
                         if (!stateData.ContainsKey(field))
@@ -400,14 +392,9 @@ public static class BuiltInMigrationHooks
     /// <summary>
     /// Hook for logging migration activities.
     /// </summary>
-    public class AuditLoggingHook : IMigrationHook
+    public class AuditLoggingHook(ILogger<BuiltInMigrationHooks.AuditLoggingHook> logger) : IMigrationHook
     {
-        private readonly ILogger<AuditLoggingHook> _logger;
-
-        public AuditLoggingHook(ILogger<AuditLoggingHook> logger)
-        {
-            _logger = logger;
-        }
+        private readonly ILogger<AuditLoggingHook> _logger = logger;
 
         public string HookName => "AuditLogging";
         public int Priority => 5; // Execute very early
@@ -447,7 +434,7 @@ public static class BuiltInMigrationHooks
     /// </summary>
     public class StateTransformationHook : IMigrationHook
     {
-        private readonly Dictionary<(StateMachineVersion From, StateMachineVersion To), Func<MigrationContext, Task<bool>>> _transformations = new();
+        private readonly Dictionary<(StateMachineVersion From, StateMachineVersion To), Func<MigrationContext, Task<bool>>> _transformations = [];
 
         public string HookName => "StateTransformation";
         public int Priority => 50; // Execute after backups

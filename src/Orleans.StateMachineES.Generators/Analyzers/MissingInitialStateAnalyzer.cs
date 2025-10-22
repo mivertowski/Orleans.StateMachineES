@@ -26,7 +26,7 @@ public class MissingInitialStateAnalyzer : DiagnosticAnalyzer
 
     private const string Category = "Usage";
 
-    private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor Rule = new(
         DiagnosticId,
         Title,
         MessageFormat,

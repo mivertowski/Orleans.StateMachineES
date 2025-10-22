@@ -1,15 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Orleans.StateMachineES;
-using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Events;
-using Orleans.StateMachineES.Hierarchical;
 using Orleans.StateMachineES.Timers;
-using Orleans.StateMachineES.Composition;
 using Orleans.StateMachineES.Composition.Components;
-using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Monitoring;
 using Stateless;
 using Xunit;
@@ -107,7 +99,7 @@ public class BasicFunctionalityTests
 
     // [Fact]
     // Commented out: HierarchyContext doesn't exist in the current implementation
-    private void HierarchicalState_ShouldSupportSubstates()
+    private static void HierarchicalState_ShouldSupportSubstates()
     {
         // This test needs to be rewritten to use the actual hierarchical implementation
         Assert.True(true, "Test placeholder - needs implementation");
@@ -139,7 +131,7 @@ public class BasicFunctionalityTests
 
     // [Fact] 
     // Commented out: SagaStep class doesn't exist in the current implementation
-    private void Saga_SagaStep_ShouldBeCreated()
+    private static void Saga_SagaStep_ShouldBeCreated()
     {
         // This test needs to be rewritten to use the actual saga implementation
         // For now, just pass the test
@@ -212,7 +204,7 @@ public class BasicFunctionalityTests
 
     // [Fact]
     // Commented out: GraphNode class doesn't exist in the current implementation
-    private void Visualization_GraphNode_ShouldBeCreated()
+    private static void Visualization_GraphNode_ShouldBeCreated()
     {
         // This test needs to be rewritten to use the actual visualization implementation
         Assert.True(true, "Test placeholder - needs implementation");

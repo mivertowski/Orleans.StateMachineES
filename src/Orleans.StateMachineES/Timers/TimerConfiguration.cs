@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using Orleans;
-
 namespace Orleans.StateMachineES.Timers;
 
 /// <summary>
 /// Configuration for state machine timers and reminders.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Timers.TimerConfiguration")]
 public class TimerConfiguration
 {
     /// <summary>
@@ -128,7 +125,7 @@ public class TimeoutBuilder<TState, TTrigger>
     /// </summary>
     public TimeoutBuilder<TState, TTrigger> WithMetadata(string key, object value)
     {
-        _config.Metadata ??= new Dictionary<string, object>();
+        _config.Metadata ??= [];
         _config.Metadata[key] = value;
         return this;
     }

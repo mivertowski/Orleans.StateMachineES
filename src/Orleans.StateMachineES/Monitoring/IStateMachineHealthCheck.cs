@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Orleans.StateMachineES.Monitoring;
 
 /// <summary>
@@ -59,7 +54,7 @@ public class StateMachineHealthResult
     public DateTime CheckedAt { get; set; }
     public string? ErrorMessage { get; set; }
     public Exception? Exception { get; set; }
-    public Dictionary<string, object> Metadata { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = [];
 
     public bool IsHealthy => Status == HealthStatus.Healthy;
     public bool IsUnhealthy => Status == HealthStatus.Unhealthy;
@@ -78,7 +73,7 @@ public class AggregatedHealthResult
     public int DegradedGrains { get; set; }
     public TimeSpan TotalCheckDuration { get; set; }
     public DateTime CheckedAt { get; set; }
-    public List<StateMachineHealthResult> Results { get; set; } = new();
+    public List<StateMachineHealthResult> Results { get; set; } = [];
 
     public double HealthPercentage => TotalGrains > 0 ? (double)HealthyGrains / TotalGrains * 100 : 0;
 }
@@ -90,11 +85,11 @@ public class SystemHealthResult
 {
     public HealthStatus Status { get; set; }
     public int TotalMonitoredGrains { get; set; }
-    public Dictionary<string, int> GrainTypesCounts { get; set; } = new();
-    public Dictionary<HealthStatus, int> StatusDistribution { get; set; } = new();
+    public Dictionary<string, int> GrainTypesCounts { get; set; } = [];
+    public Dictionary<HealthStatus, int> StatusDistribution { get; set; } = [];
     public DateTime LastUpdated { get; set; }
     public SystemMetrics Metrics { get; set; } = new();
-    public List<SystemAlert> Alerts { get; set; } = new();
+    public List<SystemAlert> Alerts { get; set; } = [];
 }
 
 /// <summary>
@@ -108,7 +103,7 @@ public class SystemMetrics
     public double ErrorRate { get; set; }
     public int ActiveSagas { get; set; }
     public TimeSpan Uptime { get; set; }
-    public Dictionary<string, double> CustomMetrics { get; set; } = new();
+    public Dictionary<string, double> CustomMetrics { get; set; } = [];
 }
 
 /// <summary>
@@ -120,7 +115,7 @@ public class SystemAlert
     public string Message { get; set; } = string.Empty;
     public string Source { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public Dictionary<string, object> Details { get; set; } = new();
+    public Dictionary<string, object> Details { get; set; } = [];
 }
 
 /// <summary>

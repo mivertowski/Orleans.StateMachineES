@@ -27,7 +27,7 @@ public class CircularTransitionAnalyzer : DiagnosticAnalyzer
 
     private const string Category = "Design";
 
-    private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor Rule = new(
         DiagnosticId,
         Title,
         MessageFormat,
@@ -106,7 +106,7 @@ public class CircularTransitionAnalyzer : DiagnosticAnalyzer
             {
                 if (!transitions.ContainsKey(stateName!))
                 {
-                    transitions[stateName!] = new HashSet<string>();
+                    transitions[stateName!] = [];
                 }
 
                 if (!stateLocations.ContainsKey(stateName!))

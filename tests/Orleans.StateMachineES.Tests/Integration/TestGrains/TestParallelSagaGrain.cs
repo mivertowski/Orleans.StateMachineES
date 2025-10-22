@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Providers;
 using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Sagas.Advanced;
@@ -18,7 +13,7 @@ namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
 public class TestParallelSagaGrain : ParallelSagaOrchestrator<TestSagaData>, ITestParallelSagaGrain
 {
     private ILogger<TestParallelSagaGrain>? _logger;
-    private readonly Dictionary<string, List<SagaStepExecutionInfo>> _executionHistory = new();
+    private readonly Dictionary<string, List<SagaStepExecutionInfo>> _executionHistory = [];
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
@@ -294,15 +289,10 @@ public class TestParallelSagaGrain : ParallelSagaOrchestrator<TestSagaData>, ITe
 /// This allows us to test different workflow configurations without modifying the grain state.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
-public class TestWorkflowOrchestrator<TSagaData>
+public class TestWorkflowOrchestrator<TSagaData>(SagaExecutionGraph<TSagaData> executionGraph)
     where TSagaData : class
 {
-    private readonly SagaExecutionGraph<TSagaData> _executionGraph;
-
-    public TestWorkflowOrchestrator(SagaExecutionGraph<TSagaData> executionGraph)
-    {
-        _executionGraph = executionGraph;
-    }
+    private readonly SagaExecutionGraph<TSagaData> _executionGraph = executionGraph;
 
     public async Task<ParallelSagaResult> ExecuteAsync(TSagaData sagaData, string correlationId)
     {
@@ -321,7 +311,7 @@ public class TestWorkflowOrchestrator<TSagaData>
             foreach (var level in levels)
             {
                 // Execute all steps in this level in parallel
-                var levelTasks = level.Select(step => ExecuteStepAsync(step, sagaData, correlationId, completedSteps, failedSteps));
+                var levelTasks = level.Select(step => TestWorkflowOrchestrator<TSagaData>.ExecuteStepAsync(step, sagaData, correlationId, completedSteps, failedSteps));
                 var levelResults = await Task.WhenAll(levelTasks);
 
                 // Process results
@@ -378,7 +368,7 @@ public class TestWorkflowOrchestrator<TSagaData>
         }
     }
 
-    private async Task<SagaStepResult> ExecuteStepAsync(
+    private static async Task<SagaStepResult> ExecuteStepAsync(
         SagaWorkflowStep<TSagaData> step,
         TSagaData sagaData,
         string correlationId,
@@ -427,11 +417,12 @@ public class TestWorkflowOrchestrator<TSagaData>
 /// Test data structure for saga execution testing.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Tests.Integration.TestGrains.TestSagaData")]
 public class TestSagaData
 {
     [Id(0)] public string WorkflowId { get; set; } = "";
-    [Id(1)] public List<string> Steps { get; set; } = new();
-    [Id(2)] public List<string> ExecutionLog { get; set; } = new();
+    [Id(1)] public List<string> Steps { get; set; } = [];
+    [Id(2)] public List<string> ExecutionLog { get; set; } = [];
     [Id(3)] public TimeSpan ProcessingTime { get; set; } = TimeSpan.FromMilliseconds(10);
     [Id(4)] public bool SkipConditionalSteps { get; set; }
     [Id(5)] public bool SimulateFailure { get; set; }
@@ -441,13 +432,21 @@ public class TestSagaData
 /// <summary>
 /// Interface for test parallel saga grain.
 /// </summary>
+[Alias("Orleans.StateMachineES.Tests.Integration.TestGrains.ITestParallelSagaGrain")]
 public interface ITestParallelSagaGrain : IGrainWithStringKey
 {
+    [Alias("ExecuteLinearWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteLinearWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("ExecuteParallelWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteParallelWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("ExecuteComplexWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteComplexWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("ExecuteConditionalWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteConditionalWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("ExecuteFailureWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteFailureWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("ExecuteRetryWorkflowAsync")]
     Task<ParallelSagaResult> ExecuteRetryWorkflowAsync(TestSagaData sagaData, string correlationId);
+    [Alias("GetExecutionHistoryAsync")]
     Task<List<SagaStepExecutionInfo>> GetExecutionHistoryAsync(string correlationId);
 }

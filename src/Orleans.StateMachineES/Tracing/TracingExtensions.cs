@@ -1,12 +1,9 @@
-using System;
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Orleans.Hosting;
 
 namespace Orleans.StateMachineES.Tracing;
 
@@ -342,7 +339,7 @@ public class TracingConfiguration
     /// <summary>
     /// Additional resource attributes for telemetry.
     /// </summary>
-    public Dictionary<string, object> ResourceAttributes { get; set; } = new();
+    public Dictionary<string, object> ResourceAttributes { get; set; } = [];
     
     /// <summary>
     /// The sampling strategy to use for trace collection.
@@ -392,7 +389,7 @@ public class TracingConfiguration
     /// <summary>
     /// List of exporter configuration delegates.
     /// </summary>
-    public List<Action<TracerProviderBuilder>> Exporters { get; set; } = new();
+    public List<Action<TracerProviderBuilder>> Exporters { get; set; } = [];
     
     /// <summary>
     /// Custom tracing configuration delegate for advanced scenarios.
@@ -407,7 +404,7 @@ public class TracingConfiguration
     /// <summary>
     /// List of metrics exporter configuration delegates.
     /// </summary>
-    public List<Action<MeterProviderBuilder>> MetricsExporters { get; set; } = new();
+    public List<Action<MeterProviderBuilder>> MetricsExporters { get; set; } = [];
     
     /// <summary>
     /// Custom metrics configuration delegate for advanced scenarios.

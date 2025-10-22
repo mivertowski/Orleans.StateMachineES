@@ -1,26 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.Runtime;
 using Orleans.StateMachineES.Sagas;
-using Orleans.StateMachineES.Tests.Integration;
 
 namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
 
 /// <summary>
 /// Complex saga grain for testing multi-step saga orchestration.
 /// </summary>
-public class ComplexSagaGrain : SagaOrchestratorGrain<ComplexSagaData>, IComplexSagaGrain
+public class ComplexSagaGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<ComplexSagaData>> state) : SagaOrchestratorGrain<ComplexSagaData>(state), IComplexSagaGrain
 {
     private ILogger<ComplexSagaGrain>? _logger;
-
-    public ComplexSagaGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<ComplexSagaData>> state) 
-        : base(state)
-    {
-    }
 
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
     {
@@ -58,8 +46,8 @@ public class ComplexSagaGrain : SagaOrchestratorGrain<ComplexSagaData>, IComplex
             IsSuccess = result.IsSuccess,
             IsCompensated = result.IsCompensated,
             Status = result.IsSuccess ? "Completed" : result.IsCompensated ? "Compensated" : "Failed",
-            CompletedSteps = result.ExecutionHistory?.Where(h => h.IsSuccess).Select(h => h.StepName).ToList() ?? new List<string>(),
-            CompensatedSteps = result.CompensationHistory?.Where(c => c.IsSuccess).Select(c => c.StepName).ToList() ?? new List<string>()
+            CompletedSteps = result.ExecutionHistory?.Where(h => h.IsSuccess).Select(h => h.StepName).ToList() ?? [],
+            CompensatedSteps = result.CompensationHistory?.Where(c => c.IsSuccess).Select(c => c.StepName).ToList() ?? []
         };
     }
 }
@@ -67,14 +55,9 @@ public class ComplexSagaGrain : SagaOrchestratorGrain<ComplexSagaData>, IComplex
 /// <summary>
 /// Payment processing step implementation.
 /// </summary>
-public class PaymentProcessingStep : ISagaStep<ComplexSagaData>
+public class PaymentProcessingStep(ILogger? logger) : ISagaStep<ComplexSagaData>
 {
-    private readonly ILogger? _logger;
-
-    public PaymentProcessingStep(ILogger? logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger? _logger = logger;
 
     public string StepName => "PaymentProcessing";
     public TimeSpan Timeout => TimeSpan.FromSeconds(30);
@@ -111,14 +94,9 @@ public class PaymentProcessingStep : ISagaStep<ComplexSagaData>
 /// <summary>
 /// Inventory reservation step implementation.
 /// </summary>
-public class InventoryReservationStep : ISagaStep<ComplexSagaData>
+public class InventoryReservationStep(ILogger? logger) : ISagaStep<ComplexSagaData>
 {
-    private readonly ILogger? _logger;
-
-    public InventoryReservationStep(ILogger? logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger? _logger = logger;
 
     public string StepName => "InventoryReservation";
     public TimeSpan Timeout => TimeSpan.FromSeconds(20);
@@ -155,14 +133,9 @@ public class InventoryReservationStep : ISagaStep<ComplexSagaData>
 /// <summary>
 /// Shipping arrangement step implementation.
 /// </summary>
-public class ShippingArrangementStep : ISagaStep<ComplexSagaData>
+public class ShippingArrangementStep(ILogger? logger) : ISagaStep<ComplexSagaData>
 {
-    private readonly ILogger? _logger;
-
-    public ShippingArrangementStep(ILogger? logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger? _logger = logger;
 
     public string StepName => "ShippingArrangement";
     public TimeSpan Timeout => TimeSpan.FromSeconds(15);
@@ -199,14 +172,9 @@ public class ShippingArrangementStep : ISagaStep<ComplexSagaData>
 /// <summary>
 /// Notification step implementation.
 /// </summary>
-public class NotificationStep : ISagaStep<ComplexSagaData>
+public class NotificationStep(ILogger? logger) : ISagaStep<ComplexSagaData>
 {
-    private readonly ILogger? _logger;
-
-    public NotificationStep(ILogger? logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger? _logger = logger;
 
     public string StepName => "CustomerNotification";
     public TimeSpan Timeout => TimeSpan.FromSeconds(10);

@@ -355,8 +355,8 @@ public class StateMachineDefinition
     public string Name { get; set; } = "";
     public string? Namespace { get; set; }
     public string? Description { get; set; }
-    public List<string> States { get; set; } = new();
-    public List<string> Triggers { get; set; } = new();
+    public List<string> States { get; set; } = [];
+    public List<string> Triggers { get; set; } = [];
     public string? InitialState { get; set; }
     public List<string>? TerminalStates { get; set; }
     public List<TransitionDefinition>? Transitions { get; set; }

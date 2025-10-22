@@ -1,15 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Stateless;
 using Stateless.Graph;
 using Stateless.Reflection;
-using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Versioning;
 
@@ -17,18 +10,13 @@ namespace Orleans.StateMachineES.Versioning;
 /// Enhanced introspector for analyzing and comparing state machine configurations.
 /// Provides advanced inspection capabilities using reflection and DOT graph parsing.
 /// </summary>
-public class ImprovedStateMachineIntrospector<TState, TTrigger>
+public class ImprovedStateMachineIntrospector<TState, TTrigger>(ILogger<ImprovedStateMachineIntrospector<TState, TTrigger>> logger)
     where TState : struct, Enum
     where TTrigger : struct, Enum
 {
-    private readonly ILogger<ImprovedStateMachineIntrospector<TState, TTrigger>> _logger;
-    private readonly Dictionary<TState, HashSet<TTrigger>> _permittedTriggersCache = new();
-    private readonly Dictionary<(TState, TTrigger), TransitionInfo<TState, TTrigger>> _transitionCache = new();
-
-    public ImprovedStateMachineIntrospector(ILogger<ImprovedStateMachineIntrospector<TState, TTrigger>> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<ImprovedStateMachineIntrospector<TState, TTrigger>> _logger = logger;
+    private readonly Dictionary<TState, HashSet<TTrigger>> _permittedTriggersCache = [];
+    private readonly Dictionary<(TState, TTrigger), TransitionInfo<TState, TTrigger>> _transitionCache = [];
 
     /// <summary>
     /// Extracts complete configuration from a state machine using multiple techniques.
@@ -81,19 +69,19 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         {
             var stateConfig = new EnhancedStateConfiguration<TState, TTrigger>
             {
-                State = ParseStateValue(state.UnderlyingState),
+                State = ImprovedStateMachineIntrospector<TState, TTrigger>.ParseStateValue(state.UnderlyingState),
                 IsInitialState = state.UnderlyingState.ToString() == config.InitialState.ToString()
             };
 
             // Extract hierarchy
             if (state.Superstate != null)
             {
-                stateConfig.Superstate = ParseStateValue(state.Superstate.UnderlyingState);
+                stateConfig.Superstate = ImprovedStateMachineIntrospector<TState, TTrigger>.ParseStateValue(state.Superstate.UnderlyingState);
             }
 
             foreach (var substate in state.Substates)
             {
-                stateConfig.Substates.Add(ParseStateValue(substate.UnderlyingState));
+                stateConfig.Substates.Add(ImprovedStateMachineIntrospector<TState, TTrigger>.ParseStateValue(substate.UnderlyingState));
             }
 
             config.States[stateConfig.State] = stateConfig;
@@ -272,7 +260,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         try
         {
             // Generate DOT graph
-            var dotGraph = GenerateDotGraph(machine);
+            var dotGraph = ImprovedStateMachineIntrospector<TState, TTrigger>.GenerateDotGraph(machine);
             if (!string.IsNullOrEmpty(dotGraph))
             {
                 config.DotGraphRepresentation = dotGraph;
@@ -285,7 +273,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         }
     }
 
-    private string GenerateDotGraph(StateMachine<TState, TTrigger> machine)
+    private static string GenerateDotGraph(StateMachine<TState, TTrigger> machine)
     {
         try
         {
@@ -377,7 +365,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
                         var key = (from, trig);
                         if (!config.TransitionMap.ContainsKey(key))
                         {
-                            config.TransitionMap[key] = new List<EnhancedTransitionConfiguration<TState, TTrigger>>();
+                            config.TransitionMap[key] = [];
                         }
                         config.TransitionMap[key].Add(transition);
                         
@@ -418,15 +406,15 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
             TotalStates = config.States.Count,
             TotalTransitions = config.TransitionMap.Sum(kvp => kvp.Value.Count),
             TotalGuardedTransitions = config.GuardedTriggers.Count,
-            MaxStateDepth = CalculateMaxDepth(config),
+            MaxStateDepth = ImprovedStateMachineIntrospector<TState, TTrigger>.CalculateMaxDepth(config),
             AverageTransitionsPerState = config.States.Count > 0 
                 ? (double)config.TransitionMap.Count / config.States.Count 
                 : 0,
-            CyclomaticComplexity = CalculateCyclomaticComplexity(config)
+            CyclomaticComplexity = ImprovedStateMachineIntrospector<TState, TTrigger>.CalculateCyclomaticComplexity(config)
         };
     }
 
-    private int CalculateMaxDepth(EnhancedStateMachineConfiguration<TState, TTrigger> config)
+    private static int CalculateMaxDepth(EnhancedStateMachineConfiguration<TState, TTrigger> config)
     {
         int maxDepth = 0;
         foreach (var state in config.States.Values)
@@ -445,7 +433,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         return maxDepth;
     }
 
-    private int CalculateCyclomaticComplexity(EnhancedStateMachineConfiguration<TState, TTrigger> config)
+    private static int CalculateCyclomaticComplexity(EnhancedStateMachineConfiguration<TState, TTrigger> config)
     {
         // Cyclomatic complexity = E - N + 2P
         // E = edges (transitions), N = nodes (states), P = connected components (usually 1)
@@ -474,9 +462,9 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         var states1 = new HashSet<TState>(config1.States.Keys);
         var states2 = new HashSet<TState>(config2.States.Keys);
 
-        comparison.AddedStates = states2.Except(states1).ToList();
-        comparison.RemovedStates = states1.Except(states2).ToList();
-        comparison.CommonStates = states1.Intersect(states2).ToList();
+        comparison.AddedStates = [.. states2.Except(states1)];
+        comparison.RemovedStates = [.. states1.Except(states2)];
+        comparison.CommonStates = [.. states1.Intersect(states2)];
 
         // Compare transitions
         foreach (var state in comparison.CommonStates)
@@ -524,7 +512,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         return comparison;
     }
 
-    private TState ParseStateValue(object stateValue)
+    private static TState ParseStateValue(object stateValue)
     {
         if (stateValue is TState state)
             return state;
@@ -532,7 +520,7 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
         return (TState)Enum.Parse(typeof(TState), stateValue.ToString() ?? string.Empty);
     }
 
-    private TTrigger ParseTriggerValue(object triggerValue)
+    private static TTrigger ParseTriggerValue(object triggerValue)
     {
         if (triggerValue is TTrigger trigger)
             return trigger;
@@ -545,17 +533,18 @@ public class ImprovedStateMachineIntrospector<TState, TTrigger>
 /// Enhanced state machine configuration with additional metadata.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.EnhancedStateMachineConfiguration`2")]
 public class EnhancedStateMachineConfiguration<TState, TTrigger>
     where TState : struct, Enum
     where TTrigger : struct, Enum
 {
-    [Id(0)] public Dictionary<TState, EnhancedStateConfiguration<TState, TTrigger>> States { get; set; } = new();
-    [Id(1)] public Dictionary<(TState Source, TTrigger Trigger), List<EnhancedTransitionConfiguration<TState, TTrigger>>> TransitionMap { get; set; } = new();
+    [Id(0)] public Dictionary<TState, EnhancedStateConfiguration<TState, TTrigger>> States { get; set; } = [];
+    [Id(1)] public Dictionary<(TState Source, TTrigger Trigger), List<EnhancedTransitionConfiguration<TState, TTrigger>>> TransitionMap { get; set; } = [];
     [Id(2)] public TState InitialState { get; set; }
     [Id(3)] public bool IsValid { get; set; }
     [Id(4)] public DateTime ExtractionTimestamp { get; set; }
-    [Id(5)] public List<string> ExtractionErrors { get; set; } = new();
-    [Id(6)] public HashSet<(TState State, TTrigger Trigger)> GuardedTriggers { get; set; } = new();
+    [Id(5)] public List<string> ExtractionErrors { get; set; } = [];
+    [Id(6)] public HashSet<(TState State, TTrigger Trigger)> GuardedTriggers { get; set; } = [];
     [Id(7)] public string? DotGraphRepresentation { get; set; }
     [Id(8)] public StateMachineMetrics Metrics { get; set; } = new();
 }
@@ -564,25 +553,27 @@ public class EnhancedStateMachineConfiguration<TState, TTrigger>
 /// Enhanced state configuration with additional details.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.EnhancedStateConfiguration`2")]
 public class EnhancedStateConfiguration<TState, TTrigger>
     where TState : struct, Enum
     where TTrigger : struct, Enum
 {
     [Id(0)] public TState State { get; set; }
     [Id(1)] public TState? Superstate { get; set; }
-    [Id(2)] public List<TState> Substates { get; set; } = new();
-    [Id(3)] public HashSet<TTrigger> PermittedTriggers { get; set; } = new();
-    [Id(4)] public HashSet<TTrigger> ActivableTriggers { get; set; } = new();
-    [Id(5)] public HashSet<TTrigger> IgnoredTriggers { get; set; } = new();
-    [Id(6)] public List<EnhancedTransitionConfiguration<TState, TTrigger>> Transitions { get; set; } = new();
+    [Id(2)] public List<TState> Substates { get; set; } = [];
+    [Id(3)] public HashSet<TTrigger> PermittedTriggers { get; set; } = [];
+    [Id(4)] public HashSet<TTrigger> ActivableTriggers { get; set; } = [];
+    [Id(5)] public HashSet<TTrigger> IgnoredTriggers { get; set; } = [];
+    [Id(6)] public List<EnhancedTransitionConfiguration<TState, TTrigger>> Transitions { get; set; } = [];
     [Id(7)] public bool IsInitialState { get; set; }
-    [Id(8)] public Dictionary<string, object> Metadata { get; set; } = new();
+    [Id(8)] public Dictionary<string, object> Metadata { get; set; } = [];
 }
 
 /// <summary>
 /// Enhanced transition configuration with additional metadata.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.EnhancedTransitionConfiguration`2")]
 public class EnhancedTransitionConfiguration<TState, TTrigger>
     where TState : struct, Enum
     where TTrigger : struct, Enum
@@ -600,6 +591,7 @@ public class EnhancedTransitionConfiguration<TState, TTrigger>
 /// Metrics about the state machine structure.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.StateMachineMetrics")]
 public class StateMachineMetrics
 {
     [Id(0)] public int TotalStates { get; set; }
@@ -614,18 +606,19 @@ public class StateMachineMetrics
 /// Result of comparing two state machine configurations.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.StateMachineComparison`2")]
 public class StateMachineComparison<TState, TTrigger>
     where TState : struct, Enum
     where TTrigger : struct, Enum
 {
     [Id(0)] public EnhancedStateMachineConfiguration<TState, TTrigger> Config1 { get; set; } = new();
     [Id(1)] public EnhancedStateMachineConfiguration<TState, TTrigger> Config2 { get; set; } = new();
-    [Id(2)] public List<TState> AddedStates { get; set; } = new();
-    [Id(3)] public List<TState> RemovedStates { get; set; } = new();
-    [Id(4)] public List<TState> CommonStates { get; set; } = new();
-    [Id(5)] public List<(TState State, TTrigger Trigger)> AddedTransitions { get; set; } = new();
-    [Id(6)] public List<(TState State, TTrigger Trigger)> RemovedTransitions { get; set; } = new();
-    [Id(7)] public List<(TState State, TTrigger Trigger, TState OldDest, TState NewDest)> ModifiedTransitions { get; set; } = new();
+    [Id(2)] public List<TState> AddedStates { get; set; } = [];
+    [Id(3)] public List<TState> RemovedStates { get; set; } = [];
+    [Id(4)] public List<TState> CommonStates { get; set; } = [];
+    [Id(5)] public List<(TState State, TTrigger Trigger)> AddedTransitions { get; set; } = [];
+    [Id(6)] public List<(TState State, TTrigger Trigger)> RemovedTransitions { get; set; } = [];
+    [Id(7)] public List<(TState State, TTrigger Trigger, TState OldDest, TState NewDest)> ModifiedTransitions { get; set; } = [];
     [Id(8)] public double SimilarityScore { get; set; }
     [Id(9)] public DateTime ComparisonTimestamp { get; set; }
 

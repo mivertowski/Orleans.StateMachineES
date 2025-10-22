@@ -1,10 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Tracing;
@@ -14,25 +9,18 @@ namespace Orleans.StateMachineES.Monitoring;
 /// <summary>
 /// Service for performing health checks on state machine grains.
 /// </summary>
-public class StateMachineHealthCheckService : IStateMachineHealthCheck
+public class StateMachineHealthCheckService(
+    IGrainFactory grainFactory,
+    ILogger<StateMachineHealthCheckService> logger,
+    StateMachineHealthCheckOptions? options = null) : IStateMachineHealthCheck
 {
-    private readonly IGrainFactory _grainFactory;
-    private readonly ILogger<StateMachineHealthCheckService> _logger;
-    private readonly StateMachineHealthCheckOptions _options;
+    private readonly IGrainFactory _grainFactory = grainFactory ?? throw new ArgumentNullException(nameof(grainFactory));
+    private readonly ILogger<StateMachineHealthCheckService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly StateMachineHealthCheckOptions _options = options ?? new StateMachineHealthCheckOptions();
     private readonly ConcurrentDictionary<string, StateMachineHealthResult> _lastResults = new();
     private readonly ConcurrentDictionary<string, DateTime> _lastChecked = new();
     private SystemHealthResult? _lastSystemHealth;
     private DateTime _lastSystemHealthUpdate = DateTime.MinValue;
-
-    public StateMachineHealthCheckService(
-        IGrainFactory grainFactory,
-        ILogger<StateMachineHealthCheckService> logger,
-        StateMachineHealthCheckOptions? options = null)
-    {
-        _grainFactory = grainFactory ?? throw new ArgumentNullException(nameof(grainFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options ?? new StateMachineHealthCheckOptions();
-    }
 
     /// <inheritdoc />
     public async Task<StateMachineHealthResult> CheckHealthAsync(
@@ -150,7 +138,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
             });
 
             var healthResults = await Task.WhenAll(tasks);
-            result.Results = healthResults.ToList();
+            result.Results = [.. healthResults];
 
             // Calculate aggregate statistics
             result.HealthyGrains = healthResults.Count(r => r.Status == HealthStatus.Healthy);
@@ -296,7 +284,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
         }
     }
 
-    private async Task<bool> PingGrainAsync(IGrainWithStringKey grain)
+    private static async Task<bool> PingGrainAsync(IGrainWithStringKey grain)
     {
         try
         {
@@ -318,7 +306,7 @@ public class StateMachineHealthCheckService : IStateMachineHealthCheck
         }
     }
 
-    private string? GetCurrentStateAsync(IStateMachineGrain<Enum, Enum> grain)
+    private static string? GetCurrentStateAsync(IStateMachineGrain<Enum, Enum> grain)
     {
         try
         {
@@ -492,12 +480,12 @@ public class StateMachineHealthCheckOptions
     /// <summary>
     /// States that should be considered degraded.
     /// </summary>
-    public HashSet<string> DegradedStates { get; set; } = new() { "Degraded", "Warning", "Retrying" };
+    public HashSet<string> DegradedStates { get; set; } = ["Degraded", "Warning", "Retrying"];
 
     /// <summary>
     /// States that should be considered unhealthy.
     /// </summary>
-    public HashSet<string> UnhealthyStates { get; set; } = new() { "Error", "Failed", "Faulted", "TimedOut" };
+    public HashSet<string> UnhealthyStates { get; set; } = ["Error", "Failed", "Faulted", "TimedOut"];
 }
 
 /// <summary>

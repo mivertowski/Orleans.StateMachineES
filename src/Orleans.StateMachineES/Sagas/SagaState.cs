@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
 using Orleans.StateMachineES.EventSourcing;
-using Orleans;
 
 namespace Orleans.StateMachineES.Sagas;
 
@@ -53,6 +50,7 @@ public interface ISagaGrainState<TSagaData>
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaState`1")]
 public class SagaState<TSagaData> : EventSourcedStateMachineState<SagaStatus>, ISagaGrainState<TSagaData>
     where TSagaData : class
 {
@@ -102,13 +100,13 @@ public class SagaState<TSagaData> : EventSourcedStateMachineState<SagaStatus>, I
     /// History of compensation executions.
     /// </summary>
     [Id(7)]
-    public List<CompensationExecution> CompensationHistory { get; set; } = new();
+    public List<CompensationExecution> CompensationHistory { get; set; } = [];
     
     /// <summary>
     /// The results from each step execution for use in compensation.
     /// </summary>
     [Id(8)]
-    public Dictionary<string, object> StepResults { get; set; } = new();
+    public Dictionary<string, object> StepResults { get; set; } = [];
     
     /// <summary>
     /// Total number of retry attempts across all steps.
@@ -120,7 +118,7 @@ public class SagaState<TSagaData> : EventSourcedStateMachineState<SagaStatus>, I
     /// Custom properties for the saga state.
     /// </summary>
     [Id(10)]
-    public Dictionary<string, object> Properties { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = [];
 }
 
 /// <summary>

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.Interfaces;
 using Stateless;
 
@@ -12,14 +7,9 @@ namespace Orleans.StateMachineES.Visualization;
 /// Service for batch processing and visualization of multiple state machines.
 /// Provides capabilities for generating reports, comparisons, and bulk exports.
 /// </summary>
-public class BatchVisualizationService
+public class BatchVisualizationService(string? outputDirectory = null)
 {
-    private readonly string _defaultOutputDirectory;
-
-    public BatchVisualizationService(string? outputDirectory = null)
-    {
-        _defaultOutputDirectory = outputDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "StateMachineVisualizations");
-    }
+    private readonly string _defaultOutputDirectory = outputDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "StateMachineVisualizations");
 
     /// <summary>
     /// Generates visualizations for multiple state machines in batch.
@@ -55,7 +45,7 @@ public class BatchVisualizationService
         }
 
         var individualResults = await Task.WhenAll(tasks);
-        result.IndividualResults = individualResults.ToList();
+        result.IndividualResults = [.. individualResults];
         result.SuccessfulCount = individualResults.Count(r => r.Success);
         result.FailedCount = result.TotalStateMachines - result.SuccessfulCount;
 
@@ -159,7 +149,7 @@ public class BatchVisualizationService
         }
 
         var individualResults = await Task.WhenAll(tasks);
-        result.IndividualResults = individualResults.ToList();
+        result.IndividualResults = [.. individualResults];
         result.SuccessfulCount = individualResults.Count(r => r.Success);
         result.FailedCount = result.TotalStateMachines - result.SuccessfulCount;
 
@@ -256,7 +246,7 @@ public class BatchVisualizationService
         return result;
     }
 
-    private async Task GenerateSummaryReportAsync(
+    private static async Task GenerateSummaryReportAsync(
         IEnumerable<SingleVisualizationResult> results,
         BatchVisualizationOptions options,
         string outputDir)
@@ -288,7 +278,7 @@ public class BatchVisualizationService
         await File.WriteAllTextAsync(summaryPath, summaryJson);
     }
 
-    private string GenerateFilename(string baseName, BatchVisualizationOptions options)
+    private static string GenerateFilename(string baseName, BatchVisualizationOptions options)
     {
         var filename = $"{options.FilePrefix}_{baseName}";
         
@@ -300,7 +290,7 @@ public class BatchVisualizationService
         return filename;
     }
 
-    private ComplexityComparison GenerateComplexityComparison(Dictionary<string, StateMachineAnalysis> analyses)
+    private static ComplexityComparison GenerateComplexityComparison(Dictionary<string, StateMachineAnalysis> analyses)
     {
         return new ComplexityComparison
         {
@@ -347,7 +337,7 @@ public class BatchVisualizationService
         return matrix;
     }
 
-    private double CalculateSimilarity(StateMachineAnalysis a1, StateMachineAnalysis a2)
+    private static double CalculateSimilarity(StateMachineAnalysis a1, StateMachineAnalysis a2)
     {
         // Simple similarity calculation based on structural properties
         var stateOverlap = a1.States.Select(s => s.Name).Intersect(a2.States.Select(s => s.Name)).Count();
@@ -362,9 +352,9 @@ public class BatchVisualizationService
         return (stateSimilarity + triggerSimilarity) / 2.0;
     }
 
-    private List<string> FindCommonElements(IEnumerable<IEnumerable<string>> collections)
+    private static List<string> FindCommonElements(IEnumerable<IEnumerable<string>> collections)
     {
-        return collections.Aggregate((acc, next) => acc.Intersect(next)).ToList();
+        return [.. collections.Aggregate((acc, next) => acc.Intersect(next))];
     }
 }
 
@@ -378,7 +368,7 @@ public class BatchVisualizationResult
     public int TotalStateMachines { get; set; }
     public int SuccessfulCount { get; set; }
     public int FailedCount { get; set; }
-    public List<SingleVisualizationResult> IndividualResults { get; set; } = new();
+    public List<SingleVisualizationResult> IndividualResults { get; set; } = [];
 }
 
 /// <summary>
@@ -390,7 +380,7 @@ public class SingleVisualizationResult
     public DateTime ProcessedAt { get; set; }
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
-    public List<string> GeneratedFiles { get; set; } = new();
+    public List<string> GeneratedFiles { get; set; } = [];
 }
 
 /// <summary>
@@ -421,11 +411,11 @@ public class ComparisonReport
     public DateTime GeneratedAt { get; set; }
     public int StateMachineCount { get; set; }
     public ComparisonCriteria ComparisonCriteria { get; set; }
-    public Dictionary<string, StateMachineAnalysis> Analyses { get; set; } = new();
+    public Dictionary<string, StateMachineAnalysis> Analyses { get; set; } = [];
     public ComplexityComparison? ComplexityComparison { get; set; }
     public StructuralComparison? StructuralComparison { get; set; }
     public SimilarityMatrix? SimilarityMatrix { get; set; }
-    public List<string> Errors { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
 }
 
 /// <summary>
@@ -436,7 +426,7 @@ public class ComplexityComparison
     public string MostComplex { get; set; } = string.Empty;
     public string LeastComplex { get; set; } = string.Empty;
     public double AverageComplexity { get; set; }
-    public Dictionary<ComplexityLevel, int> ComplexityDistribution { get; set; } = new();
+    public Dictionary<ComplexityLevel, int> ComplexityDistribution { get; set; } = [];
 }
 
 /// <summary>
@@ -447,8 +437,8 @@ public class StructuralComparison
     public Range StateCountRange { get; set; } = new Range(0, 0);
     public Range TriggerCountRange { get; set; } = new Range(0, 0);
     public Range TransitionCountRange { get; set; } = new Range(0, 0);
-    public List<string> CommonStates { get; set; } = new();
-    public List<string> CommonTriggers { get; set; } = new();
+    public List<string> CommonStates { get; set; } = [];
+    public List<string> CommonTriggers { get; set; } = [];
 }
 
 /// <summary>
@@ -456,7 +446,7 @@ public class StructuralComparison
 /// </summary>
 public class SimilarityMatrix
 {
-    public Dictionary<string, double> Similarities { get; set; } = new();
+    public Dictionary<string, double> Similarities { get; set; } = [];
 }
 
 /// <summary>

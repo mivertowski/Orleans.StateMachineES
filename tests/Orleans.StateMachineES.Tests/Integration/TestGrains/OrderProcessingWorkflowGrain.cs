@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.StateMachineES.Tests.Integration;
 using Stateless;
 
 namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
@@ -15,7 +10,7 @@ public class OrderProcessingWorkflowGrain : StateMachineGrain<OrderState, string
 {
     private ILogger<OrderProcessingWorkflowGrain>? _logger;
     private OrderData? _orderData;
-    private readonly List<OrderHistoryEntry> _orderHistory = new();
+    private readonly List<OrderHistoryEntry> _orderHistory = [];
     
     protected override StateMachine<OrderState, string> BuildStateMachine()
     {

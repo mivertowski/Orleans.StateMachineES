@@ -1,30 +1,17 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Tests.Cluster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.Runtime;
-using Orleans.TestingHost;
-using Orleans.Timers;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace Orleans.StateMachineES.Tests.Timers;
 
 [Collection(nameof(TestClusterApplication))]
-public class SimpleTimerTests
+public class SimpleTimerTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public SimpleTimerTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task SimpleTimer_ShouldFire()
@@ -45,9 +32,12 @@ public class SimpleTimerTests
     }
 }
 
+[Alias("Orleans.StateMachineES.Tests.Timers.ISimpleTimerGrain")]
 public interface ISimpleTimerGrain : IGrainWithStringKey
 {
+    [Alias("StartTimerAsync")]
     Task StartTimerAsync();
+    [Alias("GetTimerCountAsync")]
     Task<int> GetTimerCountAsync();
 }
 

@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Orleans.StateMachineES.Extensions;
@@ -35,9 +33,7 @@ public class StringInternBenchmarks
             "Submit", "Approve", "Reject", "Reset", "Initialize", "Finalize"
         };
 
-        _dynamicStrings = Enumerable.Range(0, 1000)
-            .Select(i => $"DynamicState{i}")
-            .ToArray();
+        _dynamicStrings = [.. Enumerable.Range(0, 1000).Select(i => $"DynamicState{i}")];
     }
 
     [Benchmark(Baseline = true)]

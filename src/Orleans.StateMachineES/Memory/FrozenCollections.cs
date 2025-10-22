@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace Orleans.StateMachineES.Memory;
@@ -155,22 +152,16 @@ public static class StateMachineFrozenCollections
 /// </summary>
 /// <typeparam name="TKey">The type of keys.</typeparam>
 /// <typeparam name="TValue">The type of values.</typeparam>
-public sealed class FrozenDictionaryBuilder<TKey, TValue>
+/// <remarks>
+/// Initializes a new FrozenDictionaryBuilder.
+/// </remarks>
+/// <param name="capacity">Initial capacity hint.</param>
+/// <param name="comparer">Key comparer.</param>
+public sealed class FrozenDictionaryBuilder<TKey, TValue>(int capacity = 0, IEqualityComparer<TKey>? comparer = null)
     where TKey : notnull
 {
-    private readonly Dictionary<TKey, TValue> _items;
-    private readonly IEqualityComparer<TKey>? _comparer;
-
-    /// <summary>
-    /// Initializes a new FrozenDictionaryBuilder.
-    /// </summary>
-    /// <param name="capacity">Initial capacity hint.</param>
-    /// <param name="comparer">Key comparer.</param>
-    public FrozenDictionaryBuilder(int capacity = 0, IEqualityComparer<TKey>? comparer = null)
-    {
-        _items = capacity > 0 ? new Dictionary<TKey, TValue>(capacity) : new Dictionary<TKey, TValue>();
-        _comparer = comparer;
-    }
+    private readonly Dictionary<TKey, TValue> _items = capacity > 0 ? new Dictionary<TKey, TValue>(capacity) : [];
+    private readonly IEqualityComparer<TKey>? _comparer = comparer;
 
     /// <summary>
     /// Adds a key-value pair to the builder.

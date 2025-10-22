@@ -29,7 +29,7 @@ public class GuardComplexityAnalyzer : DiagnosticAnalyzer
 
     private const string Category = "Maintainability";
 
-    private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor Rule = new(
         DiagnosticId,
         Title,
         MessageFormat,

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Stateless;
 
@@ -11,20 +9,15 @@ namespace Orleans.StateMachineES.Memory;
 /// </summary>
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
-public sealed class TriggerParameterCache<TState, TTrigger>
+/// <remarks>
+/// Initializes a new instance of the TriggerParameterCache class.
+/// </remarks>
+/// <param name="stateMachine">The state machine to cache trigger parameters for.</param>
+public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState, TTrigger> stateMachine)
     where TTrigger : notnull
 {
-    private readonly StateMachine<TState, TTrigger> _stateMachine;
-    private readonly Dictionary<TTrigger, object> _cache = new();
-
-    /// <summary>
-    /// Initializes a new instance of the TriggerParameterCache class.
-    /// </summary>
-    /// <param name="stateMachine">The state machine to cache trigger parameters for.</param>
-    public TriggerParameterCache(StateMachine<TState, TTrigger> stateMachine)
-    {
-        _stateMachine = stateMachine ?? throw new ArgumentNullException(nameof(stateMachine));
-    }
+    private readonly StateMachine<TState, TTrigger> _stateMachine = stateMachine ?? throw new ArgumentNullException(nameof(stateMachine));
+    private readonly Dictionary<TTrigger, object> _cache = [];
 
     /// <summary>
     /// Gets or creates cached trigger parameters for a trigger with one argument.

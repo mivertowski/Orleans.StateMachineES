@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Orleans;
-
 namespace Orleans.StateMachineES.Sagas;
 
 /// <summary>
@@ -54,6 +49,7 @@ public interface ISagaStep<TSagaData>
 /// Result of executing a saga step.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaStepResult")]
 public class SagaStepResult
 {
     [Id(0)] public bool IsSuccess { get; set; }
@@ -104,6 +100,7 @@ public class SagaStepResult
 /// Result of executing a compensation action.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.CompensationResult")]
 public class CompensationResult
 {
     [Id(0)] public bool IsSuccess { get; set; }
@@ -141,6 +138,7 @@ public class CompensationResult
 /// Context information passed to saga steps.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaContext")]
 public class SagaContext
 {
     /// <summary>
@@ -171,7 +169,7 @@ public class SagaContext
     /// <summary>
     /// Additional metadata for the saga context.
     /// </summary>
-    [Id(5)] public Dictionary<string, object> Metadata { get; init; } = new();
+    [Id(5)] public Dictionary<string, object> Metadata { get; init; } = [];
     
     /// <summary>
     /// Current step index in the saga execution.

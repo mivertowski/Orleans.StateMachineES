@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Frozen;
-using System.Collections.Generic;
-using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Orleans.StateMachineES.Memory;
@@ -35,12 +32,12 @@ public class FrozenCollectionBenchmarks
         _regularDict = new Dictionary<string, string>(testData);
         _frozenDict = System.Collections.Frozen.FrozenDictionary.ToFrozenDictionary(testData);
 
-        _regularSet = new HashSet<string>(testData.Select(kvp => kvp.Key));
+        _regularSet = [.. testData.Select(kvp => kvp.Key)];
         _frozenSet = System.Collections.Frozen.FrozenSet.ToFrozenSet(testData.Select(kvp => kvp.Key));
 
         // Keys for lookup tests
-        _lookupKeys = testData.Take(100).Select(kvp => kvp.Key).ToArray();
-        _lookupValues = testData.Take(100).Select(kvp => kvp.Value).ToArray();
+        _lookupKeys = [.. testData.Take(100).Select(kvp => kvp.Key)];
+        _lookupValues = [.. testData.Take(100).Select(kvp => kvp.Value)];
     }
 
     [Benchmark(Baseline = true)]
@@ -65,7 +62,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Dictionary")]
-    public void Dictionary_Lookup_StateMachineFrozen()
+    public static void Dictionary_Lookup_StateMachineFrozen()
     {
         // Use our pre-built frozen error messages
         var keys = new[] { "INVALID_TRANSITION", "STATE_NOT_FOUND", "GUARD_CONDITION_FAILED", "SERIALIZATION_ERROR" };
@@ -97,7 +94,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Set")]
-    public void Set_Lookup_StateMachineFrozen()
+    public static void Set_Lookup_StateMachineFrozen()
     {
         // Use our pre-built frozen state names
         var states = new[] { "Initial", "Active", "Processing", "Completed", "Failed", "Pending" };
@@ -133,7 +130,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("Creation")]
-    public Dictionary<string, string> Dictionary_Creation_Regular()
+    public static Dictionary<string, string> Dictionary_Creation_Regular()
     {
         var dict = new Dictionary<string, string>();
         for (int i = 0; i < 100; i++)
@@ -145,7 +142,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Creation")]
-    public FrozenDictionary<string, string> Dictionary_Creation_Frozen()
+    public static FrozenDictionary<string, string> Dictionary_Creation_Frozen()
     {
         var builder = new FrozenDictionaryBuilder<string, string>(100);
         for (int i = 0; i < 100; i++)
@@ -157,7 +154,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Creation")]
-    public FrozenDictionary<string, string> Dictionary_Creation_FrozenDirect()
+    public static FrozenDictionary<string, string> Dictionary_Creation_FrozenDirect()
     {
         var pairs = Enumerable.Range(0, 100)
             .Select(i => new KeyValuePair<string, string>($"Key{i}", $"Value{i}"));
@@ -178,7 +175,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Mixed")]
-    public bool Mixed_Operations_Frozen()
+    public static bool Mixed_Operations_Frozen()
     {
         // Use our optimized frozen collections
         var hasError = StateMachineFrozenCollections.CommonErrorMessages.ContainsKey("INVALID_TRANSITION");
@@ -190,7 +187,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Http")]
-    public string Http_Status_Mapping_Frozen()
+    public static string Http_Status_Mapping_Frozen()
     {
         var statuses = new[] { 200, 201, 400, 401, 404, 500, 502, 503 };
         var lastState = "";
@@ -208,7 +205,7 @@ public class FrozenCollectionBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("Http")]
-    public string Http_Status_Mapping_Regular()
+    public static string Http_Status_Mapping_Regular()
     {
         var statusMapping = new Dictionary<int, string>
         {

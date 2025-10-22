@@ -1,11 +1,6 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Orleans.Hosting;
 
 namespace Orleans.StateMachineES.Monitoring;
 
@@ -189,27 +184,20 @@ public class StateMachineMonitoringOptions
 /// <summary>
 /// Background service for continuous state machine monitoring.
 /// </summary>
-public class StateMachineMonitoringBackgroundService : BackgroundService
+/// <remarks>
+/// Initializes a new instance of the background monitoring service.
+/// </remarks>
+/// <param name="healthCheck">Health check service.</param>
+/// <param name="options">Monitoring options.</param>
+/// <param name="logger">Logger instance.</param>
+public class StateMachineMonitoringBackgroundService(
+    IStateMachineHealthCheck healthCheck,
+    StateMachineMonitoringOptions options,
+    ILogger<StateMachineMonitoringBackgroundService> logger) : BackgroundService
 {
-    private readonly IStateMachineHealthCheck _healthCheck;
-    private readonly StateMachineMonitoringOptions _options;
-    private readonly ILogger<StateMachineMonitoringBackgroundService> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the background monitoring service.
-    /// </summary>
-    /// <param name="healthCheck">Health check service.</param>
-    /// <param name="options">Monitoring options.</param>
-    /// <param name="logger">Logger instance.</param>
-    public StateMachineMonitoringBackgroundService(
-        IStateMachineHealthCheck healthCheck,
-        StateMachineMonitoringOptions options,
-        ILogger<StateMachineMonitoringBackgroundService> logger)
-    {
-        _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IStateMachineHealthCheck _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
+    private readonly StateMachineMonitoringOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private readonly ILogger<StateMachineMonitoringBackgroundService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

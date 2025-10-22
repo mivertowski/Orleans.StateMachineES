@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Visualization;
 using Stateless;
@@ -34,7 +29,7 @@ public class BatchVisualizationServiceTests : IDisposable
         }
     }
 
-    private StateMachine<TestState, TestTrigger> CreateTestStateMachine(TestState initialState = TestState.Idle)
+    private static StateMachine<TestState, TestTrigger> CreateTestStateMachine(TestState initialState = TestState.Idle)
     {
         var machine = new StateMachine<TestState, TestTrigger>(initialState);
         
@@ -65,7 +60,7 @@ public class BatchVisualizationServiceTests : IDisposable
 
         var options = new BatchVisualizationOptions
         {
-            Formats = new List<ExportFormat> { ExportFormat.Dot, ExportFormat.Json },
+            Formats = [ExportFormat.Dot, ExportFormat.Json],
             FilePrefix = "test",
             IncludeTimestampInFilename = false,
             OutputDirectory = _testOutputDirectory
@@ -121,7 +116,7 @@ public class BatchVisualizationServiceTests : IDisposable
 
         var options = new BatchVisualizationOptions
         {
-            Formats = new List<ExportFormat> { ExportFormat.Dot },
+            Formats = [ExportFormat.Dot],
             IncludeTimestampInFilename = true,
             FilePrefix = "ts"
         };
@@ -282,11 +277,11 @@ public class BatchVisualizationServiceTests : IDisposable
             TotalStateMachines = 5,
             SuccessfulCount = 4,
             FailedCount = 1,
-            IndividualResults = new List<SingleVisualizationResult>
-            {
+            IndividualResults =
+            [
                 new() { Name = "test1", Success = true },
                 new() { Name = "test2", Success = false, ErrorMessage = "Failed" }
-            }
+            ]
         };
 
         // Assert
@@ -307,7 +302,7 @@ public class BatchVisualizationServiceTests : IDisposable
             ProcessedAt = DateTime.UtcNow,
             Success = true,
             ErrorMessage = null,
-            GeneratedFiles = new List<string> { "file1.dot", "file2.json" }
+            GeneratedFiles = ["file1.dot", "file2.json"]
         };
 
         // Assert

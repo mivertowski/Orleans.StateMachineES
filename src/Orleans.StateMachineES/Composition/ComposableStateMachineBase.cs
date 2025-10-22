@@ -8,43 +8,33 @@ namespace Orleans.StateMachineES.Composition;
 /// </summary>
 /// <typeparam name="TState">The type of states in the state machine.</typeparam>
 /// <typeparam name="TTrigger">The type of triggers that cause state transitions.</typeparam>
-public abstract class ComposableStateMachineBase<TState, TTrigger> : IComposableStateMachine<TState, TTrigger>
+/// <remarks>
+/// Initializes a new instance of the composable state machine base class.
+/// </remarks>
+/// <param name="componentId">The unique identifier for this component.</param>
+/// <param name="description">The description of this component.</param>
+/// <param name="entryState">The entry state for this component.</param>
+/// <param name="logger">Logger instance.</param>
+public abstract class ComposableStateMachineBase<TState, TTrigger>(
+    string componentId,
+    string description,
+    TState entryState,
+    ILogger logger) : IComposableStateMachine<TState, TTrigger>
     where TState : Enum
     where TTrigger : Enum
 {
-    protected readonly ILogger _logger;
-    private readonly Dictionary<string, TTrigger> _mappableTriggers;
-    private readonly HashSet<TState> _exitStates;
-
-    /// <summary>
-    /// Initializes a new instance of the composable state machine base class.
-    /// </summary>
-    /// <param name="componentId">The unique identifier for this component.</param>
-    /// <param name="description">The description of this component.</param>
-    /// <param name="entryState">The entry state for this component.</param>
-    /// <param name="logger">Logger instance.</param>
-    protected ComposableStateMachineBase(
-        string componentId,
-        string description,
-        TState entryState,
-        ILogger logger)
-    {
-        ComponentId = componentId ?? throw new ArgumentNullException(nameof(componentId));
-        Description = description ?? throw new ArgumentNullException(nameof(description));
-        EntryState = entryState;
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _mappableTriggers = new Dictionary<string, TTrigger>();
-        _exitStates = new HashSet<TState>();
-    }
+    protected readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly Dictionary<string, TTrigger> _mappableTriggers = [];
+    private readonly HashSet<TState> _exitStates = [];
 
     /// <inheritdoc />
-    public string ComponentId { get; }
+    public string ComponentId { get; } = componentId ?? throw new ArgumentNullException(nameof(componentId));
 
     /// <inheritdoc />
-    public string Description { get; }
+    public string Description { get; } = description ?? throw new ArgumentNullException(nameof(description));
 
     /// <inheritdoc />
-    public TState EntryState { get; }
+    public TState EntryState { get; } = entryState;
 
     /// <inheritdoc />
     public IReadOnlyCollection<TState> ExitStates => _exitStates;

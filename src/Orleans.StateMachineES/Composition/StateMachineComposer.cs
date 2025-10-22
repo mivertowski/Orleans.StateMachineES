@@ -1,4 +1,3 @@
-using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Stateless;
 
@@ -10,30 +9,22 @@ namespace Orleans.StateMachineES.Composition;
 /// </summary>
 /// <typeparam name="TState">The type of states in the composed state machine.</typeparam>
 /// <typeparam name="TTrigger">The type of triggers in the composed state machine.</typeparam>
-public class StateMachineComposer<TState, TTrigger>
+/// <remarks>
+/// Initializes a new instance of the state machine composer.
+/// </remarks>
+/// <param name="logger">Logger instance.</param>
+/// <param name="strategy">The composition strategy to use.</param>
+public class StateMachineComposer<TState, TTrigger>(
+    ILogger<StateMachineComposer<TState, TTrigger>> logger,
+    CompositionStrategy strategy = CompositionStrategy.Sequential)
     where TState : Enum
     where TTrigger : Enum
 {
-    private readonly ILogger<StateMachineComposer<TState, TTrigger>> _logger;
-    private readonly List<IComposableStateMachine<TState, TTrigger>> _components;
-    private readonly Dictionary<string, IComposableStateMachine<TState, TTrigger>> _componentMap;
-    private readonly CompositionStrategy _strategy;
+    private readonly ILogger<StateMachineComposer<TState, TTrigger>> _logger = logger;
+    private readonly List<IComposableStateMachine<TState, TTrigger>> _components = [];
+    private readonly Dictionary<string, IComposableStateMachine<TState, TTrigger>> _componentMap = [];
+    private readonly CompositionStrategy _strategy = strategy;
     private CompositionContext? _currentContext;
-
-    /// <summary>
-    /// Initializes a new instance of the state machine composer.
-    /// </summary>
-    /// <param name="logger">Logger instance.</param>
-    /// <param name="strategy">The composition strategy to use.</param>
-    public StateMachineComposer(
-        ILogger<StateMachineComposer<TState, TTrigger>> logger,
-        CompositionStrategy strategy = CompositionStrategy.Sequential)
-    {
-        _logger = logger;
-        _components = new List<IComposableStateMachine<TState, TTrigger>>();
-        _componentMap = new Dictionary<string, IComposableStateMachine<TState, TTrigger>>();
-        _strategy = strategy;
-    }
 
     /// <summary>
     /// Adds a component to the composition.
@@ -152,7 +143,7 @@ public class StateMachineComposer<TState, TTrigger>
         // This requires a more complex state representation
         // We create composite states that represent combinations of component states
 
-        var parallelStates = GenerateParallelStates();
+        var parallelStates = StateMachineComposer<TState, TTrigger>.GenerateParallelStates();
 
         foreach (var component in _components)
         {
@@ -183,7 +174,7 @@ public class StateMachineComposer<TState, TTrigger>
         TState initialState)
     {
         // Build hierarchical structure
-        var rootComponents = _components.Where(c => !IsNestedComponent(c)).ToList();
+        var rootComponents = _components.Where(c => !StateMachineComposer<TState, TTrigger>.IsNestedComponent(c)).ToList();
 
         foreach (var rootComponent in rootComponents)
         {
@@ -244,17 +235,17 @@ public class StateMachineComposer<TState, TTrigger>
         component.Configure(stateMachine);
 
         // Find child components
-        var children = GetChildComponents(component);
+        var children = StateMachineComposer<TState, TTrigger>.GetChildComponents(component);
 
         foreach (var child in children)
         {
             // Configure parent-child relationship
             foreach (var exitState in component.ExitStates)
             {
-                if (CanTransitionToChild(component, child))
+                if (StateMachineComposer<TState, TTrigger>.CanTransitionToChild(component, child))
                 {
                     stateMachine.Configure(exitState)
-                        .Permit(GetTransitionTrigger(component, child), child.EntryState)
+                        .Permit(StateMachineComposer<TState, TTrigger>.GetTransitionTrigger(component, child), child.EntryState)
                         .OnExit(async () =>
                         {
                             await component.OnComponentExitAsync(GetOrCreateContext());
@@ -277,10 +268,10 @@ public class StateMachineComposer<TState, TTrigger>
 
         foreach (var component in _components)
         {
-            var type = GetComponentType(component);
+            var type = StateMachineComposer<TState, TTrigger>.GetComponentType(component);
             if (!groups.ContainsKey(type))
             {
-                groups[type] = new List<IComposableStateMachine<TState, TTrigger>>();
+                groups[type] = [];
             }
             groups[type].Add(component);
         }
@@ -301,7 +292,7 @@ public class StateMachineComposer<TState, TTrigger>
         }
 
         // Configure synchronization points if needed
-        ConfigureSynchronizationPoints(stateMachine, components);
+        StateMachineComposer<TState, TTrigger>.ConfigureSynchronizationPoints(stateMachine, components);
     }
 
     /// <summary>
@@ -343,7 +334,7 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Configures synchronization points for parallel components.
     /// </summary>
-    private void ConfigureSynchronizationPoints(
+    private static void ConfigureSynchronizationPoints(
         StateMachine<TState, TTrigger> stateMachine,
         List<IComposableStateMachine<TState, TTrigger>> components)
     {
@@ -354,17 +345,17 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Generates composite states for parallel composition.
     /// </summary>
-    private List<TState> GenerateParallelStates()
+    private static List<TState> GenerateParallelStates()
     {
         // This would generate composite states that represent
         // combinations of states from different components
-        return new List<TState>();
+        return [];
     }
 
     /// <summary>
     /// Determines if a component is nested within another.
     /// </summary>
-    private bool IsNestedComponent(IComposableStateMachine<TState, TTrigger> component)
+    private static bool IsNestedComponent(IComposableStateMachine<TState, TTrigger> component)
     {
         // Check if this component is referenced as a child by any other component
         return false; // Simplified implementation
@@ -373,11 +364,11 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Gets child components of a parent component.
     /// </summary>
-    private List<IComposableStateMachine<TState, TTrigger>> GetChildComponents(
+    private static List<IComposableStateMachine<TState, TTrigger>> GetChildComponents(
         IComposableStateMachine<TState, TTrigger> parent)
     {
         // This would use metadata or configuration to determine children
-        return new List<IComposableStateMachine<TState, TTrigger>>();
+        return [];
     }
 
     /// <summary>
@@ -391,8 +382,8 @@ public class StateMachineComposer<TState, TTrigger>
 
         foreach (var component in components)
         {
-            var componentStates = GetComponentStates(component);
-            var componentTriggers = GetComponentTriggers(component);
+            var componentStates = StateMachineComposer<TState, TTrigger>.GetComponentStates(component);
+            var componentTriggers = StateMachineComposer<TState, TTrigger>.GetComponentTriggers(component);
 
             if (componentStates.Any(s => allStates.Contains(s)) ||
                 componentTriggers.Any(t => allTriggers.Contains(t)))
@@ -412,7 +403,7 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Gets all states used by a component.
     /// </summary>
-    private HashSet<TState> GetComponentStates(IComposableStateMachine<TState, TTrigger> component)
+    private static HashSet<TState> GetComponentStates(IComposableStateMachine<TState, TTrigger> component)
     {
         var states = new HashSet<TState> { component.EntryState };
         foreach (var exitState in component.ExitStates)
@@ -423,15 +414,15 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Gets all triggers used by a component.
     /// </summary>
-    private HashSet<TTrigger> GetComponentTriggers(IComposableStateMachine<TState, TTrigger> component)
+    private static HashSet<TTrigger> GetComponentTriggers(IComposableStateMachine<TState, TTrigger> component)
     {
-        return new HashSet<TTrigger>(component.MappableTriggers.Values);
+        return [.. component.MappableTriggers.Values];
     }
 
     /// <summary>
     /// Gets the type/category of a component.
     /// </summary>
-    private string GetComponentType(IComposableStateMachine<TState, TTrigger> component)
+    private static string GetComponentType(IComposableStateMachine<TState, TTrigger> component)
     {
         // This could use attributes or naming conventions
         return component.GetType().Name;
@@ -440,7 +431,7 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Checks if a parent component can transition to a child.
     /// </summary>
-    private bool CanTransitionToChild(
+    private static bool CanTransitionToChild(
         IComposableStateMachine<TState, TTrigger> parent,
         IComposableStateMachine<TState, TTrigger> child)
     {
@@ -451,7 +442,7 @@ public class StateMachineComposer<TState, TTrigger>
     /// <summary>
     /// Gets the trigger for transitioning between components.
     /// </summary>
-    private TTrigger GetTransitionTrigger(
+    private static TTrigger GetTransitionTrigger(
         IComposableStateMachine<TState, TTrigger> source,
         IComposableStateMachine<TState, TTrigger> target)
     {
@@ -484,7 +475,7 @@ public class StateMachineComposer<TState, TTrigger>
         
         try
         {
-            trigger = GetTransitionTrigger(source, target);
+            trigger = StateMachineComposer<TState, TTrigger>.GetTransitionTrigger(source, target);
             return true;
         }
         catch

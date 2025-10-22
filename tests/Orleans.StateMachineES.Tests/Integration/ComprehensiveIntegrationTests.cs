@@ -1,26 +1,13 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
-using Orleans.Providers;
-using Orleans.Runtime;
-using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Events;
-using Orleans.StateMachineES.Hierarchical;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
-using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Sagas;
 using Orleans.StateMachineES.Tests.Cluster;
-using Orleans.StateMachineES.Timers;
 using Orleans.StateMachineES.Versioning;
-using Stateless;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -231,7 +218,7 @@ public class ComprehensiveIntegrationTests
         var sagaData = new ComplexSagaData
         {
             SagaId = sagaId,
-            Steps = new List<string> { "payment", "inventory", "shipping", "notification" },
+            Steps = ["payment", "inventory", "shipping", "notification"],
             RequiresCompensation = false
         };
         
@@ -310,11 +297,11 @@ public class ComprehensiveIntegrationTests
         {
             OrderId = orderId,
             CustomerId = "CUST-789",
-            Items = new List<OrderItem>
-            {
+            Items =
+            [
                 new() { ProductId = "PROD-1", Quantity = 2, Price = 50.00m },
                 new() { ProductId = "PROD-2", Quantity = 1, Price = 100.00m }
-            },
+            ],
             TotalAmount = 200.00m
         });
         
@@ -363,60 +350,99 @@ public class ComprehensiveIntegrationTests
 
 // Test grain interfaces for comprehensive integration tests
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IComprehensiveWorkflowGrain")]
 public interface IComprehensiveWorkflowGrain : IGrainWithStringKey
 {
+    [Alias("InitializeWithVersionAsync")]
     Task InitializeWithVersionAsync(StateMachineVersion version);
+    [Alias("StartWorkflowAsync")]
     Task StartWorkflowAsync(WorkflowData data);
+    [Alias("GetCurrentStateAsync")]
     Task<WorkflowState> GetCurrentStateAsync();
+    [Alias("GetEventHistoryAsync")]
     Task<List<StateTransitionEvent<WorkflowState, WorkflowTrigger>>> GetEventHistoryAsync();
+    [Alias("StartTimerAsync")]
     Task StartTimerAsync(string timerName, TimeSpan duration);
+    [Alias("UpgradeToVersionAsync")]
     Task<VersionUpgradeResult> UpgradeToVersionAsync(StateMachineVersion targetVersion, MigrationStrategy strategy);
+    [Alias("ExecuteSagaStepAsync")]
     Task<SagaStepResult> ExecuteSagaStepAsync(string stepName, SagaContext context);
+    [Alias("IsInStateAsync")]
     Task<bool> IsInStateAsync(WorkflowState state);
+    [Alias("GetDescendantStatesAsync")]
     Task<List<WorkflowState>> GetDescendantStatesAsync(WorkflowState parentState);
+    [Alias("CompleteWorkflowAsync")]
     Task CompleteWorkflowAsync();
+    [Alias("GetAuditTrailAsync")]
     Task<List<AuditEntry>> GetAuditTrailAsync();
+    [Alias("TriggerCompensationAsync")]
     Task TriggerCompensationAsync();
+    [Alias("GetCompensationHistoryAsync")]
     Task<List<CompensationExecution>> GetCompensationHistoryAsync();
 }
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IPerformanceTestGrain")]
 public interface IPerformanceTestGrain : IGrainWithStringKey
 {
+    [Alias("InitializeAsync")]
     Task InitializeAsync();
+    [Alias("TransitionAsync")]
     Task TransitionAsync();
 }
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IResilientWorkflowGrain")]
 public interface IResilientWorkflowGrain : IGrainWithStringKey
 {
+    [Alias("InitializeAsync")]
     Task InitializeAsync();
+    [Alias("ProcessStepAsync")]
     Task ProcessStepAsync(string stepName);
+    [Alias("GetStateAsync")]
     Task<string> GetStateAsync();
+    [Alias("GetEventCountAsync")]
     Task<int> GetEventCountAsync();
+    [Alias("DeactivateAsync")]
     Task DeactivateAsync();
 }
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IComplexSagaGrain")]
 public interface IComplexSagaGrain : IGrainWithStringKey
 {
+    [Alias("ExecuteAsync")]
     Task<SagaExecutionResult> ExecuteAsync(ComplexSagaData data, string correlationId);
 }
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IIntrospectableWorkflowGrain")]
 public interface IIntrospectableWorkflowGrain : IGrainWithStringKey
 {
+    [Alias("InitializeAsync")]
     Task InitializeAsync();
+    [Alias("GetStateMachineInfoAsync")]
     Task<OrleansStateMachineInfo> GetStateMachineInfoAsync();
+    [Alias("GetDetailedConfigurationAsync")]
     Task<EnhancedStateMachineConfiguration<WorkflowState, WorkflowTrigger>> GetDetailedConfigurationAsync();
+    [Alias("GetDotGraphAsync")]
     Task<string> GetDotGraphAsync();
+    [Alias("CompareWithVersionAsync")]
     Task<StateMachineComparison<WorkflowState, WorkflowTrigger>> CompareWithVersionAsync(StateMachineVersion version);
 }
 
+[Alias("Orleans.StateMachineES.Tests.Integration.IOrderProcessingWorkflowGrain")]
 public interface IOrderProcessingWorkflowGrain : IGrainWithStringKey
 {
+    [Alias("CreateOrderAsync")]
     Task CreateOrderAsync(OrderData data);
+    [Alias("ProcessPaymentAsync")]
     Task ProcessPaymentAsync(PaymentInfo payment);
+    [Alias("FulfillOrderAsync")]
     Task FulfillOrderAsync();
+    [Alias("ShipOrderAsync")]
     Task ShipOrderAsync(ShippingInfo shipping);
+    [Alias("CompleteOrderAsync")]
     Task CompleteOrderAsync();
+    [Alias("GetOrderStateAsync")]
     Task<OrderState> GetOrderStateAsync();
+    [Alias("GetOrderHistoryAsync")]
     Task<List<OrderHistoryEntry>> GetOrderHistoryAsync();
 }
 
@@ -425,7 +451,7 @@ public interface IOrderProcessingWorkflowGrain : IGrainWithStringKey
 public class WorkflowData
 {
     public string WorkflowId { get; set; } = "";
-    public Dictionary<string, object> BusinessData { get; set; } = new();
+    public Dictionary<string, object> BusinessData { get; set; } = [];
 }
 
 public enum WorkflowState
@@ -448,7 +474,7 @@ public class AuditEntry
 public class ComplexSagaData
 {
     public string SagaId { get; set; } = "";
-    public List<string> Steps { get; set; } = new();
+    public List<string> Steps { get; set; } = [];
     public bool RequiresCompensation { get; set; }
 }
 
@@ -457,15 +483,15 @@ public class SagaExecutionResult
     public bool IsSuccess { get; set; }
     public bool IsCompensated { get; set; }
     public string Status { get; set; } = "";
-    public List<string> CompletedSteps { get; set; } = new();
-    public List<string> CompensatedSteps { get; set; } = new();
+    public List<string> CompletedSteps { get; set; } = [];
+    public List<string> CompensatedSteps { get; set; } = [];
 }
 
 public class OrderData
 {
     public string OrderId { get; set; } = "";
     public string CustomerId { get; set; } = "";
-    public List<OrderItem> Items { get; set; } = new();
+    public List<OrderItem> Items { get; set; } = [];
     public decimal TotalAmount { get; set; }
 }
 

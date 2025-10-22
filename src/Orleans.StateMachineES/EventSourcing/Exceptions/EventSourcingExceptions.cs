@@ -1,6 +1,4 @@
-using System;
 using System.Runtime.Serialization;
-using Orleans;
 
 namespace Orleans.StateMachineES.EventSourcing.Exceptions;
 
@@ -9,6 +7,7 @@ namespace Orleans.StateMachineES.EventSourcing.Exceptions;
 /// </summary>
 [Serializable]
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.Exceptions.EventSourcingException")]
 public class EventSourcingException : Exception
 {
     /// <summary>
@@ -47,6 +46,7 @@ public class EventSourcingException : Exception
 /// </summary>
 [Serializable]
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.Exceptions.InvalidStateTransitionException")]
 public class InvalidStateTransitionException : EventSourcingException
 {
     /// <summary>
@@ -137,6 +137,7 @@ public class InvalidStateTransitionException : EventSourcingException
 /// </summary>
 [Serializable]
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.Exceptions.EventReplayException")]
 public class EventReplayException : EventSourcingException
 {
     /// <summary>
@@ -209,6 +210,7 @@ public class EventReplayException : EventSourcingException
 /// </summary>
 [Serializable]
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.Exceptions.SnapshotException")]
 public class SnapshotException : EventSourcingException
 {
     /// <summary>

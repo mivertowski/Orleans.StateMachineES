@@ -3,22 +3,14 @@ using Orleans.StateMachineES.Tests.Cluster;
 using Orleans.StateMachineES.Tests.Cluster.Grains.Interfaces;
 using Xunit;
 using Xunit.Abstractions;
-using System.Collections.Generic; // Added for List<string>
-using Stateless; // Added for StateMachine
 
 namespace Orleans.StateMachineES.Tests;
 
 [Collection(nameof(TestClusterApplication))]
-public class StateMachineGrainTests
+public class StateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public StateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task TestGrainTests()

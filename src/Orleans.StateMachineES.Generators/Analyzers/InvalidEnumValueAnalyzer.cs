@@ -26,7 +26,7 @@ public class InvalidEnumValueAnalyzer : DiagnosticAnalyzer
 
     private const string Category = "Reliability";
 
-    private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+    private static readonly DiagnosticDescriptor Rule = new(
         DiagnosticId,
         Title,
         MessageFormat,

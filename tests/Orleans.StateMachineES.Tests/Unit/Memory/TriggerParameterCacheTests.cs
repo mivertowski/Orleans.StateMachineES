@@ -1,4 +1,3 @@
-using System;
 using FluentAssertions;
 using Orleans.StateMachineES.Memory;
 using Stateless;
@@ -221,7 +220,7 @@ public class TriggerParameterCacheTests
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll(tasks.ToArray());
+        System.Threading.Tasks.Task.WaitAll([.. tasks]);
 
         // Assert
         exceptions.Should().BeEmpty();

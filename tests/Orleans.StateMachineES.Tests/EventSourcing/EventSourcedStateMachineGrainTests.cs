@@ -1,19 +1,9 @@
 using Orleans.StateMachineES.EventSourcing;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Orleans.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Configuration;
-using Orleans.StateMachineES.EventSourcing.Events;
 using Orleans.StateMachineES.EventSourcing.Exceptions;
 using Orleans.StateMachineES.Tests.Cluster;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.Providers;
-using Orleans.TestingHost;
 using Stateless;
 using Xunit;
 using Xunit.Abstractions;
@@ -21,16 +11,10 @@ using Xunit.Abstractions;
 namespace Orleans.StateMachineES.Tests.EventSourcing;
 
 [Collection(nameof(TestClusterApplication))]
-public class EventSourcedStateMachineGrainTests
+public class EventSourcedStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public EventSourcedStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task EventSourcedGrain_ShouldTransitionStatesAndPersistEvents()
@@ -255,19 +239,32 @@ public enum DoorTrigger
     Unlock
 }
 
+[Alias("Orleans.StateMachineES.Tests.EventSourcing.ITestEventSourcedGrain")]
 public interface ITestEventSourcedGrain : IGrainWithStringKey
 {
+    [Alias("GetStateAsync")]
     ValueTask<DoorState> GetStateAsync();
+    [Alias("OpenAsync")]
     Task OpenAsync();
+    [Alias("CloseAsync")]
     Task CloseAsync();
+    [Alias("LockAsync")]
     Task LockAsync(string password);
+    [Alias("UnlockAsync")]
     Task UnlockAsync(string password);
+    [Alias("GetTransitionCountAsync")]
     Task<int> GetTransitionCountAsync();
+    [Alias("GetLastCorrelationIdAsync")]
     Task<string?> GetLastCorrelationIdAsync();
+    [Alias("SetCorrelationId")]
     void SetCorrelationId(string correlationId);
+    [Alias("GetPermittedTriggersAsync")]
     Task<IEnumerable<DoorTrigger>> GetPermittedTriggersAsync();
+    [Alias("CanFireAsync")]
     Task<bool> CanFireAsync(DoorTrigger trigger);
+    [Alias("GetInfoAsync")]
     ValueTask<Orleans.StateMachineES.Models.OrleansStateMachineInfo> GetInfoAsync();
+    [Alias("DeactivateAsync")]
     Task DeactivateAsync();
 }
 

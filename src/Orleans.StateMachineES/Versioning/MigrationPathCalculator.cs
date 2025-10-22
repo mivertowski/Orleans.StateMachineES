@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
@@ -13,22 +8,15 @@ namespace Orleans.StateMachineES.Versioning;
 /// Calculates optimal migration paths between state machine versions.
 /// Uses graph algorithms to find the safest and most efficient upgrade paths.
 /// </summary>
-public sealed class MigrationPathCalculator
+/// <remarks>
+/// Initializes a new instance of the MigrationPathCalculator class.
+/// </remarks>
+/// <param name="logger">Optional logger for diagnostics.</param>
+public sealed class MigrationPathCalculator(ILogger? logger = null)
 {
-    private readonly ILogger? _logger;
-    private readonly Dictionary<string, VersionGraph> _versionGraphs;
-    private readonly MigrationCostEvaluator _costEvaluator;
-
-    /// <summary>
-    /// Initializes a new instance of the MigrationPathCalculator class.
-    /// </summary>
-    /// <param name="logger">Optional logger for diagnostics.</param>
-    public MigrationPathCalculator(ILogger? logger = null)
-    {
-        _logger = logger;
-        _versionGraphs = new Dictionary<string, VersionGraph>();
-        _costEvaluator = new MigrationCostEvaluator();
-    }
+    private readonly ILogger? _logger = logger;
+    private readonly Dictionary<string, VersionGraph> _versionGraphs = [];
+    private readonly MigrationCostEvaluator _costEvaluator = new();
 
     /// <summary>
     /// Calculates the optimal migration path between two versions.
@@ -92,11 +80,10 @@ public sealed class MigrationPathCalculator
         var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix);
 
         // Return top N paths
-        return evaluatedPaths
+        return [.. evaluatedPaths
             .OrderBy(p => p.TotalCost)
             .ThenBy(p => p.Steps.Count)
-            .Take(maxPaths)
-            .ToList();
+            .Take(maxPaths)];
     }
 
     /// <summary>
@@ -133,7 +120,7 @@ public sealed class MigrationPathCalculator
 
                     if (isCompatible)
                     {
-                        var cost = _costEvaluator.EvaluateMigrationCost(fromVer, toVer);
+                        var cost = MigrationCostEvaluator.EvaluateMigrationCost(fromVer, toVer);
                         graph.AddEdge(fromVer, toVer, cost);
                     }
                 }
@@ -147,7 +134,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Checks if two versions are compatible.
     /// </summary>
-    private bool CheckCompatibilityAsync(
+    private static bool CheckCompatibilityAsync(
         StateMachineVersion from,
         StateMachineVersion to,
         CompatibilityMatrix? matrix)
@@ -193,7 +180,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Depth-first search implementation for finding paths.
     /// </summary>
-    private void FindPathsDFS(
+    private static void FindPathsDFS(
         VersionGraph graph,
         StateMachineVersion current,
         StateMachineVersion target,
@@ -203,7 +190,7 @@ public sealed class MigrationPathCalculator
     {
         if (current.Equals(target))
         {
-            allPaths.Add(new List<StateMachineVersion>(currentPath));
+            allPaths.Add([.. currentPath]);
             return;
         }
 
@@ -271,7 +258,7 @@ public sealed class MigrationPathCalculator
 
             steps.Add(step);
             
-            var stepCost = _costEvaluator.EvaluateMigrationCost(fromVer, toVer);
+            var stepCost = MigrationCostEvaluator.EvaluateMigrationCost(fromVer, toVer);
             totalCost += stepCost;
             
             if (step.RiskLevel > totalRisk)
@@ -293,7 +280,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Determines the type of migration between versions.
     /// </summary>
-    private MigrationType DetermineMigrationType(StateMachineVersion from, StateMachineVersion to)
+    private static MigrationType DetermineMigrationType(StateMachineVersion from, StateMachineVersion to)
     {
         if (to.Major > from.Major)
             return MigrationType.MajorUpgrade;
@@ -310,7 +297,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Estimates the effort required for a migration step.
     /// </summary>
-    private MigrationEffort EstimateStepEffort(StateMachineVersion from, StateMachineVersion to)
+    private static MigrationEffort EstimateStepEffort(StateMachineVersion from, StateMachineVersion to)
     {
         if (to.Major > from.Major)
             return MigrationEffort.High;
@@ -324,7 +311,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Assesses the risk level of a migration step.
     /// </summary>
-    private RiskLevel AssessStepRisk(StateMachineVersion from, StateMachineVersion to)
+    private static RiskLevel AssessStepRisk(StateMachineVersion from, StateMachineVersion to)
     {
         // Major version changes are high risk
         if (to.Major > from.Major)
@@ -340,7 +327,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Generates required actions for a migration step.
     /// </summary>
-    private List<string> GenerateStepActions(StateMachineVersion from, StateMachineVersion to)
+    private static List<string> GenerateStepActions(StateMachineVersion from, StateMachineVersion to)
     {
         var actions = new List<string>();
 
@@ -368,7 +355,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Generates validation steps for a migration.
     /// </summary>
-    private List<string> GenerateValidationSteps(StateMachineVersion from, StateMachineVersion to)
+    private static List<string> GenerateValidationSteps(StateMachineVersion from, StateMachineVersion to)
     {
         var steps = new List<string>
         {
@@ -390,7 +377,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Estimates the total duration for a migration path.
     /// </summary>
-    private TimeSpan EstimateTotalDuration(List<MigrationStep> steps)
+    private static TimeSpan EstimateTotalDuration(List<MigrationStep> steps)
     {
         var totalMinutes = 0;
 
@@ -411,7 +398,7 @@ public sealed class MigrationPathCalculator
     /// <summary>
     /// Selects the optimal path from evaluated paths.
     /// </summary>
-    private MigrationPath SelectOptimalPath(List<MigrationPath> paths)
+    private static MigrationPath SelectOptimalPath(List<MigrationPath> paths)
     {
         // Sort by: lowest risk, then lowest cost, then fewest steps
         return paths
@@ -433,23 +420,17 @@ public sealed class MigrationPathCalculator
 /// <summary>
 /// Represents a graph of versions and their compatibility relationships.
 /// </summary>
-internal sealed class VersionGraph
+internal sealed class VersionGraph(string grainType)
 {
-    private readonly Dictionary<StateMachineVersion, List<VersionEdge>> _adjacencyList;
+    private readonly Dictionary<StateMachineVersion, List<VersionEdge>> _adjacencyList = [];
 
-    public string GrainType { get; }
-
-    public VersionGraph(string grainType)
-    {
-        GrainType = grainType;
-        _adjacencyList = new Dictionary<StateMachineVersion, List<VersionEdge>>();
-    }
+    public string GrainType { get; } = grainType;
 
     public void AddNode(StateMachineVersion version)
     {
         if (!_adjacencyList.ContainsKey(version))
         {
-            _adjacencyList[version] = new List<VersionEdge>();
+            _adjacencyList[version] = [];
         }
     }
 
@@ -472,18 +453,11 @@ internal sealed class VersionGraph
 /// <summary>
 /// Represents an edge in the version graph.
 /// </summary>
-internal sealed class VersionEdge
+internal sealed class VersionEdge(StateMachineVersion from, StateMachineVersion to, double cost)
 {
-    public StateMachineVersion From { get; }
-    public StateMachineVersion To { get; }
-    public double Cost { get; }
-
-    public VersionEdge(StateMachineVersion from, StateMachineVersion to, double cost)
-    {
-        From = from;
-        To = to;
-        Cost = cost;
-    }
+    public StateMachineVersion From { get; } = from;
+    public StateMachineVersion To { get; } = to;
+    public double Cost { get; } = cost;
 }
 
 /// <summary>
@@ -491,7 +465,7 @@ internal sealed class VersionEdge
 /// </summary>
 internal sealed class MigrationCostEvaluator
 {
-    public double EvaluateMigrationCost(StateMachineVersion from, StateMachineVersion to)
+    public static double EvaluateMigrationCost(StateMachineVersion from, StateMachineVersion to)
     {
         var cost = 0.0;
 

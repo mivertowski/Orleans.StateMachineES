@@ -25,7 +25,7 @@ namespace Orleans.StateMachineES.Generators.Analyzers
         
         private const string Category = "Design";
 
-        private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
+        private static readonly DiagnosticDescriptor Rule = new(
             DiagnosticId,
             Title,
             MessageFormat,
@@ -95,7 +95,7 @@ namespace Orleans.StateMachineES.Generators.Analyzers
                         {
                             if (!stateConfigurations.ContainsKey(stateName!))
                             {
-                                stateConfigurations[stateName!] = new List<Location>();
+                                stateConfigurations[stateName!] = [];
                             }
                             stateConfigurations[stateName!].Add(invocation.GetLocation());
                         }

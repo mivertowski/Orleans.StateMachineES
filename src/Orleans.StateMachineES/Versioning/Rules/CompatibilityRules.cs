@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Orleans.StateMachineES.Versioning;
 
 /// <summary>
@@ -36,22 +31,22 @@ public abstract class CompatibilityRuleBase : ICompatibilityRule
     
     public abstract Task<RuleResult> EvaluateAsync(CompatibilityContext context);
 
-    protected RuleResult Success() => new RuleResult { Success = true };
+    protected static RuleResult Success() => new() { Success = true };
     
-    protected RuleResult Failure(string reason) => new RuleResult 
+    protected static RuleResult Failure(string reason) => new()
     { 
         Success = false, 
         FailureReason = reason 
     };
 
-    protected RuleResult WithBreakingChange(BreakingChange breakingChange)
+    protected static RuleResult WithBreakingChange(BreakingChange breakingChange)
     {
         var result = new RuleResult { Success = true };
         result.BreakingChanges.Add(breakingChange);
         return result;
     }
 
-    protected RuleResult WithWarning(string warning)
+    protected static RuleResult WithWarning(string warning)
     {
         var result = new RuleResult { Success = true };
         result.Warnings.Add(warning);
@@ -336,7 +331,7 @@ public sealed class TransitionModificationRule : CompatibilityRuleBase
         return Task.FromResult(Success());
     }
 
-    private BreakingChangeImpact DetermineTransitionImpact(TransitionChange change)
+    private static BreakingChangeImpact DetermineTransitionImpact(TransitionChange change)
     {
         // Determine impact based on transition type
         if (change.IsRemoval)
@@ -348,7 +343,7 @@ public sealed class TransitionModificationRule : CompatibilityRuleBase
         return BreakingChangeImpact.Low;
     }
 
-    private string GenerateTransitionMitigation(TransitionChange change)
+    private static string GenerateTransitionMitigation(TransitionChange change)
     {
         if (change.IsRemoval)
             return $"Remove code that relies on transition from {change.FromState} via {change.Trigger}";
@@ -478,12 +473,12 @@ public sealed class RuleResult
     /// <summary>
     /// Gets the list of breaking changes detected.
     /// </summary>
-    public List<BreakingChange> BreakingChanges { get; } = new();
+    public List<BreakingChange> BreakingChanges { get; } = [];
 
     /// <summary>
     /// Gets the list of warnings.
     /// </summary>
-    public List<string> Warnings { get; } = new();
+    public List<string> Warnings { get; } = [];
 
     /// <summary>
     /// Gets whether there are breaking changes.

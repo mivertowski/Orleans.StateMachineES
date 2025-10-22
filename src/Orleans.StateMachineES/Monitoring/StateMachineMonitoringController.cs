@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Orleans.StateMachineES.Tracing;
-using Orleans.StateMachineES.Visualization;
 
 namespace Orleans.StateMachineES.Monitoring;
 
@@ -15,30 +9,23 @@ namespace Orleans.StateMachineES.Monitoring;
 /// REST API controller for state machine monitoring and health checks.
 /// Provides endpoints for health status, metrics, and operational monitoring.
 /// </summary>
+/// <remarks>
+/// Initializes a new instance of the monitoring controller.
+/// </remarks>
+/// <param name="healthCheck">The health check service.</param>
+/// <param name="grainFactory">Orleans grain factory.</param>
+/// <param name="logger">Logger instance.</param>
 [ApiController]
 [Route("api/statemachine/monitoring")]
 [Produces("application/json")]
-public class StateMachineMonitoringController : ControllerBase
+public class StateMachineMonitoringController(
+    IStateMachineHealthCheck healthCheck,
+    IGrainFactory grainFactory,
+    ILogger<StateMachineMonitoringController> logger) : ControllerBase
 {
-    private readonly IStateMachineHealthCheck _healthCheck;
-    private readonly IGrainFactory _grainFactory;
-    private readonly ILogger<StateMachineMonitoringController> _logger;
-
-    /// <summary>
-    /// Initializes a new instance of the monitoring controller.
-    /// </summary>
-    /// <param name="healthCheck">The health check service.</param>
-    /// <param name="grainFactory">Orleans grain factory.</param>
-    /// <param name="logger">Logger instance.</param>
-    public StateMachineMonitoringController(
-        IStateMachineHealthCheck healthCheck,
-        IGrainFactory grainFactory,
-        ILogger<StateMachineMonitoringController> logger)
-    {
-        _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
-        _grainFactory = grainFactory ?? throw new ArgumentNullException(nameof(grainFactory));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IStateMachineHealthCheck _healthCheck = healthCheck ?? throw new ArgumentNullException(nameof(healthCheck));
+    private readonly IGrainFactory _grainFactory = grainFactory ?? throw new ArgumentNullException(nameof(grainFactory));
+    private readonly ILogger<StateMachineMonitoringController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Gets the overall health status of all monitored state machines.
@@ -226,7 +213,7 @@ public class StateMachineMonitoringController : ControllerBase
                 TotalInstances = 0, // Would be populated from grain directory
                 ActiveInstances = 0, // Would be populated from metrics
                 AverageHealth = HealthStatus.Unknown,
-                RecentActivities = new List<GrainActivity>()
+                RecentActivities = []
             };
 
             return Task.FromResult<ActionResult<GrainTypeMonitoringInfo>>(Ok(info));
@@ -259,12 +246,10 @@ public class StateMachineMonitoringController : ControllerBase
 
             if (severity.HasValue)
             {
-                alerts = alerts.Where(a => a.Severity == severity.Value).ToList();
+                alerts = [.. alerts.Where(a => a.Severity == severity.Value)];
             }
 
-            alerts = alerts.OrderByDescending(a => a.CreatedAt)
-                          .Take(Math.Min(limit, 100))
-                          .ToList();
+            alerts = [.. alerts.OrderByDescending(a => a.CreatedAt).Take(Math.Min(limit, 100))];
 
             return Ok(alerts);
         }
@@ -379,7 +364,7 @@ public class BatchHealthCheckRequest
     /// <summary>
     /// List of grains to check.
     /// </summary>
-    public List<GrainIdentifier> Grains { get; set; } = new();
+    public List<GrainIdentifier> Grains { get; set; } = [];
 
     /// <summary>
     /// Optional timeout in seconds for each health check.
@@ -436,7 +421,7 @@ public class GrainTypeMonitoringInfo
     /// <summary>
     /// Recent grain activities.
     /// </summary>
-    public List<GrainActivity> RecentActivities { get; set; } = new();
+    public List<GrainActivity> RecentActivities { get; set; } = [];
 }
 
 /// <summary>
@@ -462,5 +447,5 @@ public class GrainActivity
     /// <summary>
     /// Additional details about the activity.
     /// </summary>
-    public Dictionary<string, object> Details { get; set; } = new();
+    public Dictionary<string, object> Details { get; set; } = [];
 }

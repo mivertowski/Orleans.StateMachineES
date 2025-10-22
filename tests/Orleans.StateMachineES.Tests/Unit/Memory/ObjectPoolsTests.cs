@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using FluentAssertions;
-using Orleans.StateMachineES.EventSourcing.Events;
 using Orleans.StateMachineES.Memory;
 using Xunit;
 
@@ -34,7 +30,7 @@ public class ObjectPoolsTests
     public void ObjectPool_Constructor_WithValidParameters_ShouldInitialize()
     {
         // Act
-        var pool = new ObjectPool<List<int>>(() => new List<int>(), list => list.Clear(), 50);
+        var pool = new ObjectPool<List<int>>(() => [], list => list.Clear(), 50);
 
         // Assert
         pool.Should().NotBeNull();
@@ -45,7 +41,7 @@ public class ObjectPoolsTests
     public void ObjectPool_GetAndReturn_ShouldReuseObjects()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>(), list => list.Clear());
+        var pool = new ObjectPool<List<string>>(() => [], list => list.Clear());
         
         // Act
         var obj1 = pool.Get();
@@ -64,7 +60,7 @@ public class ObjectPoolsTests
     public void ObjectPool_GetMultiple_ShouldCreateNewWhenEmpty()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>());
+        var pool = new ObjectPool<List<string>>(() => []);
         
         // Act
         var obj1 = pool.Get();
@@ -80,7 +76,7 @@ public class ObjectPoolsTests
     public void ObjectPool_ReturnNull_ShouldBeIgnored()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>());
+        var pool = new ObjectPool<List<string>>(() => []);
         
         // Act
         pool.Return(null!);
@@ -93,7 +89,7 @@ public class ObjectPoolsTests
     public void ObjectPool_ExceedMaxSize_ShouldNotAddToPool()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>(), null, maxPoolSize: 2);
+        var pool = new ObjectPool<List<string>>(() => [], null, maxPoolSize: 2);
         
         // Act
         var obj1 = pool.Get();
@@ -112,7 +108,7 @@ public class ObjectPoolsTests
     public void ObjectPool_GetDisposable_ShouldReturnPooledObjectWrapper()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>(), list => list.Clear());
+        var pool = new ObjectPool<List<string>>(() => [], list => list.Clear());
         
         // Act & Assert
         using (var pooledObj = pool.GetDisposable())
@@ -132,7 +128,7 @@ public class ObjectPoolsTests
     public void PooledObject_Dispose_ShouldReturnToPool()
     {
         // Arrange
-        var pool = new ObjectPool<List<string>>(() => new List<string>(), list => list.Clear());
+        var pool = new ObjectPool<List<string>>(() => [], list => list.Clear());
         var pooledObj = pool.GetDisposable();
         pooledObj.Value.Add("test");
         
@@ -338,7 +334,7 @@ public class ObjectPoolsTests
     public void ObjectPool_ConcurrentAccess_ShouldBeThreadSafe()
     {
         // Arrange
-        var pool = new ObjectPool<List<int>>(() => new List<int>(), list => list.Clear());
+        var pool = new ObjectPool<List<int>>(() => [], list => list.Clear());
         var tasks = new List<System.Threading.Tasks.Task>();
         var exceptions = new List<Exception>();
 
@@ -366,7 +362,7 @@ public class ObjectPoolsTests
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll(tasks.ToArray());
+        System.Threading.Tasks.Task.WaitAll([.. tasks]);
 
         // Assert
         exceptions.Should().BeEmpty();

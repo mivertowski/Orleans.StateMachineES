@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans.StateMachineES.Models;
 using Stateless;
 
 namespace Orleans.StateMachineES.Composition.Components;
@@ -14,14 +9,19 @@ namespace Orleans.StateMachineES.Composition.Components;
 /// </summary>
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
-public class CircuitBreakerComponent<TState, TTrigger>
+/// <remarks>
+/// Initializes a new instance of the CircuitBreakerComponent class.
+/// </remarks>
+/// <param name="options">Configuration options for the circuit breaker.</param>
+/// <param name="logger">Optional logger for diagnostics.</param>
+public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions options, ILogger? logger = null)
     where TState : notnull
     where TTrigger : notnull
 {
-    private readonly ILogger? _logger;
-    private readonly CircuitBreakerOptions _options;
-    private CircuitState _circuitState;
-    private int _consecutiveFailures;
+    private readonly ILogger? _logger = logger;
+    private readonly CircuitBreakerOptions _options = options ?? throw new ArgumentNullException(nameof(options));
+    private CircuitState _circuitState = CircuitState.Closed;
+    private int _consecutiveFailures = 0;
     private DateTime _lastFailureTime;
     private DateTime? _circuitOpenedTime;
     private readonly SemaphoreSlim _stateLock = new(1, 1);
@@ -40,19 +40,6 @@ public class CircuitBreakerComponent<TState, TTrigger>
     /// When the circuit was last opened, if applicable.
     /// </summary>
     public DateTime? CircuitOpenedTime => _circuitOpenedTime;
-
-    /// <summary>
-    /// Initializes a new instance of the CircuitBreakerComponent class.
-    /// </summary>
-    /// <param name="options">Configuration options for the circuit breaker.</param>
-    /// <param name="logger">Optional logger for diagnostics.</param>
-    public CircuitBreakerComponent(CircuitBreakerOptions options, ILogger? logger = null)
-    {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger;
-        _circuitState = CircuitState.Closed;
-        _consecutiveFailures = 0;
-    }
 
     /// <summary>
     /// Applies circuit breaker logic before firing a trigger.

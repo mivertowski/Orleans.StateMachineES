@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Orleans;
-
 namespace Orleans.StateMachineES.Abstractions.Events;
 
 /// <summary>
@@ -31,6 +27,7 @@ public interface IStateMachineEvent
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Abstractions.Events.StateTransitionEvent`2")]
 public sealed record StateTransitionEvent<TState, TTrigger> : IStateMachineEvent
     where TState : notnull
     where TTrigger : notnull

@@ -1,5 +1,4 @@
 using Orleans.TestingHost;
-using Orleans.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Serialization;
 

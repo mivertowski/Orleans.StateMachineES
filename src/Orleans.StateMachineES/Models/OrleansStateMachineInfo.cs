@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Orleans;
 using Stateless.Reflection;
 
 namespace Orleans.StateMachineES.Models;
@@ -11,6 +7,7 @@ namespace Orleans.StateMachineES.Models;
 /// including its initial state, all states, and type information, for use with Orleans.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Models.OrleansStateMachineInfo")]
 public class OrleansStateMachineInfo
 {
     /// <summary>
@@ -20,7 +17,7 @@ public class OrleansStateMachineInfo
     public OrleansStateMachineInfo(StateMachineInfo info)
     {
         InitialState = new OrleansStateInfo(info.InitialState);
-        States = info.States.Select(s => new OrleansStateInfo(s)).ToList();
+        States = [.. info.States.Select(s => new OrleansStateInfo(s))];
         
         ArgumentException.ThrowIfNullOrWhiteSpace(info.StateType?.FullName);
         ArgumentException.ThrowIfNullOrWhiteSpace(info.TriggerType?.FullName);

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Tests.Cluster;
 using Orleans.StateMachineES.Versioning;
@@ -9,7 +5,6 @@ using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMach
 using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Stateless;
 using Xunit;
 using Xunit.Abstractions;
@@ -18,16 +13,10 @@ namespace Orleans.StateMachineES.Tests.Versioning;
 
 [Collection(nameof(TestClusterApplication))]
 [Trait("Category", "Integration")]
-public class VersionCompatibilityTests
+public class VersionCompatibilityTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public VersionCompatibilityTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task VersionCompatibility_ShouldIdentifyCompatibleUpgrade()
@@ -186,7 +175,7 @@ public class VersionCompatibilityTests
         return new StateMachineDefinitionRegistry(logger);
     }
 
-    private async Task SetupTestVersions(IStateMachineDefinitionRegistry registry)
+    private static async Task SetupTestVersions(IStateMachineDefinitionRegistry registry)
     {
         // Register version 1.0.0
         await registry.RegisterDefinitionAsync<TestState, TestTrigger>(
@@ -294,16 +283,10 @@ public class VersionCompatibilityTests
 }
 
 [Collection(nameof(TestClusterApplication))]
-public class MigrationHooksTests
+public class MigrationHooksTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public MigrationHooksTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public void MigrationHookManager_ShouldRegisterAndOrderHooks()
@@ -456,19 +439,12 @@ public class MigrationHooksTests
         context.Metadata.Should().ContainKey("StateRestored");
     }
 
-    private class TestMigrationHook : IMigrationHook
+    private class TestMigrationHook(string name, int priority, bool shouldFail = false) : IMigrationHook
     {
-        private readonly bool _shouldFail;
+        private readonly bool _shouldFail = shouldFail;
 
-        public TestMigrationHook(string name, int priority, bool shouldFail = false)
-        {
-            HookName = name;
-            Priority = priority;
-            _shouldFail = shouldFail;
-        }
-
-        public string HookName { get; }
-        public int Priority { get; }
+        public string HookName { get; } = name;
+        public int Priority { get; } = priority;
         public bool BeforeMigrationCalled { get; private set; }
         public bool AfterMigrationCalled { get; private set; }
         public bool RollbackCalled { get; private set; }

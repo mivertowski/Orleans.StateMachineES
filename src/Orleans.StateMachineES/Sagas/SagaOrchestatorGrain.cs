@@ -1,13 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.Runtime;
-using Orleans.Storage;
 using Stateless;
 
 namespace Orleans.StateMachineES.Sagas;
@@ -17,30 +9,25 @@ namespace Orleans.StateMachineES.Sagas;
 /// Provides comprehensive saga management with compensation, retry logic, and audit trails.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data passed between saga steps.</typeparam>
-public abstract class SagaOrchestratorGrain<TSagaData> : 
+/// <remarks>
+/// Constructor for dependency injection.
+/// </remarks>
+/// <param name="state">The persistent state for the saga.</param>
+public abstract class SagaOrchestratorGrain<TSagaData>([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<TSagaData>> state) : 
     Grain,
     ISagaCoordinatorGrain<TSagaData>
     where TSagaData : class
 {
     private ILogger<SagaOrchestratorGrain<TSagaData>>? _sagaLogger;
-    private readonly List<SagaStepDefinition<TSagaData>> _steps = new();
-    private readonly List<SagaStepExecution> _executionHistory = new();
+    private readonly List<SagaStepDefinition<TSagaData>> _steps = [];
+    private readonly List<SagaStepExecution> _executionHistory = [];
     private SagaContext? _sagaContext;
     private StateMachine<SagaStatus, SagaTrigger>? _stateMachine;
     
     /// <summary>
     /// The saga state containing all saga-specific data.
     /// </summary>
-    private readonly IPersistentState<SagaGrainState<TSagaData>> _state;
-    
-    /// <summary>
-    /// Constructor for dependency injection.
-    /// </summary>
-    /// <param name="state">The persistent state for the saga.</param>
-    protected SagaOrchestratorGrain([PersistentState("sagaState", "Default")] IPersistentState<SagaGrainState<TSagaData>> state)
-    {
-        _state = state;
-    }
+    private readonly IPersistentState<SagaGrainState<TSagaData>> _state = state;
 
     /// <inheritdoc/>
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -434,7 +421,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
     /// </summary>
     protected virtual Dictionary<string, object> CreateContextProperties(TSagaData sagaData)
     {
-        return new Dictionary<string, object>();
+        return [];
     }
 
     /// <summary>
@@ -570,6 +557,7 @@ public abstract class SagaOrchestratorGrain<TSagaData> :
 /// </summary>
 /// <typeparam name="TSagaData">The type of saga data.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Sagas.SagaGrainState`1")]
 public class SagaGrainState<TSagaData>
     where TSagaData : class
 {
@@ -613,13 +601,13 @@ public class SagaGrainState<TSagaData>
     /// History of compensation executions.
     /// </summary>
     [Id(6)]
-    public List<CompensationExecution> CompensationHistory { get; set; } = new();
+    public List<CompensationExecution> CompensationHistory { get; set; } = [];
     
     /// <summary>
     /// Custom properties for the saga state.
     /// </summary>
     [Id(7)]
-    public Dictionary<string, object> Properties { get; set; } = new();
+    public Dictionary<string, object> Properties { get; set; } = [];
 }
 
 /// <summary>
@@ -668,23 +656,13 @@ public class SagaStepBuilder<TSagaData> where TSagaData : class
 /// Definition of a saga step with configuration.
 /// </summary>
 /// <typeparam name="TSagaData">The saga data type.</typeparam>
-public class SagaStepDefinition<TSagaData> where TSagaData : class
+public class SagaStepDefinition<TSagaData>(ISagaStep<TSagaData> step, int order, string? stepName = null) where TSagaData : class
 {
-    public ISagaStep<TSagaData> Step { get; }
-    public int Order { get; }
-    public string StepName { get; }
-    public TimeSpan Timeout { get; set; }
-    public bool CanRetry { get; set; }
-    public int MaxRetryAttempts { get; set; } = 3;
-    public Dictionary<string, object> Metadata { get; } = new();
-
-    public SagaStepDefinition(ISagaStep<TSagaData> step, int order, string? stepName = null)
-    {
-        Step = step;
-        Order = order;
-        StepName = stepName ?? step.StepName;
-        Timeout = step.Timeout;
-        CanRetry = step.CanRetry;
-        MaxRetryAttempts = step.MaxRetryAttempts;
-    }
+    public ISagaStep<TSagaData> Step { get; } = step;
+    public int Order { get; } = order;
+    public string StepName { get; } = stepName ?? step.StepName;
+    public TimeSpan Timeout { get; set; } = step.Timeout;
+    public bool CanRetry { get; set; } = step.CanRetry;
+    public int MaxRetryAttempts { get; set; } = step.MaxRetryAttempts;
+    public Dictionary<string, object> Metadata { get; } = [];
 }

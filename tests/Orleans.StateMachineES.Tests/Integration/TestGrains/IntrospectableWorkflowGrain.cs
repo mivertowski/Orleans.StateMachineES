@@ -1,13 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.StateMachineES.Interfaces;
 using Orleans.StateMachineES.Models;
 using Orleans.StateMachineES.Versioning;
-using Orleans.StateMachineES.Tests.Integration;
 using Stateless;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
@@ -105,13 +98,13 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
             {
                 State = state,
                 IsInitialState = state == WorkflowState.Idle,
-                Substates = new List<WorkflowState>(),
+                Substates = [],
                 Superstate = null,
-                PermittedTriggers = new HashSet<WorkflowTrigger>(),
-                ActivableTriggers = new HashSet<WorkflowTrigger>(),
-                IgnoredTriggers = new HashSet<WorkflowTrigger>(),
-                Transitions = new List<EnhancedTransitionConfiguration<WorkflowState, WorkflowTrigger>>(),
-                Metadata = new Dictionary<string, object>()
+                PermittedTriggers = [],
+                ActivableTriggers = [],
+                IgnoredTriggers = [],
+                Transitions = [],
+                Metadata = []
             };
         }
 
@@ -138,7 +131,7 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
             var key = (from, trigger);
             if (!config.TransitionMap.ContainsKey(key))
             {
-                config.TransitionMap[key] = new List<EnhancedTransitionConfiguration<WorkflowState, WorkflowTrigger>>();
+                config.TransitionMap[key] = [];
             }
             
             config.TransitionMap[key].Add(new EnhancedTransitionConfiguration<WorkflowState, WorkflowTrigger>
@@ -203,14 +196,14 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
             Config1 = currentConfig,
             Config2 = currentConfig, // Simplified for testing
             SimilarityScore = 0.85, // 85% similar
-            AddedStates = new List<WorkflowState>(),
-            RemovedStates = new List<WorkflowState>(),
-            CommonStates = new List<WorkflowState> { WorkflowState.Idle, WorkflowState.Active, WorkflowState.Processing },
-            AddedTransitions = new List<(WorkflowState State, WorkflowTrigger Trigger)>
-            {
+            AddedStates = [],
+            RemovedStates = [],
+            CommonStates = [WorkflowState.Idle, WorkflowState.Active, WorkflowState.Processing],
+            AddedTransitions =
+            [
                 (WorkflowState.Failed, WorkflowTrigger.Compensate)
-            },
-            RemovedTransitions = new List<(WorkflowState State, WorkflowTrigger Trigger)>()
+            ],
+            RemovedTransitions = []
         };
 
         return comparison;

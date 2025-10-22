@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using Orleans.StateMachineES.Memory;
@@ -20,21 +18,23 @@ public class ObjectPoolBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("StringList")]
-    public void StringList_Traditional()
+    public static void StringList_Traditional()
     {
         for (int i = 0; i < IterationCount; i++)
         {
-            var list = new List<string>();
-            list.Add("State1");
-            list.Add("State2");
-            list.Add("State3");
+            var list = new List<string>
+            {
+                "State1",
+                "State2",
+                "State3"
+            };
             list.Clear();
         }
     }
 
     [Benchmark]
     [BenchmarkCategory("StringList")]
-    public void StringList_Pooled()
+    public static void StringList_Pooled()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -48,7 +48,7 @@ public class ObjectPoolBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("StringList")]
-    public void StringList_PooledDisposable()
+    public static void StringList_PooledDisposable()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -62,21 +62,23 @@ public class ObjectPoolBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("Dictionary")]
-    public void Dictionary_Traditional()
+    public static void Dictionary_Traditional()
     {
         for (int i = 0; i < IterationCount; i++)
         {
-            var dict = new Dictionary<string, object>();
-            dict["key1"] = "value1";
-            dict["key2"] = "value2";
-            dict["key3"] = "value3";
+            var dict = new Dictionary<string, object>
+            {
+                ["key1"] = "value1",
+                ["key2"] = "value2",
+                ["key3"] = "value3"
+            };
             dict.Clear();
         }
     }
 
     [Benchmark]
     [BenchmarkCategory("Dictionary")]
-    public void Dictionary_Pooled()
+    public static void Dictionary_Pooled()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -90,21 +92,23 @@ public class ObjectPoolBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("HashSet")]
-    public void HashSet_Traditional()
+    public static void HashSet_Traditional()
     {
         for (int i = 0; i < IterationCount; i++)
         {
-            var set = new HashSet<string>();
-            set.Add("State1");
-            set.Add("State2");
-            set.Add("State3");
+            var set = new HashSet<string>
+            {
+                "State1",
+                "State2",
+                "State3"
+            };
             set.Clear();
         }
     }
 
     [Benchmark]
     [BenchmarkCategory("HashSet")]
-    public void HashSet_Pooled()
+    public static void HashSet_Pooled()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -118,7 +122,7 @@ public class ObjectPoolBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("Mixed")]
-    public void MixedCollections_Traditional()
+    public static void MixedCollections_Traditional()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -139,7 +143,7 @@ public class ObjectPoolBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("Mixed")]
-    public void MixedCollections_Pooled()
+    public static void MixedCollections_Pooled()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -164,7 +168,7 @@ public class ObjectPoolBenchmarks
 
     [Benchmark]
     [BenchmarkCategory("ArrayPool")]
-    public void ArrayPool_ByteOperations()
+    public static void ArrayPool_ByteOperations()
     {
         for (int i = 0; i < IterationCount; i++)
         {
@@ -182,7 +186,7 @@ public class ObjectPoolBenchmarks
 
     [Benchmark(Baseline = true)]
     [BenchmarkCategory("ArrayPool")]
-    public void Array_ByteOperations_Traditional()
+    public static void Array_ByteOperations_Traditional()
     {
         for (int i = 0; i < IterationCount; i++)
         {

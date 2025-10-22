@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 
 namespace Orleans.StateMachineES.Tracing;
@@ -297,8 +295,8 @@ public static class StateMachineMetrics
             tags.Add(new("event_version", eventVersion.Value));
         }
         
-        EventsSourcedTotal.Add(1, tags.ToArray());
-        EventSourcingDuration.Record(duration.TotalSeconds, tags.ToArray());
+        EventsSourcedTotal.Add(1, [.. tags]);
+        EventSourcingDuration.Record(duration.TotalSeconds, [.. tags]);
     }
     
     /// <summary>
@@ -359,7 +357,7 @@ public static class StateMachineMetrics
             tags.Add(new("events_replayed", eventsReplayed.Value));
         }
         
-        GrainActivationsTotal.Add(1, tags.ToArray());
+        GrainActivationsTotal.Add(1, [.. tags]);
         IncrementActiveGrains();
     }
     

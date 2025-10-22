@@ -1,18 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
-using Orleans.StateMachineES.EventSourcing.Exceptions;
 using Orleans.StateMachineES.Hierarchical;
 using Orleans.StateMachineES.Tests.Cluster;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
 using Orleans.Providers;
-using Orleans.TestingHost;
 using Stateless;
 using Xunit;
 using Xunit.Abstractions;
@@ -20,16 +11,10 @@ using Xunit.Abstractions;
 namespace Orleans.StateMachineES.Tests.Hierarchical;
 
 [Collection(nameof(TestClusterApplication))]
-public class HierarchicalStateMachineGrainTests
+public class HierarchicalStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
 {
-    private readonly ITestOutputHelper _outputHelper;
-    private readonly TestClusterApplication _testApp;
-
-    public HierarchicalStateMachineGrainTests(TestClusterApplication testApp, ITestOutputHelper outputHelper)
-    {
-        _testApp = testApp;
-        _outputHelper = outputHelper;
-    }
+    private readonly ITestOutputHelper _outputHelper = outputHelper;
+    private readonly TestClusterApplication _testApp = testApp;
 
     [Fact]
     public async Task HierarchicalGrain_ShouldConfigureBasicHierarchy()
@@ -223,27 +208,44 @@ public class HierarchicalStateMachineGrainTests
 }
 
 // Test grain implementation with complex hierarchy
+[Alias("Orleans.StateMachineES.Tests.Hierarchical.IDeviceControllerGrain")]
 public interface IDeviceControllerGrain : IGrainWithStringKey
 {
+    [Alias("GetStateAsync")]
     ValueTask<DeviceState> GetStateAsync();
+    [Alias("PowerOnAsync")]
     Task PowerOnAsync();
+    [Alias("PowerOffAsync")]
     Task PowerOffAsync();
+    [Alias("StartProcessingAsync")]
     Task StartProcessingAsync();
+    [Alias("StopProcessingAsync")]
     Task StopProcessingAsync();
+    [Alias("StartMonitoringAsync")]
     Task StartMonitoringAsync();
+    [Alias("StopMonitoringAsync")]
     Task StopMonitoringAsync();
-    
+
     // Hierarchical state queries  
+    [Alias("GetSubstatesAsync")]
     Task<IReadOnlyList<DeviceState>> GetSubstatesAsync(DeviceState parentState);
+    [Alias("GetAncestorStatesAsync")]
     Task<IReadOnlyList<DeviceState>> GetAncestorStatesAsync(DeviceState state);
+    [Alias("GetDescendantStatesAsync")]
     Task<IReadOnlyList<DeviceState>> GetDescendantStatesAsync(DeviceState parentState);
+    [Alias("IsInStateOrSubstateAsync")]
     Task<bool> IsInStateOrSubstateAsync(DeviceState state);
+    [Alias("IsInStateAsync")]
     ValueTask<bool> IsInStateAsync(DeviceState state);
+    [Alias("GetCurrentStatePathAsync")]
     Task<IReadOnlyList<DeviceState>> GetCurrentStatePathAsync();
+    [Alias("GetHierarchicalInfoAsync")]
     Task<HierarchicalStateInfo<DeviceState>> GetHierarchicalInfoAsync();
-    
+
     // Explicit interface methods for nullable returns
+    [Alias("GetParentStateAsync")]
     Task<DeviceState?> GetParentStateAsync(DeviceState state);
+    [Alias("GetActiveSubstateAsync")]
     Task<DeviceState?> GetActiveSubstateAsync(DeviceState parentState);
 }
 

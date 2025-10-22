@@ -1,7 +1,4 @@
-using System;
 using Microsoft.Extensions.Hosting;
-using Orleans.Hosting;
-using Orleans.StateMachineES.Tracing;
 
 namespace Orleans.StateMachineES.Tracing.Examples;
 

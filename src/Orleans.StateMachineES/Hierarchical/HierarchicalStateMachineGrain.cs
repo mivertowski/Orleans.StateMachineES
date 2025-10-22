@@ -1,17 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.Timers;
-using Orleans.StateMachineES.Interfaces;
-using Orleans.StateMachineES.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
-using Orleans.Timers;
-using Stateless;
 
 namespace Orleans.StateMachineES.Hierarchical;
 
@@ -29,8 +18,8 @@ public abstract class HierarchicalStateMachineGrain<TState, TTrigger, TGrainStat
     where TTrigger : notnull
 {
     private ILogger<HierarchicalStateMachineGrain<TState, TTrigger, TGrainState>>? _hierarchicalLogger;
-    private readonly Dictionary<TState, TState> _stateHierarchy = new();
-    private readonly Dictionary<TState, List<TState>> _substates = new();
+    private readonly Dictionary<TState, TState> _stateHierarchy = [];
+    private readonly Dictionary<TState, List<TState>> _substates = [];
 
     /// <inheritdoc/>
     public override async Task OnActivateAsync(CancellationToken cancellationToken)
@@ -66,7 +55,7 @@ public abstract class HierarchicalStateMachineGrain<TState, TTrigger, TGrainStat
         
         if (!_substates.ContainsKey(parentState))
         {
-            _substates[parentState] = new List<TState>();
+            _substates[parentState] = [];
         }
         
         if (!_substates[parentState].Contains(substate))
@@ -227,7 +216,7 @@ public abstract class HierarchicalStateMachineGrain<TState, TTrigger, TGrainStat
     protected override async Task RecordTransitionEvent(TState fromState, TState toState, TTrigger trigger, string? dedupeKey, Dictionary<string, object>? metadata = null)
     {
         // Enhance metadata with hierarchical information
-        metadata ??= new Dictionary<string, object>();
+        metadata ??= [];
         
         var fromAncestors = await GetAncestorStatesAsync(fromState);
         var toAncestors = await GetAncestorStatesAsync(toState);
@@ -275,13 +264,14 @@ public abstract class HierarchicalStateMachineGrain<TState, TTrigger, TGrainStat
 /// </summary>
 /// <typeparam name="TState">The state type.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Hierarchical.HierarchicalStateMachineState`1")]
 public class HierarchicalStateMachineState<TState> : TimerEnabledStateMachineState<TState>
 {
     /// <summary>
     /// The current active path in the state hierarchy.
     /// </summary>
     [Id(0)]
-    public List<TState> CurrentHierarchyPath { get; set; } = new();
+    public List<TState> CurrentHierarchyPath { get; set; } = [];
 }
 
 /// <summary>
@@ -289,19 +279,20 @@ public class HierarchicalStateMachineState<TState> : TimerEnabledStateMachineSta
 /// </summary>
 /// <typeparam name="TState">The state type.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Hierarchical.HierarchicalStateInfo`1")]
 public class HierarchicalStateInfo<TState> where TState : notnull
 {
     /// <summary>
     /// Maps each substate to its parent state.
     /// </summary>
     [Id(0)]
-    public Dictionary<TState, TState> StateHierarchy { get; set; } = new();
+    public Dictionary<TState, TState> StateHierarchy { get; set; } = [];
 
     /// <summary>
     /// Maps each parent state to its direct children.
     /// </summary>
     [Id(1)]
-    public Dictionary<TState, IReadOnlyList<TState>> Substates { get; set; } = new();
+    public Dictionary<TState, IReadOnlyList<TState>> Substates { get; set; } = [];
 
     /// <summary>
     /// Root states that have no parent.

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
 
@@ -95,17 +92,17 @@ public sealed class CompatibilityResult
     /// <summary>
     /// Gets the list of rule results.
     /// </summary>
-    public List<RuleResult> RuleResults { get; } = new();
+    public List<RuleResult> RuleResults { get; } = [];
 
     /// <summary>
     /// Gets the list of breaking changes.
     /// </summary>
-    public List<BreakingChange> BreakingChanges { get; } = new();
+    public List<BreakingChange> BreakingChanges { get; } = [];
 
     /// <summary>
     /// Gets the list of warnings.
     /// </summary>
-    public List<string> Warnings { get; } = new();
+    public List<string> Warnings { get; } = [];
 
     /// <summary>
     /// Gets or sets required migration steps.
@@ -126,17 +123,17 @@ public sealed class StateChanges
     /// <summary>
     /// Gets the list of added states.
     /// </summary>
-    public List<string> AddedStates { get; } = new();
+    public List<string> AddedStates { get; } = [];
 
     /// <summary>
     /// Gets the list of removed states.
     /// </summary>
-    public List<string> RemovedStates { get; } = new();
+    public List<string> RemovedStates { get; } = [];
 
     /// <summary>
     /// Gets the list of modified states.
     /// </summary>
-    public List<string> ModifiedStates { get; } = new();
+    public List<string> ModifiedStates { get; } = [];
 
     /// <summary>
     /// Gets whether there are any changes.
@@ -152,17 +149,17 @@ public sealed class TriggerChanges
     /// <summary>
     /// Gets the list of added triggers.
     /// </summary>
-    public List<string> AddedTriggers { get; } = new();
+    public List<string> AddedTriggers { get; } = [];
 
     /// <summary>
     /// Gets the list of removed triggers.
     /// </summary>
-    public List<string> RemovedTriggers { get; } = new();
+    public List<string> RemovedTriggers { get; } = [];
 
     /// <summary>
     /// Gets the list of modified triggers.
     /// </summary>
-    public List<string> ModifiedTriggers { get; } = new();
+    public List<string> ModifiedTriggers { get; } = [];
 
     /// <summary>
     /// Gets whether there are any changes.
@@ -395,7 +392,7 @@ public sealed class MigrationPath
     /// <summary>
     /// Gets the list of migration steps.
     /// </summary>
-    public List<MigrationStep> Steps { get; set; } = new();
+    public List<MigrationStep> Steps { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the total cost of the migration.
@@ -490,12 +487,12 @@ public sealed class MigrationStep
     /// <summary>
     /// Gets the list of required actions.
     /// </summary>
-    public List<string> RequiredActions { get; set; } = new();
+    public List<string> RequiredActions { get; set; } = [];
 
     /// <summary>
     /// Gets the list of validation steps.
     /// </summary>
-    public List<string> ValidationSteps { get; set; } = new();
+    public List<string> ValidationSteps { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the estimated effort.

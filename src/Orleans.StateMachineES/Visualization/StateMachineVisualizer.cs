@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.Interfaces;
-using Orleans.StateMachineES.Models;
 using Stateless;
 using Stateless.Graph;
 
@@ -64,7 +59,7 @@ public class StateMachineVisualizer
         };
 
         // Analyze states
-        analysis.States = info.States.Select(state => new StateInfo
+        analysis.States = [.. info.States.Select(state => new StateInfo
         {
             Name = state.ToString() ?? "Unknown",
             IsInitial = state.UnderlyingState.Equals(info.InitialState.UnderlyingState),
@@ -73,7 +68,7 @@ public class StateMachineVisualizer
             ExitActions = ExtractActions(info, state, "Exit"),
             InternalTransitions = CountInternalTransitions(info, state),
             Substates = ExtractSubstates(info, state)
-        }).ToList();
+        })];
 
         // Analyze triggers
         var triggerInfo = new Dictionary<string, TriggerInfo>();
@@ -91,8 +86,8 @@ public class StateMachineVisualizer
                         {
                             Name = triggerName,
                             UsageCount = 0,
-                            SourceStates = new List<string>(),
-                            TargetStates = new List<string>(),
+                            SourceStates = [],
+                            TargetStates = [],
                             HasGuards = false,
                             HasParameters = false
                         };
@@ -115,7 +110,7 @@ public class StateMachineVisualizer
             }
         }
 
-        analysis.Triggers = triggerInfo.Values.ToList();
+        analysis.Triggers = [.. triggerInfo.Values];
 
         // Calculate complexity metrics
         analysis.Metrics = CalculateComplexityMetrics(analysis);
@@ -183,15 +178,14 @@ public class StateMachineVisualizer
             if (includeRuntimeInfo)
             {
                 // Get permitted triggers
-                report.PermittedTriggers = (await grain.GetPermittedTriggersAsync())
-                    .Select(t => t.ToString()).ToList();
+                report.PermittedTriggers = [.. (await grain.GetPermittedTriggersAsync()).Select(t => t.ToString())];
 
                 // Get state history if available
                 try
                 {
                     // Note: Event sourced history would require extending the grain interface
                     // For now, we'll skip this functionality
-                    report.StateHistory = new List<string>();
+                    report.StateHistory = [];
                 }
                 catch
                 {
@@ -265,7 +259,7 @@ public class StateMachineVisualizer
     {
         // This would need to be implemented based on the actual StateMachineInfo structure
         // For now, return empty list as StateMachineInfo doesn't expose action details
-        return new List<string>();
+        return [];
     }
 
     private static int CountInternalTransitions(object info, object state)
@@ -278,7 +272,7 @@ public class StateMachineVisualizer
     private static List<string> ExtractSubstates(object info, object state)
     {
         // Extract substates if this is a hierarchical state machine
-        return new List<string>();
+        return [];
     }
 
     private static IEnumerable<object> GetTriggersForState(object info, object state)

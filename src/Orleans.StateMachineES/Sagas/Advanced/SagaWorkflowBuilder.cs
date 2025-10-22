@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Orleans.StateMachineES.Sagas.Advanced;
 
 /// <summary>
@@ -13,8 +8,8 @@ namespace Orleans.StateMachineES.Sagas.Advanced;
 public class SagaWorkflowBuilder<TSagaData> : ISagaWorkflowBuilder<TSagaData>
     where TSagaData : class
 {
-    private readonly List<SagaWorkflowStep<TSagaData>> _steps = new();
-    private readonly Dictionary<string, SagaStepBuilder<TSagaData>> _stepBuilders = new();
+    private readonly List<SagaWorkflowStep<TSagaData>> _steps = [];
+    private readonly Dictionary<string, SagaStepBuilder<TSagaData>> _stepBuilders = [];
 
     /// <summary>
     /// Adds a new step to the workflow.
@@ -82,8 +77,8 @@ public class SagaWorkflowBuilder<TSagaData> : ISagaWorkflowBuilder<TSagaData>
         var result = new SagaWorkflowValidationResult
         {
             IsValid = graphValidation.IsValid,
-            Errors = graphValidation.Errors.ToList(),
-            Warnings = graphValidation.Warnings.ToList()
+            Errors = [.. graphValidation.Errors],
+            Warnings = [.. graphValidation.Warnings]
         };
 
         // Additional workflow-specific validations
@@ -107,7 +102,7 @@ public class SagaWorkflowBuilder<TSagaData> : ISagaWorkflowBuilder<TSagaData>
             Name = $"Workflow_{typeof(TSagaData).Name}",
             Description = $"Auto-generated workflow for {typeof(TSagaData).Name}",
             Version = "1.0.0",
-            MaxConcurrency = CalculateMaxConcurrency(steps),
+            MaxConcurrency = SagaWorkflowBuilder<TSagaData>.CalculateMaxConcurrency(steps),
             TimeoutSettings = new WorkflowTimeoutSettings
             {
                 StepTimeout = TimeSpan.FromMinutes(5),
@@ -180,7 +175,7 @@ public class SagaWorkflowBuilder<TSagaData> : ISagaWorkflowBuilder<TSagaData>
         }
     }
 
-    private int CalculateMaxConcurrency(List<SagaWorkflowStep<TSagaData>> steps)
+    private static int CalculateMaxConcurrency(List<SagaWorkflowStep<TSagaData>> steps)
     {
         if (!steps.Any()) return 1;
 
@@ -197,24 +192,18 @@ public class SagaWorkflowBuilder<TSagaData> : ISagaWorkflowBuilder<TSagaData>
 /// Builder for individual saga steps.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
-public class SagaStepBuilder<TSagaData> : ISagaStepBuilder<TSagaData>
+public class SagaStepBuilder<TSagaData>(string stepName, SagaWorkflowBuilder<TSagaData> workflowBuilder) : ISagaStepBuilder<TSagaData>
     where TSagaData : class
 {
-    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder;
-    internal string StepName { get; }
-    internal List<string> Dependencies { get; } = new();
+    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder = workflowBuilder;
+    internal string StepName { get; } = stepName;
+    internal List<string> Dependencies { get; } = [];
     internal ISagaStep<TSagaData>? Implementation { get; private set; }
     internal bool ContinueOnFailureValue { get; private set; }
     internal Func<SagaConditionContext<TSagaData>, Task<bool>>? Condition { get; private set; }
     internal int MaxRetries { get; private set; } = 3;
     internal TimeSpan RetryDelay { get; private set; } = TimeSpan.FromSeconds(1);
-    internal Dictionary<string, object> Metadata { get; } = new();
-
-    public SagaStepBuilder(string stepName, SagaWorkflowBuilder<TSagaData> workflowBuilder)
-    {
-        StepName = stepName;
-        _workflowBuilder = workflowBuilder;
-    }
+    internal Dictionary<string, object> Metadata { get; } = [];
 
     public ISagaStepBuilder<TSagaData> DependsOn(params string[] stepNames)
     {
@@ -276,7 +265,7 @@ public class SagaStepBuilder<TSagaData> : ISagaStepBuilder<TSagaData>
         return new SagaWorkflowStep<TSagaData>
         {
             Name = StepName,
-            Dependencies = Dependencies.ToList(),
+            Dependencies = [.. Dependencies],
             Implementation = Implementation,
             ContinueOnFailure = ContinueOnFailureValue,
             Condition = Condition,
@@ -291,18 +280,12 @@ public class SagaStepBuilder<TSagaData> : ISagaStepBuilder<TSagaData>
 /// Builder for parallel execution branches.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
-public class ParallelBranchBuilder<TSagaData> : IParallelBranchBuilder<TSagaData>
+public class ParallelBranchBuilder<TSagaData>(string branchName, SagaWorkflowBuilder<TSagaData> workflowBuilder) : IParallelBranchBuilder<TSagaData>
     where TSagaData : class
 {
-    private readonly string _branchName;
-    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder;
-    private readonly List<string> _parallelSteps = new();
-
-    public ParallelBranchBuilder(string branchName, SagaWorkflowBuilder<TSagaData> workflowBuilder)
-    {
-        _branchName = branchName;
-        _workflowBuilder = workflowBuilder;
-    }
+    private readonly string _branchName = branchName;
+    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder = workflowBuilder;
+    private readonly List<string> _parallelSteps = [];
 
     public IParallelBranchBuilder<TSagaData> AddParallelStep(string stepName, ISagaStep<TSagaData> implementation)
     {
@@ -323,7 +306,7 @@ public class ParallelBranchBuilder<TSagaData> : IParallelBranchBuilder<TSagaData
     public ISagaWorkflowBuilder<TSagaData> ThenJoin(string joinStepName, ISagaStep<TSagaData> joinImplementation)
     {
         _workflowBuilder.AddStep(joinStepName, joinImplementation)
-            .DependsOn(_parallelSteps.ToArray());
+            .DependsOn([.. _parallelSteps]);
         return _workflowBuilder;
     }
 }
@@ -332,17 +315,11 @@ public class ParallelBranchBuilder<TSagaData> : IParallelBranchBuilder<TSagaData
 /// Builder for conditional execution branches.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
-public class ConditionalBranchBuilder<TSagaData> : IConditionalBranchBuilder<TSagaData>
+public class ConditionalBranchBuilder<TSagaData>(Func<TSagaData, Task<bool>> condition, SagaWorkflowBuilder<TSagaData> workflowBuilder) : IConditionalBranchBuilder<TSagaData>
     where TSagaData : class
 {
-    private readonly Func<TSagaData, Task<bool>> _condition;
-    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder;
-
-    public ConditionalBranchBuilder(Func<TSagaData, Task<bool>> condition, SagaWorkflowBuilder<TSagaData> workflowBuilder)
-    {
-        _condition = condition;
-        _workflowBuilder = workflowBuilder;
-    }
+    private readonly Func<TSagaData, Task<bool>> _condition = condition;
+    private readonly SagaWorkflowBuilder<TSagaData> _workflowBuilder = workflowBuilder;
 
     public ISagaWorkflowBuilder<TSagaData> Then(string stepName, ISagaStep<TSagaData> implementation)
     {
@@ -365,32 +342,22 @@ public class ConditionalBranchBuilder<TSagaData> : IConditionalBranchBuilder<TSa
 /// Inline implementation of saga step for simple scenarios.
 /// </summary>
 /// <typeparam name="TSagaData">The type of data processed by the saga.</typeparam>
-public class InlineSagaStep<TSagaData> : ISagaStep<TSagaData>
+public class InlineSagaStep<TSagaData>(
+    string stepName,
+    Func<TSagaData, SagaContext, Task<SagaStepResult>> executeFunc,
+    Func<TSagaData, SagaStepResult?, SagaContext, Task<CompensationResult>>? compensateFunc = null,
+    TimeSpan timeout = default,
+    bool canRetry = true,
+    int maxRetryAttempts = 3) : ISagaStep<TSagaData>
     where TSagaData : class
 {
-    private readonly Func<TSagaData, SagaContext, Task<SagaStepResult>> _executeFunc;
-    private readonly Func<TSagaData, SagaStepResult?, SagaContext, Task<CompensationResult>>? _compensateFunc;
+    private readonly Func<TSagaData, SagaContext, Task<SagaStepResult>> _executeFunc = executeFunc;
+    private readonly Func<TSagaData, SagaStepResult?, SagaContext, Task<CompensationResult>>? _compensateFunc = compensateFunc;
 
-    public InlineSagaStep(
-        string stepName,
-        Func<TSagaData, SagaContext, Task<SagaStepResult>> executeFunc,
-        Func<TSagaData, SagaStepResult?, SagaContext, Task<CompensationResult>>? compensateFunc = null,
-        TimeSpan timeout = default,
-        bool canRetry = true,
-        int maxRetryAttempts = 3)
-    {
-        StepName = stepName;
-        _executeFunc = executeFunc;
-        _compensateFunc = compensateFunc;
-        Timeout = timeout == default ? TimeSpan.FromMinutes(5) : timeout;
-        CanRetry = canRetry;
-        MaxRetryAttempts = maxRetryAttempts;
-    }
-
-    public string StepName { get; }
-    public TimeSpan Timeout { get; }
-    public bool CanRetry { get; }
-    public int MaxRetryAttempts { get; }
+    public string StepName { get; } = stepName;
+    public TimeSpan Timeout { get; } = timeout == default ? TimeSpan.FromMinutes(5) : timeout;
+    public bool CanRetry { get; } = canRetry;
+    public int MaxRetryAttempts { get; } = maxRetryAttempts;
 
     public async Task<SagaStepResult> ExecuteAsync(TSagaData sagaData, SagaContext context)
     {
@@ -415,7 +382,7 @@ public class InlineSagaStep<TSagaData> : ISagaStep<TSagaData>
 public class SagaWorkflowConfiguration<TSagaData>
     where TSagaData : class
 {
-    public List<SagaWorkflowStep<TSagaData>> Steps { get; set; } = new();
+    public List<SagaWorkflowStep<TSagaData>> Steps { get; set; } = [];
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
     public string Version { get; set; } = "1.0.0";
@@ -439,8 +406,8 @@ public class WorkflowTimeoutSettings
 public class SagaWorkflowValidationResult
 {
     public bool IsValid { get; set; } = true;
-    public List<string> Errors { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
 }
 
 // Interfaces for fluent builder pattern

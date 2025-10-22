@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using Orleans;
-
 namespace Orleans.StateMachineES.EventSourcing.Events;
 
 /// <summary>
@@ -10,6 +6,7 @@ namespace Orleans.StateMachineES.EventSourcing.Events;
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.Events.StateTransitionEvent`2")]
 public record StateTransitionEvent<TState, TTrigger>
 {
     /// <summary>

@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 using RiskLevel = Orleans.StateMachineES.Abstractions.Models.RiskLevel;
@@ -48,22 +44,14 @@ public interface IVersionCompatibilityChecker
 /// Default implementation of version compatibility checker.
 /// Coordinates between the CompatibilityRulesEngine and MigrationPathCalculator.
 /// </summary>
-public class VersionCompatibilityChecker : IVersionCompatibilityChecker
+public class VersionCompatibilityChecker(
+    IStateMachineDefinitionRegistry registry,
+    ILogger<VersionCompatibilityChecker> logger) : IVersionCompatibilityChecker
 {
-    private readonly IStateMachineDefinitionRegistry _registry;
-    private readonly ILogger<VersionCompatibilityChecker> _logger;
-    private readonly CompatibilityRulesEngine _rulesEngine;
-    private readonly MigrationPathCalculator _pathCalculator;
-
-    public VersionCompatibilityChecker(
-        IStateMachineDefinitionRegistry registry,
-        ILogger<VersionCompatibilityChecker> logger)
-    {
-        _registry = registry ?? throw new ArgumentNullException(nameof(registry));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _rulesEngine = new CompatibilityRulesEngine(logger);
-        _pathCalculator = new MigrationPathCalculator(logger);
-    }
+    private readonly IStateMachineDefinitionRegistry _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+    private readonly ILogger<VersionCompatibilityChecker> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly CompatibilityRulesEngine _rulesEngine = new(logger);
+    private readonly MigrationPathCalculator _pathCalculator = new(logger);
 
     public async Task<CompatibilityCheckResult> CheckCompatibilityAsync(
         string grainTypeName,
@@ -171,16 +159,14 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
                 MigrationPaths = paths,
                 EstimatedEffort = EstimateUpgradeEffort(compatibility),
                 Benefits = GenerateBenefitsList(currentVersion, targetVersion),
-                Risks = compatibility.BreakingChanges.Select(bc => bc.Description).ToList(),
+                Risks = [.. compatibility.BreakingChanges.Select(bc => bc.Description)],
                 RiskLevel = DetermineRiskLevel(currentVersion, targetVersion, compatibility)
             };
 
             recommendations.Add(recommendation);
         }
 
-        return recommendations.OrderByDescending(r => r.RecommendationType)
-                             .ThenBy(r => r.EstimatedEffort)
-                             .ToList();
+        return [.. recommendations.OrderByDescending(r => r.RecommendationType).ThenBy(r => r.EstimatedEffort)];
     }
 
     public async Task<DeploymentCompatibilityResult> ValidateDeploymentCompatibilityAsync(
@@ -194,7 +180,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         var result = new DeploymentCompatibilityResult
         {
             NewVersion = newVersion,
-            ExistingVersions = existingVersions.ToList(),
+            ExistingVersions = [.. existingVersions],
             CanDeploy = true,
             ValidationTime = DateTime.UtcNow
         };
@@ -249,7 +235,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
     /// (states, triggers, transitions, guards) by comparing version definitions
     /// from the registry.
     /// </remarks>
-    private CompatibilityContext BuildCompatibilityContextAsync(
+    private static CompatibilityContext BuildCompatibilityContextAsync(
         string grainTypeName,
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion)
@@ -262,13 +248,13 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
             FromVersion = fromVersion,
             ToVersion = toVersion,
             GrainTypeName = grainTypeName,
-            MigrationComplexity = MigrationComplexity.Low
+            MigrationComplexity = MigrationComplexity.Simple
         };
 
         return context;
     }
 
-    private UpgradeRecommendationType DetermineRecommendationType(CompatibilityCheckResult compatibility)
+    private static UpgradeRecommendationType DetermineRecommendationType(CompatibilityCheckResult compatibility)
     {
         if (!compatibility.IsCompatible)
             return UpgradeRecommendationType.NotRecommended;
@@ -282,7 +268,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return UpgradeRecommendationType.ConsiderWithCaution;
     }
 
-    private MigrationEffort EstimateUpgradeEffort(CompatibilityCheckResult compatibility)
+    private static MigrationEffort EstimateUpgradeEffort(CompatibilityCheckResult compatibility)
     {
         if (!compatibility.IsCompatible)
             return MigrationEffort.High;
@@ -299,7 +285,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return MigrationEffort.Low;
     }
 
-    private RiskLevel DetermineRiskLevel(StateMachineVersion fromVersion, StateMachineVersion toVersion, CompatibilityCheckResult compatibility)
+    private static RiskLevel DetermineRiskLevel(StateMachineVersion fromVersion, StateMachineVersion toVersion, CompatibilityCheckResult compatibility)
     {
         // Major version changes are high risk
         if (toVersion.Major > fromVersion.Major)
@@ -329,7 +315,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return RiskLevel.Low;
     }
 
-    private List<string> GenerateBenefitsList(StateMachineVersion fromVersion, StateMachineVersion toVersion)
+    private static List<string> GenerateBenefitsList(StateMachineVersion fromVersion, StateMachineVersion toVersion)
     {
         var benefits = new List<string>();
 
@@ -351,7 +337,7 @@ public class VersionCompatibilityChecker : IVersionCompatibilityChecker
         return benefits;
     }
 
-    private DeploymentStrategy DetermineDeploymentStrategy(DeploymentCompatibilityResult result)
+    private static DeploymentStrategy DetermineDeploymentStrategy(DeploymentCompatibilityResult result)
     {
         if (!result.CanDeploy)
             return DeploymentStrategy.Blocked;
@@ -378,8 +364,8 @@ public class CompatibilityCheckResult
     public StateMachineVersion ToVersion { get; set; } = null!;
     public bool IsCompatible { get; set; }
     public VersionCompatibilityLevel CompatibilityLevel { get; set; }
-    public List<BreakingChange> BreakingChanges { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
+    public List<BreakingChange> BreakingChanges { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
     public MigrationPath? MigrationPath { get; set; }
     public DateTime CheckedAt { get; set; }
     public string? FailureReason { get; set; }
@@ -416,17 +402,11 @@ public enum VersionCompatibilityLevel
 /// <summary>
 /// Matrix of compatibility between versions.
 /// </summary>
-public class CompatibilityMatrix
+public class CompatibilityMatrix(string grainTypeName)
 {
-    private readonly Dictionary<(StateMachineVersion, StateMachineVersion), CompatibilityCheckResult> _entries;
+    private readonly Dictionary<(StateMachineVersion, StateMachineVersion), CompatibilityCheckResult> _entries = [];
 
-    public string GrainTypeName { get; }
-
-    public CompatibilityMatrix(string grainTypeName)
-    {
-        GrainTypeName = grainTypeName;
-        _entries = new Dictionary<(StateMachineVersion, StateMachineVersion), CompatibilityCheckResult>();
-    }
+    public string GrainTypeName { get; } = grainTypeName;
 
     public void AddEntry(StateMachineVersion from, StateMachineVersion to, CompatibilityCheckResult result)
     {
@@ -516,10 +496,10 @@ public class UpgradeRecommendation
     public StateMachineVersion TargetVersion { get; set; } = null!;
     public UpgradeRecommendationType RecommendationType { get; set; }
     public VersionCompatibilityLevel CompatibilityLevel { get; set; }
-    public List<MigrationPath> MigrationPaths { get; set; } = new();
+    public List<MigrationPath> MigrationPaths { get; set; } = [];
     public MigrationEffort EstimatedEffort { get; set; }
-    public List<string> Benefits { get; set; } = new();
-    public List<string> Risks { get; set; } = new();
+    public List<string> Benefits { get; set; } = [];
+    public List<string> Risks { get; set; } = [];
     public RiskLevel RiskLevel { get; set; }
     
     /// <summary>
@@ -545,9 +525,9 @@ public enum UpgradeRecommendationType
 public class DeploymentCompatibilityResult
 {
     public StateMachineVersion NewVersion { get; set; } = null!;
-    public List<StateMachineVersion> ExistingVersions { get; set; } = new();
+    public List<StateMachineVersion> ExistingVersions { get; set; } = [];
     public bool CanDeploy { get; set; }
-    public List<DeploymentIssue> Issues { get; set; } = new();
+    public List<DeploymentIssue> Issues { get; set; } = [];
     public DeploymentStrategy RecommendedStrategy { get; set; }
     public DateTime ValidationTime { get; set; }
 }

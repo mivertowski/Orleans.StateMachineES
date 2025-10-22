@@ -1,13 +1,10 @@
-using System;
-using System.Collections.Generic;
-using Orleans;
-
 namespace Orleans.StateMachineES.Abstractions.Models;
 
 /// <summary>
 /// Represents a semantic version for state machines.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Abstractions.Models.StateMachineVersion")]
 public sealed record StateMachineVersion : IComparable<StateMachineVersion>
 {
     /// <summary>

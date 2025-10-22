@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.EventSourcing.Events;
 using Orleans.StateMachineES.EventSourcing.Configuration;
 using Orleans.StateMachineES.EventSourcing.Exceptions;
@@ -13,14 +8,10 @@ using Orleans.StateMachineES.Memory;
 using Orleans.StateMachineES.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Orleans.EventSourcing;
 using Orleans.EventSourcing.CustomStorage;
-using Orleans.Providers;
-using Orleans.Runtime;
 using Orleans.Streams;
 using Stateless;
-using Stateless.Graph;
 
 namespace Orleans.StateMachineES.EventSourcing;
 
@@ -52,7 +43,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     protected EventSourcingOptions Options { get; private set; } = new();
 
     private readonly LinkedList<string> _processedDedupeKeys = new();
-    private readonly Dictionary<string, LinkedListNode<string>> _dedupeKeyLookup = new();
+    private readonly Dictionary<string, LinkedListNode<string>> _dedupeKeyLookup = [];
     private string? _currentCorrelationId;
     private int _eventsSinceSnapshot;
     private readonly SemaphoreSlim _transitionSemaphore = new(1, 1);
@@ -885,6 +876,7 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
 /// State class for event-sourced state machines.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.EventSourcing.EventSourcedStateMachineState`1")]
 public class EventSourcedStateMachineState<TState>
 {
     [Id(0)]

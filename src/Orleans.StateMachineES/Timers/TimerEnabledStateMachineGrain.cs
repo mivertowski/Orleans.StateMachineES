@@ -1,16 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Orleans.StateMachineES.EventSourcing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orleans;
-using Orleans.EventSourcing;
-using Orleans.Runtime;
 using Orleans.Timers;
-using Stateless;
 
 namespace Orleans.StateMachineES.Timers;
 
@@ -26,9 +17,9 @@ public abstract class TimerEnabledStateMachineGrain<TState, TTrigger, TGrainStat
     where TTrigger : notnull
 {
     private ILogger<TimerEnabledStateMachineGrain<TState, TTrigger, TGrainState>>? _timerLogger;
-    private readonly Dictionary<string, IGrainTimer> _activeTimers = new();
-    private readonly Dictionary<string, IGrainReminder> _activeReminders = new();
-    private readonly Dictionary<TState, List<TimerConfiguration>> _stateTimeouts = new();
+    private readonly Dictionary<string, IGrainTimer> _activeTimers = [];
+    private readonly Dictionary<string, IGrainReminder> _activeReminders = [];
+    private readonly Dictionary<TState, List<TimerConfiguration>> _stateTimeouts = [];
     private IReminderRegistry? _reminderRegistry;
 
     /// <summary>
@@ -46,7 +37,7 @@ public abstract class TimerEnabledStateMachineGrain<TState, TTrigger, TGrainStat
     {
         if (!_stateTimeouts.ContainsKey(state))
         {
-            _stateTimeouts[state] = new List<TimerConfiguration>();
+            _stateTimeouts[state] = [];
         }
         _stateTimeouts[state].Add(config);
         
@@ -119,7 +110,7 @@ public abstract class TimerEnabledStateMachineGrain<TState, TTrigger, TGrainStat
                 }
                 
                 // Save to state for recovery
-                State.ActiveTimerConfigs ??= new List<TimerConfiguration>();
+                State.ActiveTimerConfigs ??= [];
                 State.ActiveTimerConfigs.Add(config);
             }
             catch (Exception ex)
@@ -448,6 +439,7 @@ public abstract class TimerEnabledStateMachineGrain<TState, TTrigger, TGrainStat
 /// State class for timer-enabled state machines.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Timers.TimerEnabledStateMachineState`1")]
 public class TimerEnabledStateMachineState<TState> : EventSourcedStateMachineState<TState>
 {
     /// <summary>

@@ -1,10 +1,5 @@
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Orleans;
 using Stateless;
 using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
@@ -66,16 +61,11 @@ public interface IStateMachineDefinitionRegistry
 /// <summary>
 /// Default implementation of the state machine definition registry.
 /// </summary>
-public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
+public class StateMachineDefinitionRegistry(ILogger<StateMachineDefinitionRegistry> logger) : IStateMachineDefinitionRegistry
 {
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<StateMachineVersion, StateMachineDefinitionEntry>> _definitions = new();
     private readonly ConcurrentDictionary<string, List<MigrationRule>> _migrationRules = new();
-    private readonly ILogger<StateMachineDefinitionRegistry> _logger;
-
-    public StateMachineDefinitionRegistry(ILogger<StateMachineDefinitionRegistry> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<StateMachineDefinitionRegistry> _logger = logger;
 
     public Task RegisterDefinitionAsync<TState, TTrigger>(
         string grainTypeName,
@@ -210,7 +200,7 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
             return Task.FromResult<MigrationPath?>(null);
 
         // Get migration rules for this grain type
-        var migrationRules = _migrationRules.GetOrAdd(grainTypeName, _ => new List<MigrationRule>());
+        var migrationRules = _migrationRules.GetOrAdd(grainTypeName, _ => []);
 
         // Find direct migration rule
         var directRule = migrationRules.FirstOrDefault(r => 
@@ -223,7 +213,7 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
             {
                 FromVersion = fromVersion,
                 ToVersion = toVersion,
-                Steps = new List<MigrationStep> { directRule.Step },
+                Steps = [directRule.Step],
                 IsDirectPath = true
             };
             directPath.UpdateEstimatedDuration();
@@ -240,14 +230,14 @@ public class StateMachineDefinitionRegistry : IStateMachineDefinitionRegistry
     /// </summary>
     public void RegisterMigrationRule(string grainTypeName, MigrationRule rule)
     {
-        var rules = _migrationRules.GetOrAdd(grainTypeName, _ => new List<MigrationRule>());
+        var rules = _migrationRules.GetOrAdd(grainTypeName, _ => []);
         rules.Add(rule);
 
         _logger.LogInformation("Registered migration rule for {GrainType} from {FromVersion} to {ToVersion}",
             grainTypeName, rule.FromVersion, rule.ToVersion);
     }
 
-    private MigrationPath? FindMigrationPath(
+    private static MigrationPath? FindMigrationPath(
         string grainTypeName,
         StateMachineVersion fromVersion,
         StateMachineVersion toVersion,
@@ -314,6 +304,7 @@ public class StateMachineDefinitionEntry
 /// Metadata for a state machine definition.
 /// </summary>
 [GenerateSerializer]
+[Alias("Orleans.StateMachineES.Versioning.StateMachineDefinitionMetadata")]
 public class StateMachineDefinitionMetadata
 {
     [Id(0)] public string Description { get; set; } = "";
@@ -322,8 +313,8 @@ public class StateMachineDefinitionMetadata
     [Id(3)] public bool IsDeprecated { get; set; }
     [Id(4)] public bool IsUnsupported { get; set; }
     [Id(5)] public StateMachineVersion? MinSupportedVersion { get; set; }
-    [Id(6)] public List<string> BreakingChanges { get; set; } = new();
-    [Id(7)] public List<string> Features { get; set; } = new();
-    [Id(8)] public Dictionary<string, object> Properties { get; set; } = new();
+    [Id(6)] public List<string> BreakingChanges { get; set; } = [];
+    [Id(7)] public List<string> Features { get; set; } = [];
+    [Id(8)] public Dictionary<string, object> Properties { get; set; } = [];
 }
 

@@ -79,7 +79,7 @@ public class CompositionContext
     /// <summary>
     /// Shared data between components.
     /// </summary>
-    public Dictionary<string, object> SharedData { get; set; } = new();
+    public Dictionary<string, object> SharedData { get; set; } = [];
 
     /// <summary>
     /// The grain context if available.
@@ -110,12 +110,12 @@ public class CompositionValidationResult
     /// <summary>
     /// Validation errors if any.
     /// </summary>
-    public List<string> Errors { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
 
     /// <summary>
     /// Validation warnings if any.
     /// </summary>
-    public List<string> Warnings { get; set; } = new();
+    public List<string> Warnings { get; set; } = [];
 
     /// <summary>
     /// Creates a successful validation result.
@@ -129,6 +129,6 @@ public class CompositionValidationResult
     public static CompositionValidationResult Failure(string error) => new()
     {
         IsValid = false,
-        Errors = new List<string> { error }
+        Errors = [error]
     };
 }

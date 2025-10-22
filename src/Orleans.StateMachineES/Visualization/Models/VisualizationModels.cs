@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Orleans.StateMachineES.Models;
 
 namespace Orleans.StateMachineES.Visualization;
@@ -118,12 +116,12 @@ public class StateMachineAnalysis
     /// <summary>
     /// Information about all states in the state machine.
     /// </summary>
-    public List<StateInfo> States { get; set; } = new();
+    public List<StateInfo> States { get; set; } = [];
     
     /// <summary>
     /// Information about all triggers in the state machine.
     /// </summary>
-    public List<TriggerInfo> Triggers { get; set; } = new();
+    public List<TriggerInfo> Triggers { get; set; } = [];
     
     /// <summary>
     /// Complexity metrics for the state machine.
@@ -154,12 +152,12 @@ public class StateInfo
     /// <summary>
     /// Entry actions configured for this state.
     /// </summary>
-    public List<string> EntryActions { get; set; } = new();
+    public List<string> EntryActions { get; set; } = [];
     
     /// <summary>
     /// Exit actions configured for this state.
     /// </summary>
-    public List<string> ExitActions { get; set; } = new();
+    public List<string> ExitActions { get; set; } = [];
     
     /// <summary>
     /// Number of internal transitions (self-loops) for this state.
@@ -169,7 +167,7 @@ public class StateInfo
     /// <summary>
     /// Substates if this is a hierarchical state machine.
     /// </summary>
-    public List<string> Substates { get; set; } = new();
+    public List<string> Substates { get; set; } = [];
 }
 
 /// <summary>
@@ -190,12 +188,12 @@ public class TriggerInfo
     /// <summary>
     /// States that can fire this trigger.
     /// </summary>
-    public List<string> SourceStates { get; set; } = new();
+    public List<string> SourceStates { get; set; } = [];
     
     /// <summary>
     /// States that this trigger can transition to.
     /// </summary>
-    public List<string> TargetStates { get; set; } = new();
+    public List<string> TargetStates { get; set; } = [];
     
     /// <summary>
     /// Whether this trigger has guard conditions.
@@ -329,17 +327,17 @@ public class VisualizationReport
     /// <summary>
     /// Currently permitted triggers.
     /// </summary>
-    public List<string> PermittedTriggers { get; set; } = new();
+    public List<string> PermittedTriggers { get; set; } = [];
     
     /// <summary>
     /// State transition history (if available and requested).
     /// </summary>
-    public List<string> StateHistory { get; set; } = new();
+    public List<string> StateHistory { get; set; } = [];
     
     /// <summary>
     /// Additional runtime metrics.
     /// </summary>
-    public Dictionary<string, object> RuntimeMetrics { get; set; } = new();
+    public Dictionary<string, object> RuntimeMetrics { get; set; } = [];
 }
 
 /// <summary>
@@ -350,7 +348,7 @@ public class BatchVisualizationOptions
     /// <summary>
     /// Formats to export to.
     /// </summary>
-    public List<ExportFormat> Formats { get; set; } = new();
+    public List<ExportFormat> Formats { get; set; } = [];
     
     /// <summary>
     /// Base output directory for batch exports.

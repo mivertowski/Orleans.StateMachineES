@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Orleans.StateMachineES.Sagas.Advanced;
 
 /// <summary>
@@ -13,9 +8,9 @@ namespace Orleans.StateMachineES.Sagas.Advanced;
 public class SagaExecutionGraph<TSagaData>
     where TSagaData : class
 {
-    private readonly Dictionary<string, SagaWorkflowStep<TSagaData>> _steps = new();
-    private readonly Dictionary<string, List<string>> _dependencies = new();
-    private readonly Dictionary<string, List<string>> _dependents = new();
+    private readonly Dictionary<string, SagaWorkflowStep<TSagaData>> _steps = [];
+    private readonly Dictionary<string, List<string>> _dependencies = [];
+    private readonly Dictionary<string, List<string>> _dependents = [];
 
     /// <summary>
     /// Builds the execution graph from the workflow configuration.
@@ -30,8 +25,8 @@ public class SagaExecutionGraph<TSagaData>
         foreach (var step in configuration.Steps)
         {
             _steps[step.Name] = step;
-            _dependencies[step.Name] = step.Dependencies.ToList();
-            _dependents[step.Name] = new List<string>();
+            _dependencies[step.Name] = [.. step.Dependencies];
+            _dependents[step.Name] = [];
         }
 
         // Build dependent relationships
@@ -319,13 +314,13 @@ public class SagaWorkflowStep<TSagaData>
     where TSagaData : class
 {
     public string Name { get; set; } = "";
-    public List<string> Dependencies { get; set; } = new();
+    public List<string> Dependencies { get; set; } = [];
     public bool ContinueOnFailure { get; set; }
     public Func<SagaConditionContext<TSagaData>, Task<bool>>? Condition { get; set; }
     public ISagaStep<TSagaData> Implementation { get; set; } = default!;
     public int MaxRetries { get; set; } = 3;
     public TimeSpan RetryDelay { get; set; } = TimeSpan.FromSeconds(1);
-    public Dictionary<string, object> Metadata { get; set; } = new();
+    public Dictionary<string, object> Metadata { get; set; } = [];
 
     public async Task<SagaStepResult> ExecuteAsync(TSagaData sagaData, SagaContext context)
     {
@@ -374,8 +369,8 @@ public class SagaWorkflowStep<TSagaData>
 public class SagaGraphValidationResult
 {
     public bool IsValid { get; set; }
-    public List<string> Errors { get; set; } = new();
-    public List<string> Warnings { get; set; } = new();
+    public List<string> Errors { get; set; } = [];
+    public List<string> Warnings { get; set; } = [];
 }
 
 /// <summary>

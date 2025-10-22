@@ -1,12 +1,8 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Orleans.StateMachineES.Versioning;
 using Microsoft.Extensions.Logging;
 using Stateless;
 using Xunit;
-using StateMachineVersion = Orleans.StateMachineES.Abstractions.Models.StateMachineVersion;
 
 namespace Orleans.StateMachineES.Tests.Versioning;
 
@@ -190,7 +186,7 @@ public class ImprovedIntrospectorTests
         comparison.RemovedStates.Should().BeEmpty();
     }
 
-    private StateMachine<TestState, TestTrigger> BuildComplexStateMachine()
+    private static StateMachine<TestState, TestTrigger> BuildComplexStateMachine()
     {
         var machine = new StateMachine<TestState, TestTrigger>(TestState.Initial);
 
@@ -218,7 +214,7 @@ public class ImprovedIntrospectorTests
         return machine;
     }
 
-    private StateMachine<TestState, TestTrigger> BuildHierarchicalStateMachine()
+    private static StateMachine<TestState, TestTrigger> BuildHierarchicalStateMachine()
     {
         var machine = new StateMachine<TestState, TestTrigger>(TestState.Initial);
 
@@ -242,7 +238,7 @@ public class ImprovedIntrospectorTests
         return machine;
     }
 
-    private StateMachine<TestState, TestTrigger> BuildModifiedStateMachine()
+    private static StateMachine<TestState, TestTrigger> BuildModifiedStateMachine()
     {
         var machine = new StateMachine<TestState, TestTrigger>(TestState.Initial);
 
