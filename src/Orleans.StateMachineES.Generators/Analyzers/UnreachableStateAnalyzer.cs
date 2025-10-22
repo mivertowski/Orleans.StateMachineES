@@ -103,9 +103,9 @@ namespace Orleans.StateMachineES.Generators.Analyzers
                     var stateArg = ExtractStateFromConfigureCall(invocation);
                     if (!string.IsNullOrEmpty(stateArg))
                     {
-                        configuredStates.Add(stateArg);
+                        configuredStates.Add(stateArg!);
                     }
-                    
+
                     // Analyze chained method calls for Permit
                     AnalyzeChainedCalls(invocation, statesWithIncomingTransitions);
                 }
@@ -138,7 +138,7 @@ namespace Orleans.StateMachineES.Generators.Analyzers
                         var targetState = ExtractTargetStateFromPermit(parentInvocation);
                         if (!string.IsNullOrEmpty(targetState))
                         {
-                            statesWithIncomingTransitions.Add(targetState);
+                            statesWithIncomingTransitions.Add(targetState!);
                         }
                     }
                     // Check for SubstateOf
@@ -147,7 +147,7 @@ namespace Orleans.StateMachineES.Generators.Analyzers
                         var parentState = ExtractStateFromArguments(parentInvocation);
                         if (!string.IsNullOrEmpty(parentState))
                         {
-                            statesWithIncomingTransitions.Add(parentState);
+                            statesWithIncomingTransitions.Add(parentState!);
                         }
                     }
                     

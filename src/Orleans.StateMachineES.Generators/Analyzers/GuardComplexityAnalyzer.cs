@@ -22,7 +22,7 @@ public class GuardComplexityAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "Guard condition is too complex";
     private static readonly LocalizableString MessageFormat =
-        "Guard condition has cyclomatic complexity of {0} (threshold: {1}). Consider extracting to a named method";
+        "Guard condition has cyclomatic complexity of {0} (threshold: {1}). Consider extracting to a named method.";
     private static readonly LocalizableString Description =
         "Guard conditions with high cyclomatic complexity are difficult to test and maintain. " +
         "Extract complex logic into well-named methods with unit tests.";

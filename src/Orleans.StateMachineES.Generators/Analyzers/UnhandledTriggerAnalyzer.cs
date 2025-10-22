@@ -20,7 +20,7 @@ public class UnhandledTriggerAnalyzer : DiagnosticAnalyzer
     private static readonly LocalizableString Title =
         "State has no trigger handlers";
     private static readonly LocalizableString MessageFormat =
-        "State '{0}' has no configured trigger handlers. Consider adding Permit/Ignore transitions or OnUnhandledTrigger handler";
+        "State '{0}' has no configured trigger handlers. Consider adding Permit/Ignore transitions or OnUnhandledTrigger handler.";
     private static readonly LocalizableString Description =
         "States should handle at least one trigger or configure an OnUnhandledTrigger callback. " +
         "States with no trigger handlers may cause runtime exceptions when triggers are fired.";
@@ -106,16 +106,16 @@ public class UnhandledTriggerAnalyzer : DiagnosticAnalyzer
                 var stateName = AnalyzerHelpers.ExtractStateFromConfigureCall(invocation);
                 if (!string.IsNullOrEmpty(stateName))
                 {
-                    if (!stateConfigurations.ContainsKey(stateName))
+                    if (!stateConfigurations.ContainsKey(stateName!))
                     {
-                        stateConfigurations[stateName] = new StateConfiguration
+                        stateConfigurations[stateName!] = new StateConfiguration
                         {
                             Location = invocation.GetLocation()
                         };
                     }
 
                     // Analyze chained method calls
-                    AnalyzeChainedCalls(invocation, stateName, stateConfigurations,
+                    AnalyzeChainedCalls(invocation, stateName!, stateConfigurations,
                         ref hasGlobalUnhandledTriggerHandler);
                 }
             }
