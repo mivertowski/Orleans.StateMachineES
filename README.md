@@ -9,9 +9,17 @@
 
 A robust, production-ready integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), featuring comprehensive event sourcing capabilities and enterprise-grade distributed state machine functionality.
 
-## ⚡ Performance Enhancements (v1.0.3)
+## ⚡ Performance Enhancements (v1.0.4)
 
-**New in v1.0.3**: Advanced optimizations and comprehensive compile-time safety:
+**New in v1.0.4**: Production enhancements and reliability improvements:
+
+- **CircuitBreaker Component**: Production-ready resilience pattern with three-state management (Closed/Open/HalfOpen)
+- **Enhanced TriggerParameterCache**: Thread-safe double-checked locking for concurrent scenarios
+- **ObjectPool Thread Safety**: Fixed race condition with atomic CompareExchange loop
+- **Consolidated Validation**: Refactored validation logic with ValidateNotInCallback helper
+- **Base Class Optimization**: Trigger caching moved to StateMachineGrain base for universal performance
+
+**Previous (v1.0.3)**: Advanced optimizations and comprehensive compile-time safety:
 
 - **TriggerParameterCache**: ~100x performance improvement for parameterized triggers
 - **ValueTask Zero-Allocation**: Eliminates Task allocations in hot-path async operations
@@ -26,7 +34,7 @@ These enterprise-grade optimizations maintain full backward compatibility while 
 
 **The underlying Stateless library does not support async operations in state callbacks (OnEntry, OnExit).** This is a fundamental design limitation. See our comprehensive [Async Patterns Guide](docs/ASYNC_PATTERNS.md) for correct patterns and best practices.
 
-### Compile-Time Safety (v1.0.3)
+### Compile-Time Safety (v1.0.3+)
 Orleans.StateMachineES includes 10 comprehensive Roslyn analyzers that detect anti-patterns at compile time:
 
 **Async Safety**:
@@ -97,8 +105,8 @@ dotnet add package Orleans.StateMachineES
 
 ### NuGet Package
 ```xml
-<PackageReference Include="Orleans.StateMachineES" Version="1.0.3" />
-<PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.3" />
+<PackageReference Include="Orleans.StateMachineES" Version="1.0.4" />
+<PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.4" />
 ```
 
 ## Quick Start
