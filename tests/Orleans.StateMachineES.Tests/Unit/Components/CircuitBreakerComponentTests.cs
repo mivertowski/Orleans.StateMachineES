@@ -227,7 +227,7 @@ public class CircuitBreakerComponentTests
         var options = new CircuitBreakerOptions
         {
             FailureThreshold = 2,
-            MonitoredTriggers = new[] { TestTrigger.Start } // Only monitor Start trigger
+            MonitoredTriggers = new object[] { TestTrigger.Start } // Only monitor Start trigger
         };
         var circuitBreaker = new CircuitBreakerComponent<TestState, TestTrigger>(options);
 

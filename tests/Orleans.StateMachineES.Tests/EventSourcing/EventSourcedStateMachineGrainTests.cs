@@ -294,20 +294,31 @@ public interface ITestEventSourcedGrain : IGrainWithStringKey
                 .Permit(DoorTrigger.Open, DoorState.Open)
                 .Permit(DoorTrigger.Lock, DoorState.Locked);
 
+            // Configure trigger parameters during state machine construction
+            // Store locally to avoid duplicate configuration
             _lockTriggerParam = machine.SetTriggerParameters<string>(DoorTrigger.Lock);
-            
-            // Cache the trigger parameter for reuse
-            TriggerParametersCache[DoorTrigger.Lock] = _lockTriggerParam;
-            
+
             machine.Configure(DoorState.Locked)
                 .PermitIf(DoorTrigger.Unlock, DoorState.Closed, () => true)
-                .OnEntryFrom(_lockTriggerParam, (string password) => 
+                .OnEntryFrom(_lockTriggerParam, (string password) =>
                 {
                     _currentPassword = password;
                     State.Password = password;
                 });
 
             return machine;
+        }
+
+        public override async Task OnActivateAsync(CancellationToken cancellationToken)
+        {
+            await base.OnActivateAsync(cancellationToken);
+
+            // Populate the cache with triggers configured during BuildStateMachine
+            // to avoid duplicate SetTriggerParameters calls
+            if (TriggerCache != null && _lockTriggerParam != null)
+            {
+                TriggerCache.Add(DoorTrigger.Lock, _lockTriggerParam);
+            }
         }
 
         protected override void ConfigureEventSourcing(EventSourcingOptions options)

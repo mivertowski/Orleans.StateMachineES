@@ -24,7 +24,7 @@ public class ValueTaskExtensionsTests
     public void FromResult_WithNull_ShouldCreateValueTaskWithNull()
     {
         // Act
-        var valueTask = ValueTaskExtensions.FromResult<string>(null);
+        var valueTask = ValueTaskExtensions.FromResult<string?>(null);
 
         // Assert
         valueTask.IsCompletedSuccessfully.Should().BeTrue();

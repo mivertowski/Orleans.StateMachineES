@@ -18,6 +18,7 @@ public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState,
 {
     private readonly StateMachine<TState, TTrigger> _stateMachine = stateMachine ?? throw new ArgumentNullException(nameof(stateMachine));
     private readonly Dictionary<TTrigger, object> _cache = [];
+    private readonly object _lock = new();
 
     /// <summary>
     /// Gets or creates cached trigger parameters for a trigger with one argument.
@@ -25,15 +26,26 @@ public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState,
     /// <typeparam name="TArg0">Type of the first trigger argument.</typeparam>
     /// <param name="trigger">The trigger to get parameters for.</param>
     /// <returns>A cached or newly created TriggerWithParameters instance.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0> GetOrCreate<TArg0>(TTrigger trigger)
     {
-        if (!_cache.TryGetValue(trigger, out var cached))
+        // Fast path: check without lock first
+        if (_cache.TryGetValue(trigger, out var cached))
         {
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
+        }
+
+        // Slow path: acquire lock and double-check
+        lock (_lock)
+        {
+            if (_cache.TryGetValue(trigger, out cached))
+            {
+                return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
+            }
+
             cached = _stateMachine.SetTriggerParameters<TArg0>(trigger);
             _cache[trigger] = cached;
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
         }
-        return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0>)cached;
     }
 
     /// <summary>
@@ -43,15 +55,26 @@ public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState,
     /// <typeparam name="TArg1">Type of the second trigger argument.</typeparam>
     /// <param name="trigger">The trigger to get parameters for.</param>
     /// <returns>A cached or newly created TriggerWithParameters instance.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1> GetOrCreate<TArg0, TArg1>(TTrigger trigger)
     {
-        if (!_cache.TryGetValue(trigger, out var cached))
+        // Fast path: check without lock first
+        if (_cache.TryGetValue(trigger, out var cached))
         {
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
+        }
+
+        // Slow path: acquire lock and double-check
+        lock (_lock)
+        {
+            if (_cache.TryGetValue(trigger, out cached))
+            {
+                return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
+            }
+
             cached = _stateMachine.SetTriggerParameters<TArg0, TArg1>(trigger);
             _cache[trigger] = cached;
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
         }
-        return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1>)cached;
     }
 
     /// <summary>
@@ -62,15 +85,26 @@ public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState,
     /// <typeparam name="TArg2">Type of the third trigger argument.</typeparam>
     /// <param name="trigger">The trigger to get parameters for.</param>
     /// <returns>A cached or newly created TriggerWithParameters instance.</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2> GetOrCreate<TArg0, TArg1, TArg2>(TTrigger trigger)
     {
-        if (!_cache.TryGetValue(trigger, out var cached))
+        // Fast path: check without lock first
+        if (_cache.TryGetValue(trigger, out var cached))
         {
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
+        }
+
+        // Slow path: acquire lock and double-check
+        lock (_lock)
+        {
+            if (_cache.TryGetValue(trigger, out cached))
+            {
+                return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
+            }
+
             cached = _stateMachine.SetTriggerParameters<TArg0, TArg1, TArg2>(trigger);
             _cache[trigger] = cached;
+            return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
         }
-        return (StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0, TArg1, TArg2>)cached;
     }
 
     /// <summary>
@@ -95,5 +129,17 @@ public sealed class TriggerParameterCache<TState, TTrigger>(StateMachine<TState,
     public bool Contains(TTrigger trigger)
     {
         return _cache.ContainsKey(trigger);
+    }
+
+    /// <summary>
+    /// Manually adds a pre-configured trigger parameter to the cache.
+    /// Use this when trigger parameters were configured before the cache was created.
+    /// </summary>
+    /// <typeparam name="TArg0">Type of the first trigger argument.</typeparam>
+    /// <param name="trigger">The trigger.</param>
+    /// <param name="triggerWithParameters">The pre-configured trigger with parameters.</param>
+    public void Add<TArg0>(TTrigger trigger, StateMachine<TState, TTrigger>.TriggerWithParameters<TArg0> triggerWithParameters)
+    {
+        _cache[trigger] = triggerWithParameters;
     }
 }

@@ -14,6 +14,7 @@ namespace Orleans.StateMachineES;
 /// <typeparam name="TState">The type representing the states.</typeparam>
 /// <typeparam name="TTrigger">The type representing the triggers.</typeparam>
 public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachineGrain<TState, TTrigger>
+    where TTrigger : notnull
 {
     [NotNull]
     protected StateMachine<TState, TTrigger>? StateMachine { get; private set; }

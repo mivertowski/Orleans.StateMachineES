@@ -29,12 +29,18 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     /// <summary>
     /// The current state of the circuit breaker.
     /// </summary>
-    public CircuitState CurrentCircuitState => _circuitState;
+    public CircuitState State => _circuitState;
 
     /// <summary>
     /// Number of consecutive failures recorded.
     /// </summary>
     public int ConsecutiveFailures => _consecutiveFailures;
+
+    /// <summary>
+    /// Number of consecutive successes recorded (used in HalfOpen state).
+    /// </summary>
+    private int _consecutiveSuccesses = 0;
+    public int ConsecutiveSuccesses => _consecutiveSuccesses;
 
     /// <summary>
     /// When the circuit was last opened, if applicable.
@@ -59,6 +65,10 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
                         elapsed.TotalMilliseconds);
                     _circuitState = CircuitState.HalfOpen;
                     _circuitOpenedTime = null;
+                    _consecutiveSuccesses = 0;
+
+                    // Invoke callback if configured
+                    _options.OnCircuitHalfOpened?.Invoke(_circuitState);
                 }
             }
 
@@ -86,25 +96,66 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     }
 
     /// <summary>
-    /// Records success or failure after firing a trigger.
+    /// Records a successful trigger execution.
     /// </summary>
-    public async Task AfterFireAsync(
-        TTrigger trigger,
-        StateMachine<TState, TTrigger> stateMachine,
-        bool success,
-        Exception? exception)
+    public async Task AfterFireSuccessAsync(TTrigger trigger)
     {
+        // Check if this trigger is monitored
+        if (_options.MonitoredTriggers != null && _options.MonitoredTriggers.Length > 0)
+        {
+            bool isMonitored = false;
+            foreach (var monitored in _options.MonitoredTriggers)
+            {
+                if (monitored is TTrigger mt && EqualityComparer<TTrigger>.Default.Equals(mt, trigger))
+                {
+                    isMonitored = true;
+                    break;
+                }
+            }
+            if (!isMonitored)
+            {
+                return;
+            }
+        }
+
         await _stateLock.WaitAsync();
         try
         {
-            if (success)
+            await RecordSuccessAsync();
+        }
+        finally
+        {
+            _stateLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Records a failed trigger execution.
+    /// </summary>
+    public async Task AfterFireFailureAsync(TTrigger trigger, Exception exception)
+    {
+        // Check if this trigger is monitored
+        if (_options.MonitoredTriggers != null && _options.MonitoredTriggers.Length > 0)
+        {
+            bool isMonitored = false;
+            foreach (var monitored in _options.MonitoredTriggers)
             {
-                await RecordSuccessAsync();
+                if (monitored is TTrigger mt && EqualityComparer<TTrigger>.Default.Equals(mt, trigger))
+                {
+                    isMonitored = true;
+                    break;
+                }
             }
-            else
+            if (!isMonitored)
             {
-                await RecordFailureAsync(trigger, exception);
+                return;
             }
+        }
+
+        await _stateLock.WaitAsync();
+        try
+        {
+            await RecordFailureAsync(trigger, exception);
         }
         finally
         {
@@ -119,9 +170,18 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     {
         if (_circuitState == CircuitState.HalfOpen)
         {
+            _consecutiveSuccesses++;
             _consecutiveFailures = 0;
-            _circuitState = CircuitState.Closed;
-            _logger?.LogInformation("Circuit breaker closed after successful operation in Half-Open state");
+
+            _logger?.LogInformation(
+                "Circuit breaker recorded success #{Count} in Half-Open state",
+                _consecutiveSuccesses);
+
+            // Check if we've reached the success threshold to close the circuit
+            if (_consecutiveSuccesses >= _options.SuccessThreshold)
+            {
+                await CloseCircuitAsync();
+            }
         }
         else if (_circuitState == CircuitState.Closed)
         {
@@ -166,6 +226,7 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     {
         _circuitState = CircuitState.Open;
         _circuitOpenedTime = DateTime.UtcNow;
+        _consecutiveSuccesses = 0;
 
         _logger?.LogError(
             "Circuit breaker OPENED after {Count} consecutive failures. Will retry after {Duration}ms",
@@ -173,29 +234,40 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
             _options.OpenDuration.TotalMilliseconds);
 
         // Invoke callback if configured
-        if (_options.OnCircuitOpened != null)
-        {
-            try
-            {
-                await _options.OnCircuitOpened(_consecutiveFailures, _lastFailureTime);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error invoking OnCircuitOpened callback");
-            }
-        }
+        _options.OnCircuitOpened?.Invoke(_circuitState, _consecutiveFailures);
+
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Closes the circuit breaker.
+    /// </summary>
+    private async Task CloseCircuitAsync()
+    {
+        _circuitState = CircuitState.Closed;
+        _consecutiveFailures = 0;
+        _consecutiveSuccesses = 0;
+        _circuitOpenedTime = null;
+
+        _logger?.LogInformation("Circuit breaker CLOSED after successful recovery");
+
+        // Invoke callback if configured
+        _options.OnCircuitClosed?.Invoke(_circuitState);
+
+        await Task.CompletedTask;
     }
 
     /// <summary>
     /// Manually resets the circuit breaker to closed state.
     /// </summary>
-    public async Task ResetAsync()
+    public void Reset()
     {
-        await _stateLock.WaitAsync();
+        _stateLock.Wait();
         try
         {
             _circuitState = CircuitState.Closed;
             _consecutiveFailures = 0;
+            _consecutiveSuccesses = 0;
             _circuitOpenedTime = null;
             _logger?.LogInformation("Circuit breaker manually reset to Closed state");
         }
@@ -248,6 +320,12 @@ public class CircuitBreakerOptions
     public int FailureThreshold { get; set; } = 5;
 
     /// <summary>
+    /// Number of consecutive successes in HalfOpen state before closing the circuit.
+    /// Default: 2
+    /// </summary>
+    public int SuccessThreshold { get; set; } = 2;
+
+    /// <summary>
     /// Duration to keep the circuit open before attempting Half-Open state.
     /// Default: 30 seconds
     /// </summary>
@@ -260,14 +338,27 @@ public class CircuitBreakerOptions
     public bool ThrowWhenOpen { get; set; } = true;
 
     /// <summary>
-    /// Callback invoked when circuit opens.
+    /// Optional list of triggers to monitor. If null or empty, all triggers are monitored.
     /// </summary>
-    public Func<int, DateTime, Task>? OnCircuitOpened { get; set; }
+    public object[]? MonitoredTriggers { get; set; }
+
+    /// <summary>
+    /// Callback invoked when circuit opens.
+    /// Parameters: (CircuitState state, int failureCount)
+    /// </summary>
+    public Action<CircuitState, int>? OnCircuitOpened { get; set; }
 
     /// <summary>
     /// Callback invoked when circuit closes after being open.
+    /// Parameters: (CircuitState state)
     /// </summary>
-    public Func<Task>? OnCircuitClosed { get; set; }
+    public Action<CircuitState>? OnCircuitClosed { get; set; }
+
+    /// <summary>
+    /// Callback invoked when circuit enters half-open state.
+    /// Parameters: (CircuitState state)
+    /// </summary>
+    public Action<CircuitState>? OnCircuitHalfOpened { get; set; }
 }
 
 /// <summary>
