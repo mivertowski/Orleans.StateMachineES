@@ -653,3 +653,7 @@ TestDotGraph/TestDotGraph.csproj
 docs/GAP_ANALYSIS.md
 build_output.txt
 OPTIMIZATION_SUMMARY.md
+nuget.exe
+sign-packages-simple.ps1
+sign-packages.cmd
+sign-packages.ps1

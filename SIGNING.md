@@ -2,6 +2,8 @@
 
 This document describes how to sign Orleans.StateMachineES NuGet packages using Authenticode signing with a hardware token.
 
+**Current Version:** 1.0.4
+
 ## Prerequisites
 
 ### Required Tools
@@ -45,9 +47,9 @@ dotnet pack -c Release -o ./packages
 ```
 
 This will create three packages:
-- `Orleans.StateMachineES.1.0.3.nupkg`
-- `Orleans.StateMachineES.Abstractions.1.0.3.nupkg`
-- `Orleans.StateMachineES.Generators.1.0.3.nupkg`
+- `Orleans.StateMachineES.1.0.4.nupkg`
+- `Orleans.StateMachineES.Abstractions.1.0.4.nupkg`
+- `Orleans.StateMachineES.Generators.1.0.4.nupkg`
 
 ### Step 2: Identify Your Certificate
 
@@ -70,17 +72,17 @@ Note the **thumbprint** (SHA1 hash) of your code signing certificate.
 cd ./packages
 
 # Sign each package with your certificate thumbprint
-nuget sign Orleans.StateMachineES.1.0.3.nupkg `
+nuget sign Orleans.StateMachineES.1.0.4.nupkg `
     -CertificateFingerprint <YOUR_THUMBPRINT> `
     -Timestamper http://timestamp.digicert.com `
     -TimestampHashAlgorithm SHA256
 
-nuget sign Orleans.StateMachineES.Abstractions.1.0.3.nupkg `
+nuget sign Orleans.StateMachineES.Abstractions.1.0.4.nupkg `
     -CertificateFingerprint <YOUR_THUMBPRINT> `
     -Timestamper http://timestamp.digicert.com `
     -TimestampHashAlgorithm SHA256
 
-nuget sign Orleans.StateMachineES.Generators.1.0.3.nupkg `
+nuget sign Orleans.StateMachineES.Generators.1.0.4.nupkg `
     -CertificateFingerprint <YOUR_THUMBPRINT> `
     -Timestamper http://timestamp.digicert.com `
     -TimestampHashAlgorithm SHA256
@@ -102,9 +104,9 @@ param(
 )
 
 $packages = @(
-    "Orleans.StateMachineES.1.0.3.nupkg",
-    "Orleans.StateMachineES.Abstractions.1.0.3.nupkg",
-    "Orleans.StateMachineES.Generators.1.0.3.nupkg"
+    "Orleans.StateMachineES.1.0.4.nupkg",
+    "Orleans.StateMachineES.Abstractions.1.0.4.nupkg",
+    "Orleans.StateMachineES.Generators.1.0.4.nupkg"
 )
 
 foreach ($package in $packages) {
@@ -135,15 +137,15 @@ Usage:
 Verify that packages are properly signed:
 
 ```bash
-nuget verify -Signatures Orleans.StateMachineES.1.0.3.nupkg
-nuget verify -Signatures Orleans.StateMachineES.Abstractions.1.0.3.nupkg
-nuget verify -Signatures Orleans.StateMachineES.Generators.1.0.3.nupkg
+nuget verify -Signatures Orleans.StateMachineES.1.0.4.nupkg
+nuget verify -Signatures Orleans.StateMachineES.Abstractions.1.0.4.nupkg
+nuget verify -Signatures Orleans.StateMachineES.Generators.1.0.4.nupkg
 ```
 
 Expected output:
 ```
-Verifying Orleans.StateMachineES.1.0.3
-Successfully verified package 'Orleans.StateMachineES.1.0.3'.
+Verifying Orleans.StateMachineES.1.0.4
+Successfully verified package 'Orleans.StateMachineES.1.0.4'.
 ```
 
 ### Step 5: Push to NuGet.org
@@ -153,9 +155,9 @@ Successfully verified package 'Orleans.StateMachineES.1.0.3'.
 nuget setapikey <YOUR_NUGET_API_KEY>
 
 # Push packages
-nuget push Orleans.StateMachineES.1.0.3.nupkg -Source https://api.nuget.org/v3/index.json
-nuget push Orleans.StateMachineES.Abstractions.1.0.3.nupkg -Source https://api.nuget.org/v3/index.json
-nuget push Orleans.StateMachineES.Generators.1.0.3.nupkg -Source https://api.nuget.org/v3/index.json
+nuget push Orleans.StateMachineES.1.0.4.nupkg -Source https://api.nuget.org/v3/index.json
+nuget push Orleans.StateMachineES.Abstractions.1.0.4.nupkg -Source https://api.nuget.org/v3/index.json
+nuget push Orleans.StateMachineES.Generators.1.0.4.nupkg -Source https://api.nuget.org/v3/index.json
 ```
 
 ## Timestamp Servers
@@ -240,4 +242,4 @@ For signing issues:
 ---
 
 **Last Updated**: January 2025
-**Version**: 1.0.3
+**Version**: 1.0.4
