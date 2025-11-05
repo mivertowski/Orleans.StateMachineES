@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Async Operations in Orleans.StateMachineES | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Async Operations in Orleans.StateMachineES | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/async-patterns.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="async-operations-in-orleansstatemachinees">Async Operations in Orleans.StateMachineES</h1>
+
+<h2 id="important-understanding-stateless-limitations">Important: Understanding Stateless Limitations</h2>
+<p>The underlying Stateless library <strong>does not support async operations</strong> in state callbacks (OnEntry, OnExit, OnEntryFrom, OnExitTo). This is a fundamental design limitation of Stateless, not Orleans.StateMachineES.</p>
+<h2 id="-common-mistakes-to-avoid">❌ Common Mistakes to Avoid</h2>
+<h3 id="1-dont-use-async-lambdas-in-callbacks">1. Don't Use Async Lambdas in Callbacks</h3>
+<pre><code class="lang-csharp">// ❌ WRONG - This will NOT work correctly
+machine.Configure(OrderState.Processing)
+    .OnEntry(async () =&gt; 
+    {
+        // This async operation will run as fire-and-forget!
+        await SaveToDatabase();  // NOT AWAITED!
+        await SendEmail();       // NOT AWAITED!
+    });
+
+// ❌ WRONG - Don't call FireAsync from callbacks
+machine.Configure(OrderState.Processing)
+    .OnEntry(() =&gt; 
+    {
+        // This will throw InvalidOperationException at runtime
+        FireAsync(OrderTrigger.Complete).Wait();  // DEADLOCK or EXCEPTION!
+    });
+</code></pre>
+<h3 id="2-dont-block-on-async-operations">2. Don't Block on Async Operations</h3>
+<pre><code class="lang-csharp">// ❌ WRONG - This will cause deadlocks
+machine.Configure(OrderState.Processing)
+    .OnEntry(() =&gt; 
+    {
+        SaveToDatabase().Wait();  // DEADLOCK!
+        Task.Run(async () =&gt; await SendEmail()).Wait();  // DEADLOCK!
+    });
+</code></pre>
+<h2 id="-correct-patterns">✅ Correct Patterns</h2>
+<h3 id="pattern-1-perform-async-operations-in-grain-methods">Pattern 1: Perform Async Operations in Grain Methods</h3>
+<p>The recommended approach is to perform async operations in your grain methods, not in state callbacks:</p>
+<pre><code class="lang-csharp">public class OrderGrain : StateMachineGrain&lt;OrderState, OrderTrigger&gt;, IOrderGrain
+{
+    protected override StateMachine&lt;OrderState, OrderTrigger&gt; BuildStateMachine()
+    {
+        var machine = new StateMachine&lt;OrderState, OrderTrigger&gt;(OrderState.Created);
+        
+        // Configure states with SYNCHRONOUS callbacks only
+        machine.Configure(OrderState.Created)
+            .Permit(OrderTrigger.Submit, OrderState.Processing)
+            .OnExit(() =&gt; LogTransition(&quot;Leaving Created state&quot;));  // Synchronous logging
+        
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Complete, OrderState.Completed)
+            .OnEntry(() =&gt; LogTransition(&quot;Entering Processing state&quot;))  // Synchronous logging
+            .OnExit(() =&gt; LogTransition(&quot;Leaving Processing state&quot;));
+        
+        return machine;
+    }
+    
+    // Grain method that handles async operations
+    public async Task SubmitOrderAsync(OrderData data)
+    {
+        // 1. Perform async operations BEFORE state transition
+        await ValidateOrderAsync(data);
+        await SaveToDatabase(data);
+        
+        // 2. Fire the trigger (state transition)
+        await FireAsync(OrderTrigger.Submit);
+        
+        // 3. Perform async operations AFTER state transition
+        await SendConfirmationEmailAsync(data);
+        await NotifyInventoryServiceAsync(data);
+    }
+    
+    private void LogTransition(string message)
+    {
+        // Synchronous logging is fine
+        Console.WriteLine($&quot;[{DateTime.UtcNow}] {message}&quot;);
+    }
+}
+</code></pre>
+<h3 id="pattern-2-use-state-change-notifications">Pattern 2: Use State Change Notifications</h3>
+<p>If you need to react to state changes with async operations, use a separate method:</p>
+<pre><code class="lang-csharp">public class OrderGrain : EventSourcedStateMachineGrain&lt;OrderState, OrderTrigger, OrderGrainState&gt;, IOrderGrain
+{
+    private readonly Queue&lt;Func&lt;Task&gt;&gt; _postTransitionTasks = new();
+    
+    protected override StateMachine&lt;OrderState, OrderTrigger&gt; BuildStateMachine()
+    {
+        var machine = new StateMachine&lt;OrderState, OrderTrigger&gt;(OrderState.Created);
+        
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Complete, OrderState.Completed)
+            .OnEntry(() =&gt; 
+            {
+                // Queue async work to be done after transition
+                _postTransitionTasks.Enqueue(() =&gt; SendProcessingNotificationAsync());
+            });
+        
+        return machine;
+    }
+    
+    public override async Task FireAsync(OrderTrigger trigger)
+    {
+        // Fire the trigger
+        await base.FireAsync(trigger);
+        
+        // Execute any queued async operations after transition
+        while (_postTransitionTasks.Count &gt; 0)
+        {
+            var task = _postTransitionTasks.Dequeue();
+            await task();
+        }
+    }
+    
+    private async Task SendProcessingNotificationAsync()
+    {
+        await _notificationService.NotifyAsync(&quot;Order is being processed&quot;);
+    }
+}
+</code></pre>
+<h3 id="pattern-3-state-specific-grain-methods">Pattern 3: State-Specific Grain Methods</h3>
+<p>Create grain methods that encapsulate both the state transition and related async operations:</p>
+<pre><code class="lang-csharp">public interface IOrderGrain : IGrainWithStringKey
+{
+    Task&lt;OrderSubmissionResult&gt; SubmitOrderAsync(OrderData data);
+    Task&lt;ProcessingResult&gt; ProcessOrderAsync();
+    Task&lt;CompletionResult&gt; CompleteOrderAsync();
+}
+
+public class OrderGrain : StateMachineGrain&lt;OrderState, OrderTrigger&gt;, IOrderGrain
+{
+    public async Task&lt;OrderSubmissionResult&gt; SubmitOrderAsync(OrderData data)
+    {
+        // Validate current state
+        if (!await CanFireAsync(OrderTrigger.Submit))
+        {
+            return new OrderSubmissionResult 
+            { 
+                Success = false, 
+                Message = &quot;Order cannot be submitted in current state&quot; 
+            };
+        }
+        
+        // Perform async pre-transition operations
+        var validationResult = await ValidateOrderAsync(data);
+        if (!validationResult.IsValid)
+        {
+            return new OrderSubmissionResult 
+            { 
+                Success = false, 
+                Message = validationResult.Message 
+            };
+        }
+        
+        // State transition
+        await FireAsync(OrderTrigger.Submit);
+        
+        // Perform async post-transition operations
+        await SaveOrderAsync(data);
+        await SendConfirmationEmailAsync(data);
+        
+        return new OrderSubmissionResult 
+        { 
+            Success = true, 
+            OrderId = this.GetPrimaryKeyString() 
+        };
+    }
+}
+</code></pre>
+<h2 id="compile-time-safety">Compile-Time Safety</h2>
+<p>Orleans.StateMachineES includes Roslyn analyzers that detect common async mistakes at compile time:</p>
+<h3 id="osmes001-async-lambda-in-callback">OSMES001: Async Lambda in Callback</h3>
+<pre><code class="lang-csharp">// This will generate a compiler warning
+machine.Configure(State.Active)
+    .OnEntry(async () =&gt; await DoSomething());  // ⚠️ Warning OSMES001
+</code></pre>
+<h3 id="osmes002-fireasync-in-callback">OSMES002: FireAsync in Callback</h3>
+<pre><code class="lang-csharp">// This will generate a compiler error
+machine.Configure(State.Active)
+    .OnEntry(() =&gt; 
+    {
+        FireAsync(Trigger.Next);  // ❌ Error OSMES002
+    });
+</code></pre>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Keep callbacks simple and synchronous</strong>: Use them only for logging, metrics, or updating local state</li>
+<li><strong>Perform async operations in grain methods</strong>: This gives you full control over error handling and ordering</li>
+<li><strong>Validate before transitioning</strong>: Check if a trigger can fire before performing expensive operations</li>
+<li><strong>Use event sourcing for reliability</strong>: EventSourcedStateMachineGrain handles async persistence automatically</li>
+<li><strong>Document your state machine flow</strong>: Make it clear where async operations occur in your workflow</li>
+</ol>
+<h2 id="example-complete-order-processing-workflow">Example: Complete Order Processing Workflow</h2>
+<pre><code class="lang-csharp">public class OrderProcessingGrain : EventSourcedStateMachineGrain&lt;OrderState, OrderTrigger, OrderGrainState&gt;, IOrderGrain
+{
+    private readonly IOrderRepository _repository;
+    private readonly IEmailService _emailService;
+    private readonly IPaymentService _paymentService;
+    
+    public OrderProcessingGrain(
+        IOrderRepository repository,
+        IEmailService emailService,
+        IPaymentService paymentService)
+    {
+        _repository = repository;
+        _emailService = emailService;
+        _paymentService = paymentService;
+    }
+    
+    protected override StateMachine&lt;OrderState, OrderTrigger&gt; BuildStateMachine()
+    {
+        var machine = new StateMachine&lt;OrderState, OrderTrigger&gt;(() =&gt; State.CurrentState);
+        
+        machine.Configure(OrderState.Created)
+            .Permit(OrderTrigger.Submit, OrderState.Validating);
+        
+        machine.Configure(OrderState.Validating)
+            .Permit(OrderTrigger.Approve, OrderState.PaymentPending)
+            .Permit(OrderTrigger.Reject, OrderState.Rejected);
+        
+        machine.Configure(OrderState.PaymentPending)
+            .Permit(OrderTrigger.PaymentReceived, OrderState.Processing)
+            .Permit(OrderTrigger.PaymentFailed, OrderState.PaymentFailed);
+        
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Ship, OrderState.Shipped)
+            .Permit(OrderTrigger.Cancel, OrderState.Cancelled);
+        
+        machine.Configure(OrderState.Shipped)
+            .Permit(OrderTrigger.Deliver, OrderState.Delivered);
+        
+        return machine;
+    }
+    
+    public async Task&lt;OrderResult&gt; CreateOrderAsync(CreateOrderCommand command)
+    {
+        // Initialize state
+        State.OrderId = command.OrderId;
+        State.CustomerId = command.CustomerId;
+        State.Items = command.Items;
+        State.CurrentState = OrderState.Created;
+        
+        // Save to repository
+        await _repository.CreateOrderAsync(State);
+        
+        // Send confirmation email
+        await _emailService.SendOrderCreatedEmailAsync(State.CustomerId, State.OrderId);
+        
+        return new OrderResult { Success = true, OrderId = State.OrderId };
+    }
+    
+    public async Task&lt;OrderResult&gt; SubmitForValidationAsync()
+    {
+        // Check if we can transition
+        if (!await CanFireAsync(OrderTrigger.Submit))
+        {
+            return new OrderResult 
+            { 
+                Success = false, 
+                Message = $&quot;Cannot submit order in state {State.CurrentState}&quot; 
+            };
+        }
+        
+        // Transition to Validating
+        await FireAsync(OrderTrigger.Submit);
+        
+        // Perform validation asynchronously
+        var validationResult = await ValidateOrderAsync();
+        
+        if (validationResult.IsValid)
+        {
+            await FireAsync(OrderTrigger.Approve);
+            await _emailService.SendOrderApprovedEmailAsync(State.CustomerId, State.OrderId);
+            
+            // Initiate payment process
+            var paymentResult = await _paymentService.ProcessPaymentAsync(State);
+            
+            if (paymentResult.Success)
+            {
+                await FireAsync(OrderTrigger.PaymentReceived);
+                
+                // Start processing
+                await StartOrderProcessingAsync();
+            }
+            else
+            {
+                await FireAsync(OrderTrigger.PaymentFailed);
+                await _emailService.SendPaymentFailedEmailAsync(State.CustomerId, State.OrderId);
+            }
+        }
+        else
+        {
+            await FireAsync(OrderTrigger.Reject);
+            await _emailService.SendOrderRejectedEmailAsync(
+                State.CustomerId, 
+                State.OrderId, 
+                validationResult.Reasons);
+        }
+        
+        return new OrderResult 
+        { 
+            Success = true, 
+            OrderId = State.OrderId, 
+            State = State.CurrentState 
+        };
+    }
+    
+    private async Task&lt;ValidationResult&gt; ValidateOrderAsync()
+    {
+        // Async validation logic
+        var inventoryCheck = await _repository.CheckInventoryAsync(State.Items);
+        var creditCheck = await _paymentService.CheckCreditAsync(State.CustomerId);
+        
+        return new ValidationResult
+        {
+            IsValid = inventoryCheck &amp;&amp; creditCheck,
+            Reasons = GenerateValidationReasons(inventoryCheck, creditCheck)
+        };
+    }
+    
+    private async Task StartOrderProcessingAsync()
+    {
+        // Queue for fulfillment
+        await _repository.QueueForFulfillmentAsync(State.OrderId);
+        
+        // Notify warehouse
+        await _emailService.NotifyWarehouseAsync(State.OrderId, State.Items);
+    }
+}
+</code></pre>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>Stateless callbacks are synchronous</strong>: This is by design and cannot be changed</li>
+<li><strong>Use grain methods for async operations</strong>: This is the Orleans way</li>
+<li><strong>Leverage compile-time analyzers</strong>: They'll catch common mistakes</li>
+<li><strong>Follow the patterns</strong>: They ensure reliable and maintainable code</li>
+<li><strong>Event sourcing handles persistence</strong>: You don't need async in callbacks for persistence</li>
+</ul>
+<p>Remember: The separation between synchronous state configuration and asynchronous execution logic is intentional and leads to cleaner, more maintainable code.</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/async-patterns.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Installation | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Installation | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/installation.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="installation">Installation</h1>
+
+<p>This guide walks you through installing Orleans.StateMachineES in your project.</p>
+<h2 id="package-overview">Package Overview</h2>
+<p>Orleans.StateMachineES consists of three NuGet packages:</p>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Purpose</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Orleans.StateMachineES</strong></td>
+<td>Main library with state machine grains</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><strong>Orleans.StateMachineES.Abstractions</strong></td>
+<td>Core interfaces (auto-included)</td>
+<td>Auto</td>
+</tr>
+<tr>
+<td><strong>Orleans.StateMachineES.Generators</strong></td>
+<td>Roslyn analyzers for compile-time safety</td>
+<td>Recommended</td>
+</tr>
+</tbody>
+</table>
+<h2 id="installation-methods">Installation Methods</h2>
+<h3 id="using-net-cli-recommended">Using .NET CLI (Recommended)</h3>
+<pre><code class="lang-bash"># Install main library
+dotnet add package Orleans.StateMachineES
+
+# Install analyzers (recommended)
+dotnet add package Orleans.StateMachineES.Generators
+</code></pre>
+<h3 id="using-package-manager-console">Using Package Manager Console</h3>
+<pre><code class="lang-powershell">Install-Package Orleans.StateMachineES
+Install-Package Orleans.StateMachineES.Generators
+</code></pre>
+<h3 id="using-visual-studio">Using Visual Studio</h3>
+<ol>
+<li>Right-click your project in Solution Explorer</li>
+<li>Select <strong>Manage NuGet Packages</strong></li>
+<li>Search for <code>Orleans.StateMachineES</code></li>
+<li>Click <strong>Install</strong> on both packages</li>
+</ol>
+<h3 id="manual-package-reference">Manual Package Reference</h3>
+<p>Add to your <code>.csproj</code> file:</p>
+<pre><code class="lang-xml">&lt;ItemGroup&gt;
+  &lt;PackageReference Include=&quot;Orleans.StateMachineES&quot; Version=&quot;1.0.4&quot; /&gt;
+  &lt;PackageReference Include=&quot;Orleans.StateMachineES.Generators&quot; Version=&quot;1.0.4&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<h2 id="version-compatibility">Version Compatibility</h2>
+<table>
+<thead>
+<tr>
+<th>Orleans.StateMachineES</th>
+<th>.NET Version</th>
+<th>Orleans Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0.x</td>
+<td>.NET 9.0+</td>
+<td>9.1.0+</td>
+</tr>
+</tbody>
+</table>
+<h2 id="verify-installation">Verify Installation</h2>
+<p>After installation, verify the packages are correctly referenced:</p>
+<pre><code class="lang-bash">dotnet list package
+</code></pre>
+<p>You should see:</p>
+<pre><code>Project 'YourProject' has the following package references
+   [net9.0]:
+   Top-level Package                           Requested   Resolved
+   &gt; Orleans.StateMachineES                    1.0.4       1.0.4
+   &gt; Orleans.StateMachineES.Generators         1.0.4       1.0.4
+</code></pre>
+<h2 id="analyzer-configuration">Analyzer Configuration</h2>
+<p>The Roslyn analyzers are enabled by default. To configure them, add to your <code>.editorconfig</code> or <code>.globalconfig</code>:</p>
+<pre><code class="lang-ini"># Treat async lambda warnings as errors in production
+dotnet_diagnostic.OSMES001.severity = error
+
+# Customize severity for specific analyzers
+dotnet_diagnostic.OSMES004.severity = suggestion  # Unreachable states
+dotnet_diagnostic.OSMES005.severity = none        # Multiple entry callbacks
+</code></pre>
+<p>See the <a href="../guides/analyzers.html">Analyzers Guide</a> for complete configuration options.</p>
+<h2 id="project-setup">Project Setup</h2>
+<h3 id="basic-orleans-setup">Basic Orleans Setup</h3>
+<p>Ensure your Orleans silo is configured. In your <code>Program.cs</code>:</p>
+<pre><code class="lang-csharp">var builder = Host.CreateDefaultBuilder(args)
+    .UseOrleans(siloBuilder =&gt;
+    {
+        siloBuilder.UseLocalhostClustering();
+        // Add other Orleans configuration
+    });
+
+var host = builder.Build();
+await host.RunAsync();
+</code></pre>
+<h3 id="enable-event-sourcing-optional">Enable Event Sourcing (Optional)</h3>
+<p>If you plan to use event sourcing, configure a storage provider:</p>
+<pre><code class="lang-csharp">siloBuilder.UseOrleans(siloBuilder =&gt;
+{
+    siloBuilder.UseLocalhostClustering();
+
+    // Add storage for event sourcing
+    siloBuilder.AddMemoryGrainStorage(&quot;EventStore&quot;);
+
+    // Or use Azure Table Storage
+    siloBuilder.AddAzureTableGrainStorage(&quot;EventStore&quot;, options =&gt;
+    {
+        options.ConfigureTableServiceClient(&quot;UseDevelopmentStorage=true&quot;);
+    });
+});
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="missing-abstractions-package">Missing Abstractions Package</h3>
+<p>If you see errors about missing <code>IStateMachineGrain&lt;,&gt;</code>:</p>
+<pre><code class="lang-bash">dotnet restore
+dotnet build
+</code></pre>
+<p>The Abstractions package should be automatically restored as a dependency.</p>
+<h3 id="analyzer-not-working">Analyzer Not Working</h3>
+<p>If analyzer warnings don't appear:</p>
+<ol>
+<li><p>Clean and rebuild:</p>
+<pre><code class="lang-bash">dotnet clean
+dotnet build
+</code></pre>
+</li>
+<li><p>Check analyzer status in Visual Studio:</p>
+<ul>
+<li>Go to <strong>Dependencies</strong> → <strong>Analyzers</strong> → <strong>Orleans.StateMachineES.Generators</strong></li>
+<li>Ensure analyzers are listed and not disabled</li>
+</ul>
+</li>
+<li><p>Restart your IDE</p>
+</li>
+</ol>
+<h3 id="version-conflicts">Version Conflicts</h3>
+<p>If you encounter version conflicts with Orleans packages:</p>
+<pre><code class="lang-bash"># Check all package versions
+dotnet list package --include-transitive
+
+# Update all packages to compatible versions
+dotnet add package Microsoft.Orleans.Sdk --version 9.1.2
+</code></pre>
+<h2 id="next-steps">Next Steps</h2>
+<p>Now that you have Orleans.StateMachineES installed:</p>
+<ol>
+<li><a href="first-state-machine.html">Create your first state machine →</a></li>
+<li>Learn <a href="core-concepts.html">core concepts</a></li>
+<li>Explore <a href="../examples/index.html">examples</a></li>
+</ol>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="https://www.nuget.org/packages/Orleans.StateMachineES">NuGet Package Page</a></li>
+<li><a href="https://github.com/mivertowski/Orleans.StateMachineES">GitHub Repository</a></li>
+<li><a href="../reference/release-notes.html">Release Notes</a></li>
+<li><a href="../reference/migration-guide.html">Migration Guide</a> (for upgrading from older versions)</li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/installation.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

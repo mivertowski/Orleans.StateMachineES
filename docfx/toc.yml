@@ -1,0 +1,20 @@
+- name: Home
+  href: index.md
+- name: Getting Started
+  href: articles/getting-started/toc.yml
+  topicHref: articles/getting-started/index.md
+- name: Guides
+  href: articles/guides/toc.yml
+  topicHref: articles/guides/index.md
+- name: Examples
+  href: articles/examples/toc.yml
+  topicHref: articles/examples/index.md
+- name: Architecture
+  href: articles/architecture/toc.yml
+  topicHref: articles/architecture/index.md
+- name: API Reference
+  href: api/
+  topicHref: api/index.md
+- name: Reference
+  href: articles/reference/toc.yml
+  topicHref: articles/reference/index.md

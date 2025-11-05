@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Migration Guide: From ManagedCode.Orleans.StateMachine to Orleans.StateMachineES | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Migration Guide: From ManagedCode.Orleans.StateMachine to Orleans.StateMachineES | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/reference/migration-guide.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="migration-guide-from-managedcodeorleansstatemachine-to-orleansstatemachinees">Migration Guide: From ManagedCode.Orleans.StateMachine to Orleans.StateMachineES</h1>
+
+<h2 id="overview">Overview</h2>
+<p>This guide helps you migrate from the original <code>ManagedCode.Orleans.StateMachine</code> library to the enhanced <code>Orleans.StateMachineES</code> library with event sourcing capabilities.</p>
+<h2 id="key-differences">Key Differences</h2>
+<h3 id="1-namespace-changes">1. Namespace Changes</h3>
+<ul>
+<li><strong>Old</strong>: <code>ManagedCode.Orleans.StateMachine</code></li>
+<li><strong>New</strong>: <code>Orleans.StateMachineES</code></li>
+</ul>
+<h3 id="2-new-features">2. New Features</h3>
+<ul>
+<li><strong>Event Sourcing</strong>: Automatic persistence of state transitions as events</li>
+<li><strong>JournaledGrain Integration</strong>: Built on Orleans' event sourcing foundation</li>
+<li><strong>Idempotency</strong>: Built-in deduplication for repeated triggers</li>
+<li><strong>Stream Publishing</strong>: Optional publishing of events to Orleans Streams</li>
+<li><strong>Correlation Tracking</strong>: Built-in correlation ID support for distributed tracing</li>
+</ul>
+<h2 id="migration-steps">Migration Steps</h2>
+<h3 id="step-1-update-nuget-package">Step 1: Update NuGet Package</h3>
+<p>Remove the old package:</p>
+<pre><code class="lang-bash">dotnet remove package ManagedCode.Orleans.StateMachine
+</code></pre>
+<p>Add the new package:</p>
+<pre><code class="lang-bash">dotnet add package Orleans.StateMachineES
+</code></pre>
+<h3 id="step-2-update-namespace-imports">Step 2: Update Namespace Imports</h3>
+<p>Update all your using statements:</p>
+<pre><code class="lang-csharp">// Old
+using ManagedCode.Orleans.StateMachine;
+using ManagedCode.Orleans.StateMachine.Interfaces;
+using ManagedCode.Orleans.StateMachine.Models;
+using ManagedCode.Orleans.StateMachine.Extensions;
+
+// New
+using Orleans.StateMachineES;
+using Orleans.StateMachineES.Interfaces;
+using Orleans.StateMachineES.Models;
+using Orleans.StateMachineES.Extensions;
+</code></pre>
+<h3 id="step-3-choose-your-base-class">Step 3: Choose Your Base Class</h3>
+<p>You have two options:</p>
+<h4 id="option-a-keep-using-non-event-sourced-minimal-changes">Option A: Keep Using Non-Event-Sourced (Minimal Changes)</h4>
+<p>Continue using <code>StateMachineGrain</code> for backward compatibility:</p>
+<pre><code class="lang-csharp">public class MyGrain : StateMachineGrain&lt;MyState, MyTrigger&gt;, IMyGrain
+{
+    // No changes needed to your existing code
+}
+</code></pre>
+<h4 id="option-b-upgrade-to-event-sourcing-recommended">Option B: Upgrade to Event Sourcing (Recommended)</h4>
+<p>Migrate to <code>EventSourcedStateMachineGrain</code> for event sourcing benefits:</p>
+<pre><code class="lang-csharp">// Define your grain state
+public class MyGrainState : EventSourcedStateMachineState&lt;MyState&gt;
+{
+    // Add any additional state properties if needed
+}
+
+// Update your grain class
+public class MyGrain : EventSourcedStateMachineGrain&lt;MyState, MyTrigger, MyGrainState&gt;, IMyGrain
+{
+    protected override StateMachine&lt;MyState, MyTrigger&gt; BuildStateMachine()
+    {
+        // Your existing state machine configuration
+    }
+
+    // Optional: Configure event sourcing
+    protected override void ConfigureEventSourcing(EventSourcingOptions options)
+    {
+        options.AutoConfirmEvents = true;
+        options.PublishToStream = true;
+        options.StreamProvider = &quot;SMS&quot;;
+        options.EnableIdempotency = true;
+    }
+
+    // Optional: Customize version for migration tracking
+    protected override string GetStateMachineVersion()
+    {
+        return &quot;2.0.0&quot;; // Your version
+    }
+}
+</code></pre>
+<h3 id="step-4-update-silo-configuration">Step 4: Update Silo Configuration</h3>
+<p>Add event sourcing storage provider to your silo configuration:</p>
+<pre><code class="lang-csharp">siloBuilder
+    .AddLogStorageBasedLogConsistencyProvider()
+    .AddStateStorageBasedLogConsistencyProvider()
+    .AddMemoryGrainStorage(&quot;EventStore&quot;) // Or use Azure/ADO.NET storage
+    .AddMemoryStreams(&quot;SMS&quot;); // Optional: for stream publishing
+</code></pre>
+<h3 id="step-5-handle-breaking-changes">Step 5: Handle Breaking Changes</h3>
+<h4 id="interface-changes">Interface Changes</h4>
+<p>The core <code>IStateMachineGrain&lt;TState, TTrigger&gt;</code> interface remains the same, so no changes are needed to your grain interfaces.</p>
+<h4 id="extension-methods">Extension Methods</h4>
+<p>The Orleans context extension methods remain compatible:</p>
+<pre><code class="lang-csharp">// Still works the same
+machine.Configure(State.Active)
+    .OnEntryOrleansContextAsync(async () =&gt; { /* ... */ })
+    .OnExitOrleansContextAsync(async () =&gt; { /* ... */ });
+</code></pre>
+<h2 id="event-sourcing-benefits">Event Sourcing Benefits</h2>
+<p>When you migrate to <code>EventSourcedStateMachineGrain</code>, you automatically get:</p>
+<h3 id="1-event-persistence">1. Event Persistence</h3>
+<p>Every state transition is automatically persisted as an event:</p>
+<pre><code class="lang-csharp">// This automatically creates a StateTransitionEvent
+await grain.FireAsync(MyTrigger.Start);
+</code></pre>
+<h3 id="2-event-replay">2. Event Replay</h3>
+<p>State is automatically restored from events on grain activation.</p>
+<h3 id="3-idempotency">3. Idempotency</h3>
+<p>Duplicate triggers are automatically ignored:</p>
+<pre><code class="lang-csharp">// Second call with same parameters is ignored (idempotent)
+await grain.FireAsync(MyTrigger.Process, &quot;job-123&quot;);
+await grain.FireAsync(MyTrigger.Process, &quot;job-123&quot;); // No-op
+</code></pre>
+<h3 id="4-correlation-tracking">4. Correlation Tracking</h3>
+<p>Track related operations across grains:</p>
+<pre><code class="lang-csharp">grain.SetCorrelationId(&quot;request-123&quot;);
+await grain.FireAsync(MyTrigger.Process); // Event includes correlation ID
+</code></pre>
+<h3 id="5-stream-publishing">5. Stream Publishing</h3>
+<p>Events can be automatically published to Orleans Streams:</p>
+<pre><code class="lang-csharp">protected override void ConfigureEventSourcing(EventSourcingOptions options)
+{
+    options.PublishToStream = true;
+    options.StreamProvider = &quot;SMS&quot;;
+}
+</code></pre>
+<h2 id="testing-your-migration">Testing Your Migration</h2>
+<h3 id="1-unit-tests">1. Unit Tests</h3>
+<p>Your existing unit tests should continue to work. For event-sourced grains, add tests for:</p>
+<ul>
+<li>Event persistence</li>
+<li>Idempotency</li>
+<li>Event replay</li>
+</ul>
+<h3 id="2-integration-tests">2. Integration Tests</h3>
+<p>Test the full event sourcing flow:</p>
+<pre><code class="lang-csharp">[Fact]
+public async Task EventSourcedGrain_PersistsTransitions()
+{
+    var grain = cluster.GrainFactory.GetGrain&lt;IMyGrain&gt;(&quot;test&quot;);
+    
+    // Fire trigger
+    await grain.FireAsync(MyTrigger.Start);
+    
+    // Deactivate and reactivate grain
+    // ... grain deactivation logic ...
+    
+    // State should be restored from events
+    var state = await grain.GetStateAsync();
+    Assert.Equal(MyState.Started, state);
+}
+</code></pre>
+<h2 id="rollback-plan">Rollback Plan</h2>
+<p>If you need to rollback to the original library:</p>
+<ol>
+<li>Keep the namespace as <code>Orleans.StateMachineES</code> but use <code>StateMachineGrain</code> base class</li>
+<li>Or create type aliases:</li>
+</ol>
+<pre><code class="lang-csharp">global using StateMachineGrain = Orleans.StateMachineES.StateMachineGrain;
+</code></pre>
+<h2 id="common-issues-and-solutions">Common Issues and Solutions</h2>
+<h3 id="issue-1-state-not-persisting">Issue 1: State Not Persisting</h3>
+<p><strong>Solution</strong>: Ensure you've configured a log consistency provider and storage provider.</p>
+<h3 id="issue-2-duplicate-events">Issue 2: Duplicate Events</h3>
+<p><strong>Solution</strong>: Enable idempotency in options and ensure dedupe keys are unique.</p>
+<h3 id="issue-3-performance-impact">Issue 3: Performance Impact</h3>
+<p><strong>Solution</strong>: Tune snapshot intervals:</p>
+<pre><code class="lang-csharp">options.EnableSnapshots = true;
+options.SnapshotInterval = 50; // Snapshot every 50 events
+</code></pre>
+<h2 id="getting-help">Getting Help</h2>
+<ul>
+<li><strong>Documentation</strong>: See <a href="../README.md">README.md</a></li>
+<li><strong>Examples</strong>: Check the test project for usage examples</li>
+<li><strong>Issues</strong>: Report issues on <a href="https://github.com/mivertowski/Orleans.StateMachineES/issues">GitHub</a></li>
+</ul>
+<h2 id="acknowledgments">Acknowledgments</h2>
+<p>This library is based on the excellent work of the ManagedCode team. We've extended it with event sourcing capabilities while maintaining backward compatibility where possible.</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/reference/migration-guide.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

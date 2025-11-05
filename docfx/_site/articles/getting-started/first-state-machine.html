@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Your First State Machine | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Your First State Machine | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/first-state-machine.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="your-first-state-machine">Your First State Machine</h1>
+
+<p>This tutorial walks you through creating your first state machine grain step by step.</p>
+<h2 id="what-were-building">What We're Building</h2>
+<p>We'll create a simple <strong>light switch</strong> state machine with two states (On/Off) and one trigger (Toggle). This demonstrates the fundamentals without complexity.</p>
+<h2 id="step-1-define-states-and-triggers">Step 1: Define States and Triggers</h2>
+<p>Create enums for your states and triggers:</p>
+<pre><code class="lang-csharp">public enum LightState
+{
+    Off,
+    On
+}
+
+public enum LightTrigger
+{
+    Toggle
+}
+</code></pre>
+<blockquote>
+<p><strong>Tip</strong>: Use clear, descriptive names. States are typically nouns (Off, On), triggers are verbs (Toggle, Switch).</p>
+</blockquote>
+<h2 id="step-2-define-the-grain-interface">Step 2: Define the Grain Interface</h2>
+<p>Create an interface that extends <code>IStateMachineGrain&lt;TState, TTrigger&gt;</code>:</p>
+<pre><code class="lang-csharp">using Orleans.StateMachineES.Interfaces;
+
+public interface ILightSwitchGrain : IStateMachineGrain&lt;LightState, LightTrigger&gt;
+{
+    // Optional: Add custom grain methods here
+    Task&lt;int&gt; GetToggleCountAsync();
+}
+</code></pre>
+<p>The base interface provides all standard state machine operations:</p>
+<ul>
+<li><code>FireAsync(trigger)</code> - Execute a transition</li>
+<li><code>GetStateAsync()</code> - Query current state</li>
+<li><code>CanFireAsync(trigger)</code> - Check if transition is permitted</li>
+<li><code>GetPermittedTriggersAsync()</code> - Get all valid triggers</li>
+</ul>
+<h2 id="step-3-implement-the-grain">Step 3: Implement the Grain</h2>
+<p>Create a grain class that extends <code>StateMachineGrain&lt;TState, TTrigger&gt;</code>:</p>
+<pre><code class="lang-csharp">using Orleans.StateMachineES;
+
+public class LightSwitchGrain : StateMachineGrain&lt;LightState, LightTrigger&gt;, ILightSwitchGrain
+{
+    private int _toggleCount = 0;
+
+    protected override void BuildStateMachine()
+    {
+        // Configure the Off state
+        StateMachine.Configure(LightState.Off)
+            .Permit(LightTrigger.Toggle, LightState.On)
+            .OnEntry(() =&gt;
+            {
+                Console.WriteLine(&quot;Light is now OFF&quot;);
+            });
+
+        // Configure the On state
+        StateMachine.Configure(LightState.On)
+            .Permit(LightTrigger.Toggle, LightState.Off)
+            .OnEntry(() =&gt;
+            {
+                Console.WriteLine(&quot;Light is now ON&quot;);
+                _toggleCount++;
+            });
+
+        // Set the initial state
+        StateMachine.State = LightState.Off;
+    }
+
+    public Task&lt;int&gt; GetToggleCountAsync()
+    {
+        return Task.FromResult(_toggleCount);
+    }
+}
+</code></pre>
+<h3 id="understanding-buildstatemachine">Understanding BuildStateMachine()</h3>
+<p>The <code>BuildStateMachine()</code> method is called during grain activation. Here you:</p>
+<ol>
+<li><strong>Configure each state</strong> using <code>StateMachine.Configure(state)</code></li>
+<li><strong>Define transitions</strong> with <code>.Permit(trigger, destinationState)</code></li>
+<li><strong>Add callbacks</strong> using <code>.OnEntry()</code> and <code>.OnExit()</code></li>
+<li><strong>Set initial state</strong> with <code>StateMachine.State = ...</code></li>
+</ol>
+<blockquote>
+<p><strong>Important</strong>: Callbacks must be synchronous. See <a href="../guides/async-patterns.html">Async Patterns</a> for handling async operations.</p>
+</blockquote>
+<h2 id="step-4-use-the-grain">Step 4: Use the Grain</h2>
+<p>In your client or another grain:</p>
+<pre><code class="lang-csharp">// Get a reference to the grain
+var lightSwitch = grainFactory.GetGrain&lt;ILightSwitchGrain&gt;(0);
+
+// Check current state
+var currentState = await lightSwitch.GetStateAsync();
+Console.WriteLine($&quot;Current state: {currentState}&quot;); // Output: Off
+
+// Toggle the light
+await lightSwitch.FireAsync(LightTrigger.Toggle);
+currentState = await lightSwitch.GetStateAsync();
+Console.WriteLine($&quot;Current state: {currentState}&quot;); // Output: On
+
+// Toggle again
+await lightSwitch.FireAsync(LightTrigger.Toggle);
+currentState = await lightSwitch.GetStateAsync();
+Console.WriteLine($&quot;Current state: {currentState}&quot;); // Output: Off
+
+// Check toggle count
+var count = await lightSwitch.GetToggleCountAsync();
+Console.WriteLine($&quot;Toggled {count} times&quot;); // Output: Toggled 1 times
+</code></pre>
+<h2 id="step-5-query-state-machine-metadata">Step 5: Query State Machine Metadata</h2>
+<p>Orleans.StateMachineES provides rich metadata about your state machine:</p>
+<pre><code class="lang-csharp">var lightSwitch = grainFactory.GetGrain&lt;ILightSwitchGrain&gt;(0);
+
+// Check if a trigger can fire
+bool canToggle = await lightSwitch.CanFireAsync(LightTrigger.Toggle);
+Console.WriteLine($&quot;Can toggle: {canToggle}&quot;); // Output: true
+
+// Get all permitted triggers
+var permittedTriggers = await lightSwitch.GetPermittedTriggersAsync();
+Console.WriteLine($&quot;Permitted: {string.Join(&quot;, &quot;, permittedTriggers)}&quot;);
+// Output: Permitted: Toggle
+
+// Get detailed state machine info
+var info = await lightSwitch.GetStateMachineInfoAsync();
+Console.WriteLine($&quot;Current: {info.State}&quot;);
+Console.WriteLine($&quot;Initial: {info.InitialState}&quot;);
+Console.WriteLine($&quot;States: {string.Join(&quot;, &quot;, info.States)}&quot;);
+Console.WriteLine($&quot;Triggers: {string.Join(&quot;, &quot;, info.Triggers)}&quot;);
+</code></pre>
+<h2 id="complete-example">Complete Example</h2>
+<p>Here's the complete code in one place:</p>
+<pre><code class="lang-csharp">// States and Triggers
+public enum LightState { Off, On }
+public enum LightTrigger { Toggle }
+
+// Interface
+public interface ILightSwitchGrain : IStateMachineGrain&lt;LightState, LightTrigger&gt;
+{
+    Task&lt;int&gt; GetToggleCountAsync();
+}
+
+// Implementation
+public class LightSwitchGrain : StateMachineGrain&lt;LightState, LightTrigger&gt;, ILightSwitchGrain
+{
+    private int _toggleCount = 0;
+
+    protected override void BuildStateMachine()
+    {
+        StateMachine.Configure(LightState.Off)
+            .Permit(LightTrigger.Toggle, LightState.On)
+            .OnEntry(() =&gt; Console.WriteLine(&quot;Light OFF&quot;));
+
+        StateMachine.Configure(LightState.On)
+            .Permit(LightTrigger.Toggle, LightState.Off)
+            .OnEntry(() =&gt;
+            {
+                Console.WriteLine(&quot;Light ON&quot;);
+                _toggleCount++;
+            });
+
+        StateMachine.State = LightState.Off;
+    }
+
+    public Task&lt;int&gt; GetToggleCountAsync() =&gt; Task.FromResult(_toggleCount);
+}
+
+// Usage
+var light = grainFactory.GetGrain&lt;ILightSwitchGrain&gt;(0);
+await light.FireAsync(LightTrigger.Toggle); // Turn on
+await light.FireAsync(LightTrigger.Toggle); // Turn off
+var count = await light.GetToggleCountAsync(); // 1
+</code></pre>
+<h2 id="what-youve-learned">What You've Learned</h2>
+<ul>
+<li>How to define states and triggers using enums</li>
+<li>Creating a grain interface extending <code>IStateMachineGrain&lt;,&gt;</code></li>
+<li>Implementing <code>StateMachineGrain&lt;,&gt;</code> and <code>BuildStateMachine()</code></li>
+<li>Configuring states with transitions and callbacks</li>
+<li>Using <code>FireAsync()</code> to execute transitions</li>
+<li>Querying state machine metadata</li>
+</ul>
+<h2 id="common-mistakes">Common Mistakes</h2>
+<h3 id="1-forgetting-to-set-initial-state">1. Forgetting to Set Initial State</h3>
+<pre><code class="lang-csharp">// ❌ Wrong: No initial state
+protected override void BuildStateMachine()
+{
+    StateMachine.Configure(LightState.Off)
+        .Permit(LightTrigger.Toggle, LightState.On);
+}
+
+// ✅ Correct: Set initial state
+protected override void BuildStateMachine()
+{
+    StateMachine.Configure(LightState.Off)
+        .Permit(LightTrigger.Toggle, LightState.On);
+
+    StateMachine.State = LightState.Off; // Required!
+}
+</code></pre>
+<p>The <strong>OSMES009</strong> analyzer will catch this at compile time.</p>
+<h3 id="2-using-async-lambdas-in-callbacks">2. Using Async Lambdas in Callbacks</h3>
+<pre><code class="lang-csharp">// ❌ Wrong: Async lambda not supported
+StateMachine.Configure(LightState.On)
+    .OnEntry(async () =&gt;
+    {
+        await SomeAsyncOperation();
+    });
+
+// ✅ Correct: Keep callbacks synchronous
+StateMachine.Configure(LightState.On)
+    .OnEntry(() =&gt;
+    {
+        RegisterTimer(_ =&gt; SomeAsyncOperation(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+    });
+</code></pre>
+<p>The <strong>OSMES001</strong> analyzer will warn you about this pattern.</p>
+<h3 id="3-calling-fireasync-in-callbacks">3. Calling FireAsync in Callbacks</h3>
+<pre><code class="lang-csharp">// ❌ Wrong: FireAsync in callback causes runtime error
+StateMachine.Configure(LightState.On)
+    .OnEntry(() =&gt;
+    {
+        _ = FireAsync(LightTrigger.SomeOtherTrigger); // Runtime error!
+    });
+
+// ✅ Correct: Fire triggers from grain methods
+public async Task TurnOnAndDoSomethingAsync()
+{
+    await FireAsync(LightTrigger.Toggle);
+    // Now do async work after the transition
+    await PerformAsyncOperation();
+}
+</code></pre>
+<p>The <strong>OSMES002</strong> analyzer prevents this at compile time.</p>
+<h2 id="next-steps">Next Steps</h2>
+<p>Now that you've built your first state machine:</p>
+<ol>
+<li><a href="core-concepts.html">Learn core concepts</a> - Understand states, triggers, and transitions in depth</li>
+<li><a href="parameterized-triggers.html">Add parameterized triggers</a> - Pass data with transitions</li>
+<li><a href="guard-conditions.html">Implement guard conditions</a> - Validate transitions with business logic</li>
+</ol>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="../guides/async-patterns.html">Async Patterns Guide</a> - Critical reading for production code</li>
+<li><a href="../guides/analyzers.html">Analyzer Reference</a> - Understanding all 10 analyzers</li>
+<li><a href="../../api/Orleans.StateMachineES.StateMachineGrain-2.yml">API Reference</a> - Complete API documentation</li>
+<li><a href="../examples/index.html">Examples</a> - Real-world implementations</li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/first-state-machine.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1889,6 +1889,54 @@ var options = new CircuitBreakerOptions
 - **Selective Monitoring**: Monitor specific triggers only
 - **Production Ready**: Comprehensive error handling and logging
 
+## 📚 Documentation
+
+**Complete documentation is available at: https://mivertowski.github.io/Orleans.StateMachineES/**
+
+The documentation site includes comprehensive guides, tutorials, API reference, and examples:
+
+### 🚀 Getting Started
+- **[Installation Guide](https://mivertowski.github.io/Orleans.StateMachineES/articles/getting-started/installation.html)** - Install and set up Orleans.StateMachineES
+- **[First State Machine](https://mivertowski.github.io/Orleans.StateMachineES/articles/getting-started/first-state-machine.html)** - Step-by-step tutorial
+- **[Core Concepts](https://mivertowski.github.io/Orleans.StateMachineES/articles/getting-started/core-concepts.html)** - Understanding states, triggers, and transitions
+
+### 📖 Feature Guides
+- **[Async Patterns](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/async-patterns.html)** - Critical reading: Handling async operations correctly
+- **[Roslyn Analyzers](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/analyzers.html)** - Complete guide to all 10 compile-time analyzers
+- **[Event Sourcing](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/event-sourcing.html)** - 30% faster with complete state history
+- **[Circuit Breaker Pattern](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/circuit-breaker.html)** - Production resilience
+- **[Hierarchical States](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/hierarchical-states.html)** - Parent-child state relationships
+- **[Distributed Sagas](https://mivertowski.github.io/Orleans.StateMachineES/articles/guides/distributed-sagas.html)** - Multi-grain workflows
+
+### 💡 Examples
+- **[E-Commerce Workflow](https://mivertowski.github.io/Orleans.StateMachineES/articles/examples/ecommerce.html)** - Order processing with event sourcing and timers
+- **[Document Approval](https://mivertowski.github.io/Orleans.StateMachineES/articles/examples/document-approval.html)** - Multi-level approval with hierarchical states
+- **[Smart Home Automation](https://mivertowski.github.io/Orleans.StateMachineES/articles/examples/smart-home.html)** - Orthogonal regions and source generation
+- **[Performance Showcase](https://mivertowski.github.io/Orleans.StateMachineES/articles/examples/performance-showcase.html)** - Benchmarks and optimizations
+
+### 🏗️ Architecture
+- **[Performance Guide](https://mivertowski.github.io/Orleans.StateMachineES/articles/architecture/performance.html)** - Optimization strategies and benchmarks
+- **[Production Deployment](https://mivertowski.github.io/Orleans.StateMachineES/articles/architecture/production.html)** - Production best practices
+- **[Architecture Overview](https://mivertowski.github.io/Orleans.StateMachineES/articles/architecture/index.html)** - Design decisions and patterns
+
+### 🔍 API Reference
+- **[Complete API Documentation](https://mivertowski.github.io/Orleans.StateMachineES/api/index.html)** - Auto-generated from XML comments
+- **[StateMachineGrain API](https://mivertowski.github.io/Orleans.StateMachineES/api/Orleans.StateMachineES.StateMachineGrain-2.html)** - Core base class
+- **[EventSourcedStateMachineGrain API](https://mivertowski.github.io/Orleans.StateMachineES/api/Orleans.StateMachineES.EventSourcing.EventSourcedStateMachineGrain-3.html)** - Event sourcing
+
+### 📋 Reference
+- **[Cheat Sheet](https://mivertowski.github.io/Orleans.StateMachineES/articles/reference/cheat-sheet.html)** - Quick reference for all features
+- **[Migration Guide](https://mivertowski.github.io/Orleans.StateMachineES/articles/reference/migration-guide.html)** - Upgrading from ManagedCode library
+
+### 📁 Local Documentation
+Additional documentation is also available in the repository:
+- [Async Patterns Guide](docs/ASYNC_PATTERNS.md) - Local copy of async patterns
+- [Analyzer Reference](docs/ANALYZERS.md) - Local copy of analyzer documentation
+- [Developer Cheat Sheet](docs/CHEAT_SHEET.md) - Local copy of cheat sheet
+- [Migration Guide](docs/MIGRATION_GUIDE.md) - Local copy of migration guide
+- [Implementation Strategy](docs/IMPLEMENTATION_STRATEGY.md) - Technical implementation details
+- [Project Plan](docs/plan.md) - Development roadmap
+
 ## Requirements
 
 - .NET 9.0 or higher

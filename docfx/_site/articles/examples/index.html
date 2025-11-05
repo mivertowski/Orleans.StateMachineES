@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Examples | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Examples | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/examples/index.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="examples">Examples</h1>
+
+<p>Production-ready example applications demonstrating Orleans.StateMachineES features.</p>
+<h2 id="available-examples">Available Examples</h2>
+<h3 id="e-commerce-workflow"><a href="ecommerce.html">E-Commerce Workflow</a></h3>
+<p>Complete order processing system with event sourcing, timers, and monitoring.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Event-sourced order state machine</li>
+<li>Payment integration</li>
+<li>Inventory management</li>
+<li>Automatic timeouts for abandoned orders</li>
+<li>Email notifications</li>
+<li>Distributed tracing</li>
+</ul>
+<p><strong>Complexity:</strong> Intermediate
+<strong>Source:</strong> <code>examples/ECommerceWorkflow/</code></p>
+<h3 id="document-approval"><a href="document-approval.html">Document Approval</a></h3>
+<p>Multi-level approval workflow with hierarchical states and distributed sagas.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Hierarchical state machine (Draft → Review → Approval)</li>
+<li>Multi-stakeholder approval process</li>
+<li>Saga orchestration for cross-system updates</li>
+<li>Compensation logic for rollbacks</li>
+<li>Audit trail</li>
+</ul>
+<p><strong>Complexity:</strong> Advanced
+<strong>Source:</strong> <code>examples/DocumentApproval/</code></p>
+<h3 id="monitoring-dashboard"><a href="monitoring.html">Monitoring Dashboard</a></h3>
+<p>Health checks, metrics collection, and observability patterns.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>ASP.NET Core health checks integration</li>
+<li>OpenTelemetry distributed tracing</li>
+<li>State machine visualization</li>
+<li>Real-time metrics with Prometheus</li>
+<li>Dashboard UI with state diagrams</li>
+</ul>
+<p><strong>Complexity:</strong> Intermediate
+<strong>Source:</strong> <code>examples/MonitoringDashboard/</code></p>
+<h3 id="smart-home-automation"><a href="smart-home.html">Smart Home Automation</a></h3>
+<p>Source generator demonstration with orthogonal regions.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>YAML/JSON state machine definitions</li>
+<li>Roslyn source generator usage</li>
+<li>Orthogonal regions (Security, Climate, Energy, Presence)</li>
+<li>Cross-region synchronization</li>
+<li>Vacation mode automation</li>
+</ul>
+<p><strong>Complexity:</strong> Advanced
+<strong>Source:</strong> <code>examples/SmartHome/</code></p>
+<h3 id="performance-showcase"><a href="performance-showcase.html">Performance Showcase</a></h3>
+<p>Benchmarks and performance optimization demonstrations.</p>
+<p><strong>Features:</strong></p>
+<ul>
+<li>TriggerParameterCache benchmarks (~100x speedup)</li>
+<li>Event sourcing vs regular grain performance</li>
+<li>ObjectPool optimization</li>
+<li>FrozenCollections usage</li>
+<li>ValueTask patterns</li>
+</ul>
+<p><strong>Complexity:</strong> Beginner
+<strong>Source:</strong> <code>examples/PerformanceShowcase/</code></p>
+<h2 id="running-the-examples">Running the Examples</h2>
+<p>Each example is a complete, runnable application. To run any example:</p>
+<pre><code class="lang-bash">cd examples/&lt;ExampleName&gt;
+dotnet restore
+dotnet run
+</code></pre>
+<h2 id="example-structure">Example Structure</h2>
+<p>All examples follow a consistent structure:</p>
+<pre><code>ExampleName/
+├── ExampleName.csproj          # Project file
+├── README.md                   # Example-specific documentation
+├── Program.cs                  # Silo configuration
+├── Grains/                     # State machine grain implementations
+├── Interfaces/                 # Grain interfaces
+├── Models/                     # State, trigger, and data models
+├── Configuration/              # Example-specific configuration
+└── Tests/                      # Unit and integration tests
+</code></pre>
+<h2 id="learning-path">Learning Path</h2>
+<h3 id="beginner-start-here">Beginner: Start Here</h3>
+<ol>
+<li><strong><a href="performance-showcase.html">Performance Showcase</a></strong> - Basic patterns and performance benefits</li>
+<li><strong><a href="ecommerce.html">E-Commerce Workflow</a></strong> - Event sourcing and timers</li>
+</ol>
+<h3 id="intermediate-level-up">Intermediate: Level Up</h3>
+<ol start="3">
+<li><strong><a href="monitoring.html">Monitoring Dashboard</a></strong> - Observability and health checks</li>
+<li><strong><a href="document-approval.html">Document Approval</a></strong> - Hierarchical states</li>
+</ol>
+<h3 id="advanced-master-the-library">Advanced: Master the Library</h3>
+<ol start="5">
+<li><strong><a href="smart-home.html">Smart Home Automation</a></strong> - Source generator and orthogonal regions</li>
+</ol>
+<h2 id="common-patterns-demonstrated">Common Patterns Demonstrated</h2>
+<h3 id="event-sourcing">Event Sourcing</h3>
+<p>See: <a href="ecommerce.html">E-Commerce Workflow</a>, <a href="document-approval.html">Document Approval</a></p>
+<pre><code class="lang-csharp">public class OrderGrain : EventSourcedStateMachineGrain&lt;OrderState, OrderTrigger, OrderGrainState&gt;
+{
+    protected override void ConfigureEventSourcing(EventSourcingOptions options)
+    {
+        options.AutoConfirmEvents = true;  // Essential!
+        options.EnableSnapshots = true;
+        options.SnapshotInterval = 100;
+    }
+}
+</code></pre>
+<h3 id="timers--timeouts">Timers &amp; Timeouts</h3>
+<p>See: <a href="ecommerce.html">E-Commerce Workflow</a></p>
+<pre><code class="lang-csharp">RegisterStateTimeout(OrderState.Pending,
+    ConfigureTimeout(OrderState.Pending)
+        .After(TimeSpan.FromHours(24))
+        .TransitionTo(OrderTrigger.Cancel)
+        .UseReminder()
+        .Build());
+</code></pre>
+<h3 id="hierarchical-states">Hierarchical States</h3>
+<p>See: <a href="document-approval.html">Document Approval</a></p>
+<pre><code class="lang-csharp">machine.Configure(DocumentState.InReview)
+    .SubstateOf(DocumentState.Active)
+    .Permit(DocumentTrigger.Approve, DocumentState.Approved);
+</code></pre>
+<h3 id="distributed-sagas">Distributed Sagas</h3>
+<p>See: <a href="document-approval.html">Document Approval</a></p>
+<pre><code class="lang-csharp">public class DocumentPublishingSaga : SagaOrchestratorGrain&lt;DocumentData&gt;
+{
+    protected override void ConfigureSagaSteps()
+    {
+        AddStep(new PublishToWebStep()).WithRetry(3);
+        AddStep(new NotifySubscribersStep()).WithRetry(2);
+        AddStep(new ArchiveOriginalStep()).WithRetry(1);
+    }
+}
+</code></pre>
+<h3 id="orthogonal-regions">Orthogonal Regions</h3>
+<p>See: <a href="smart-home.html">Smart Home Automation</a></p>
+<pre><code class="lang-csharp">DefineOrthogonalRegion(&quot;Security&quot;, SecurityState.Disarmed, machine =&gt; { ... });
+DefineOrthogonalRegion(&quot;Climate&quot;, ClimateState.Off, machine =&gt; { ... });
+DefineOrthogonalRegion(&quot;Energy&quot;, EnergyState.Normal, machine =&gt; { ... });
+</code></pre>
+<h3 id="source-generator">Source Generator</h3>
+<p>See: <a href="smart-home.html">Smart Home Automation</a></p>
+<p><strong>SmartLight.statemachine.yaml:</strong></p>
+<pre><code class="lang-yaml">name: SmartLight
+states: [Off, On, Dimmed]
+triggers: [TurnOn, TurnOff, Dim]
+transitions:
+  - { from: Off, to: On, trigger: TurnOn }
+  - { from: On, to: Dimmed, trigger: Dim }
+</code></pre>
+<h2 id="testing-examples">Testing Examples</h2>
+<p>Each example includes comprehensive tests. Run tests with:</p>
+<pre><code class="lang-bash">cd examples/&lt;ExampleName&gt;
+dotnet test
+</code></pre>
+<h3 id="test-coverage">Test Coverage</h3>
+<ul>
+<li>Unit tests for state transitions</li>
+<li>Integration tests with Orleans TestCluster</li>
+<li>Guard condition validation</li>
+<li>Timeout and reminder behavior</li>
+<li>Event sourcing replay scenarios</li>
+</ul>
+<h2 id="configuration-patterns">Configuration Patterns</h2>
+<h3 id="storage-configuration">Storage Configuration</h3>
+<pre><code class="lang-csharp">siloBuilder
+    .AddMemoryGrainStorage(&quot;Default&quot;)
+    .AddLogStorageBasedLogConsistencyProvider(&quot;LogStorage&quot;)
+    .AddMemoryGrainStorage(&quot;PubSubStore&quot;);
+</code></pre>
+<h3 id="stream-configuration">Stream Configuration</h3>
+<pre><code class="lang-csharp">siloBuilder
+    .AddStreams(&quot;SMS&quot;)
+    .AddMemoryStreams(&quot;SMS&quot;);
+</code></pre>
+<h3 id="tracing-configuration">Tracing Configuration</h3>
+<pre><code class="lang-csharp">services.AddOpenTelemetry()
+    .WithTracing(builder =&gt; builder
+        .AddSource(&quot;Orleans.StateMachineES&quot;)
+        .AddJaegerExporter());
+</code></pre>
+<h2 id="troubleshooting-examples">Troubleshooting Examples</h2>
+<h3 id="build-issues">Build Issues</h3>
+<pre><code class="lang-bash"># Clean and restore
+dotnet clean
+dotnet restore
+dotnet build
+</code></pre>
+<h3 id="runtime-issues">Runtime Issues</h3>
+<p>Check the example README for:</p>
+<ul>
+<li>Required dependencies</li>
+<li>Configuration settings</li>
+<li>Known limitations</li>
+<li>Common errors</li>
+</ul>
+<h2 id="contributing-examples">Contributing Examples</h2>
+<p>Have a great example? Contributions are welcome!</p>
+<ol>
+<li>Follow the standard example structure</li>
+<li>Include comprehensive README</li>
+<li>Add unit and integration tests</li>
+<li>Document key concepts used</li>
+<li>Submit a pull request</li>
+</ol>
+<p>See <a href="../reference/contributing.html">Contributing Guide</a> for details.</p>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="../getting-started/index.html">Getting Started Tutorial</a></li>
+<li><a href="../guides/index.html">Guides</a></li>
+<li><a href="../../api/index.html">API Reference</a></li>
+<li><a href="../reference/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/examples/index.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -11,6 +11,7 @@
     <Description>Production-ready state machine implementation for Microsoft Orleans with comprehensive event sourcing, enterprise features, and performance optimizations. Includes ValueTask optimizations, object pooling, and advanced memory management.</Description>
     <PackageTags>Orleans;StateMachine;Stateless;Actor;EventSourcing;Saga;Versioning;Analyzers</PackageTags>
     <PackageReleaseNotes>v1.0.4: CircuitBreaker production enhancements (success threshold tracking, separate success/failure callbacks, synchronous Reset), TriggerParameterCache thread-safety improvements with double-checked locking, EventSourcedStateMachineGrain trigger caching fixes. All 10 analyzers (OSMES001-010) now shipped. Comprehensive NuGet-focused documentation and signing guide included.</PackageReleaseNotes>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <!-- Package signing configuration (Release builds only) -->

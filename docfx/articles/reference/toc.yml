@@ -1,0 +1,14 @@
+- name: Cheat Sheet
+  href: cheat-sheet.md
+- name: Migration Guide
+  href: migration-guide.md
+- name: Troubleshooting
+  href: troubleshooting.md
+- name: Configuration Reference
+  href: configuration.md
+- name: FAQ
+  href: faq.md
+- name: Contributing
+  href: contributing.md
+- name: Release Notes
+  href: release-notes.md

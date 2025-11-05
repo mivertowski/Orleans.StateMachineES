@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Getting Started with Orleans.StateMachineES | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Getting Started with Orleans.StateMachineES | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/index.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="getting-started-with-orleansstatemachinees">Getting Started with Orleans.StateMachineES</h1>
+
+<p>Welcome to Orleans.StateMachineES! This guide will help you get up and running with state machines in your Orleans applications.</p>
+<h2 id="what-youll-learn">What You'll Learn</h2>
+<p>This getting started series covers:</p>
+<ol>
+<li><strong><a href="installation.html">Installation</a></strong> - Setting up Orleans.StateMachineES in your project</li>
+<li><strong><a href="first-state-machine.html">First State Machine</a></strong> - Building your first state machine grain</li>
+<li><strong><a href="core-concepts.html">Core Concepts</a></strong> - Understanding states, triggers, and transitions</li>
+<li><strong><a href="parameterized-triggers.html">Parameterized Triggers</a></strong> - Passing data with transitions</li>
+<li><strong><a href="guard-conditions.html">Guard Conditions</a></strong> - Validating transitions with business logic</li>
+<li><strong><a href="next-steps.html">Next Steps</a></strong> - Exploring advanced features</li>
+</ol>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Before you begin, ensure you have:</p>
+<ul>
+<li><strong>.NET 9.0 SDK</strong> or later installed</li>
+<li><strong>Basic Orleans knowledge</strong> - Understanding of grains and the Orleans runtime</li>
+<li><strong>C# familiarity</strong> - Knowledge of async/await, generics, and enums</li>
+<li><strong>An Orleans project</strong> - Either existing or newly created</li>
+</ul>
+<p>If you're new to Orleans, check out the <a href="https://learn.microsoft.com/en-us/dotnet/orleans/">official Orleans documentation</a> first.</p>
+<h2 id="quick-overview">Quick Overview</h2>
+<p>Orleans.StateMachineES provides state machine functionality for Orleans grains through:</p>
+<h3 id="core-components">Core Components</h3>
+<ul>
+<li><strong>StateMachineGrain&lt;TState, TTrigger&gt;</strong> - Base class for state machine grains</li>
+<li><strong>EventSourcedStateMachineGrain&lt;TState, TTrigger&gt;</strong> - Event sourcing support</li>
+<li><strong>IStateMachineGrain&lt;TState, TTrigger&gt;</strong> - Standard grain interface</li>
+</ul>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li>Orleans-native async APIs</li>
+<li>Compile-time safety with 10 Roslyn analyzers</li>
+<li>Event sourcing with state replay</li>
+<li>Production components (circuit breakers, retries)</li>
+<li>Performance optimizations (TriggerParameterCache)</li>
+</ul>
+<h2 id="learning-path">Learning Path</h2>
+<h3 id="beginner-start-here">Beginner (Start Here)</h3>
+<ol>
+<li><a href="installation.html">Install the packages</a></li>
+<li><a href="first-state-machine.html">Create your first state machine</a></li>
+<li><a href="core-concepts.html">Understand core concepts</a></li>
+</ol>
+<h3 id="intermediate">Intermediate</h3>
+<ol start="4">
+<li><a href="parameterized-triggers.html">Use parameterized triggers</a></li>
+<li><a href="guard-conditions.html">Add guard conditions</a></li>
+<li><a href="../guides/async-patterns.html">Explore async patterns</a></li>
+</ol>
+<h3 id="advanced">Advanced</h3>
+<ol start="7">
+<li><a href="../guides/event-sourcing.html">Enable event sourcing</a></li>
+<li><a href="../guides/hierarchical-states.html">Build hierarchical states</a></li>
+<li><a href="../guides/distributed-sagas.html">Implement distributed sagas</a></li>
+</ol>
+<h2 id="example-order-processing">Example: Order Processing</h2>
+<p>Here's a preview of what you'll be able to build:</p>
+<pre><code class="lang-csharp">public enum OrderState
+{
+    Draft,
+    Submitted,
+    PaymentPending,
+    PaymentConfirmed,
+    Processing,
+    Shipped,
+    Delivered,
+    Cancelled
+}
+
+public enum OrderTrigger
+{
+    Submit,
+    ConfirmPayment,
+    Process,
+    Ship,
+    Deliver,
+    Cancel
+}
+
+public class OrderGrain : StateMachineGrain&lt;OrderState, OrderTrigger&gt;, IOrderGrain
+{
+    protected override void BuildStateMachine()
+    {
+        StateMachine.Configure(OrderState.Draft)
+            .Permit(OrderTrigger.Submit, OrderState.Submitted)
+            .Permit(OrderTrigger.Cancel, OrderState.Cancelled);
+
+        StateMachine.Configure(OrderState.Submitted)
+            .OnEntry(() =&gt; StartPaymentProcessing())
+            .Permit(OrderTrigger.ConfirmPayment, OrderState.PaymentConfirmed)
+            .Permit(OrderTrigger.Cancel, OrderState.Cancelled);
+
+        StateMachine.Configure(OrderState.PaymentConfirmed)
+            .Permit(OrderTrigger.Process, OrderState.Processing);
+
+        StateMachine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Ship, OrderState.Shipped);
+
+        StateMachine.Configure(OrderState.Shipped)
+            .Permit(OrderTrigger.Deliver, OrderState.Delivered);
+    }
+
+    private void StartPaymentProcessing()
+    {
+        // Payment gateway integration
+        var paymentGrain = GrainFactory.GetGrain&lt;IPaymentGrain&gt;(this.GetPrimaryKeyLong());
+        RegisterTimer(
+            _ =&gt; paymentGrain.CheckPaymentStatusAsync(),
+            null,
+            TimeSpan.FromSeconds(30),
+            TimeSpan.FromSeconds(30)
+        );
+    }
+}
+</code></pre>
+<p>This state machine handles the complete order lifecycle with transitions, entry callbacks, and integration with other grains.</p>
+<h2 id="need-help">Need Help?</h2>
+<ul>
+<li><strong>Examples</strong>: Check out <a href="../examples/index.html">complete examples</a></li>
+<li><strong>API Reference</strong>: Browse the <a href="../../api/index.html">API documentation</a></li>
+<li><strong>Troubleshooting</strong>: See <a href="../reference/troubleshooting.html">common issues</a></li>
+<li><strong>Community</strong>: Ask questions on <a href="https://github.com/mivertowski/Orleans.StateMachineES/discussions">GitHub Discussions</a></li>
+</ul>
+<h2 id="ready-to-begin">Ready to Begin?</h2>
+<p><a href="installation.html">Start with Installation →</a></p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/index.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

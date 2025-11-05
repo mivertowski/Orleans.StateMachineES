@@ -1,0 +1,547 @@
+{
+  "source_base_path": "/Users/mivertowski/DEV/StateMachineES/Orleans.StateMachineES/docfx",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "Resource",
+      "output": {
+        "resource": {
+          "relative_path": "index.json"
+        }
+      }
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "README.md",
+      "output": {
+        ".html": {
+          "relative_path": "README.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "api/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "api/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/design-decisions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/design-decisions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/performance.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/performance.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/production.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/production.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/scalability.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/scalability.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/security.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/security.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/architecture/testing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/testing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/architecture/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/architecture/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/architecture/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/document-approval.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/document-approval.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/ecommerce.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/ecommerce.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/monitoring.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/monitoring.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/performance-showcase.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/performance-showcase.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/examples/smart-home.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/smart-home.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/examples/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/examples/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/examples/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/core-concepts.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/core-concepts.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/first-state-machine.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/first-state-machine.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/guard-conditions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/guard-conditions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/installation.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/installation.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/next-steps.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/next-steps.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/getting-started/parameterized-triggers.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/parameterized-triggers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/getting-started/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/getting-started/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/getting-started/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/analyzers.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/analyzers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/async-patterns.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/async-patterns.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/circuit-breaker.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/circuit-breaker.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/composition.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/composition.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/distributed-sagas.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/distributed-sagas.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/event-sourcing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/event-sourcing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/health-checks.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/health-checks.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/hierarchical-states.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/hierarchical-states.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/orthogonal-regions.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/orthogonal-regions.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/timers.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/timers.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/guides/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/guides/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/tracing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/tracing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/versioning.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/versioning.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/guides/visualization.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/guides/visualization.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/cheat-sheet.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/cheat-sheet.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/configuration.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/configuration.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/contributing.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/contributing.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/faq.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/faq.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/migration-guide.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/migration-guide.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/release-notes.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/release-notes.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "articles/reference/toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/toc.html"
+        },
+        ".json": {
+          "relative_path": "articles/reference/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/reference/troubleshooting.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/reference/troubleshooting.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html"
+        },
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

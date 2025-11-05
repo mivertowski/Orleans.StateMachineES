@@ -1,0 +1,12 @@
+- name: Overview
+  href: index.md
+- name: E-Commerce Workflow
+  href: ecommerce.md
+- name: Document Approval
+  href: document-approval.md
+- name: Monitoring Dashboard
+  href: monitoring.md
+- name: Smart Home Automation
+  href: smart-home.md
+- name: Performance Showcase
+  href: performance-showcase.md

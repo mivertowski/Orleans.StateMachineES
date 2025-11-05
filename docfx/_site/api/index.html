@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>API Reference | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="API Reference | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../public/docfx.min.css">
+      <link rel="stylesheet" href="../public/main.css">
+      <meta name="docfx:navrel" content="../toc.html">
+      <meta name="docfx:tocrel" content="../toc.html">
+      
+      <meta name="docfx:rel" content="../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/api/index.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../index.html">
+            <img id="logo" class="svg" src="../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="api-reference">API Reference</h1>
+
+<p>This section contains the complete API documentation for Orleans.StateMachineES, automatically generated from XML documentation comments in the source code.</p>
+<h2 id="packages">Packages</h2>
+<h3 id="orleansstatemachinees"><a href="Orleans.StateMachineES.yml">Orleans.StateMachineES</a></h3>
+<p>The main library containing state machine grain implementations, event sourcing, advanced features, and production components.</p>
+<p><strong>Key Namespaces:</strong></p>
+<ul>
+<li><code>Orleans.StateMachineES</code> - Core state machine grain base classes</li>
+<li><code>Orleans.StateMachineES.EventSourcing</code> - Event sourcing support with state replay</li>
+<li><code>Orleans.StateMachineES.Hierarchical</code> - Nested state hierarchies</li>
+<li><code>Orleans.StateMachineES.Sagas</code> - Distributed saga patterns</li>
+<li><code>Orleans.StateMachineES.Timers</code> - Timer and reminder management</li>
+<li><code>Orleans.StateMachineES.Tracing</code> - OpenTelemetry distributed tracing</li>
+<li><code>Orleans.StateMachineES.Visualization</code> - State diagram generation (DOT, Mermaid, PlantUML, HTML)</li>
+<li><code>Orleans.StateMachineES.Versioning</code> - State machine versioning and migration</li>
+<li><code>Orleans.StateMachineES.Composition</code> - Composable state machine patterns</li>
+<li><code>Orleans.StateMachineES.Composition.Components</code> - Built-in components (CircuitBreaker, Retry, Validation, Approval)</li>
+<li><code>Orleans.StateMachineES.Orthogonal</code> - Parallel state regions</li>
+<li><code>Orleans.StateMachineES.Memory</code> - Performance optimizations (TriggerParameterCache, ObjectPools)</li>
+</ul>
+<h3 id="orleansstatemachineesabstractions"><a href="Orleans.StateMachineES.Abstractions.yml">Orleans.StateMachineES.Abstractions</a></h3>
+<p>Core interfaces, models, and abstractions used across the library.</p>
+<p><strong>Key Namespaces:</strong></p>
+<ul>
+<li><code>Orleans.StateMachineES.Interfaces</code> - Core grain interfaces (IStateMachineGrain, IEventSourcedStateMachineGrain)</li>
+<li><code>Orleans.StateMachineES.Models</code> - Data models and metadata structures</li>
+</ul>
+<h3 id="orleansstatemachineesgenerators"><a href="Orleans.StateMachineES.Generators.yml">Orleans.StateMachineES.Generators</a></h3>
+<p>Roslyn analyzers and source generators for compile-time safety and code generation.</p>
+<p><strong>Key Components:</strong></p>
+<ul>
+<li><strong>10 Roslyn Analyzers</strong> (OSMES001-010) - Compile-time safety checks</li>
+<li><strong>Source Generator</strong> - YAML/JSON to state machine code generation</li>
+</ul>
+<h2 id="quick-links">Quick Links</h2>
+<ul>
+<li><strong>Getting Started</strong>: See <a href="../articles/getting-started/first-state-machine.html">First State Machine</a></li>
+<li><strong>Core Concepts</strong>: See <a href="../articles/getting-started/core-concepts.html">Core Concepts Guide</a></li>
+<li><strong>Analyzer Reference</strong>: See <a href="../articles/guides/analyzers.html">Analyzer Guide</a></li>
+<li><strong>Examples</strong>: See <a href="../articles/examples/index.html">Examples Overview</a></li>
+</ul>
+<h2 id="searching-the-api">Searching the API</h2>
+<p>Use the search box in the top navigation to quickly find classes, methods, properties, and other API members across all packages.</p>
+<h2 id="common-entry-points">Common Entry Points</h2>
+<p>If you're new to the API, start with these key types:</p>
+<ul>
+<li><strong>StateMachineGrain&lt;TState, TTrigger&gt;</strong> - Base class for basic state machine grains</li>
+<li><strong>EventSourcedStateMachineGrain&lt;TState, TTrigger&gt;</strong> - Base class for event-sourced state machines</li>
+<li><strong>IStateMachineGrain&lt;TState, TTrigger&gt;</strong> - Core interface for state machine operations</li>
+<li><strong>CircuitBreakerComponent</strong> - Production resilience pattern for state machines</li>
+<li><strong>StateMachineVisualization</strong> - Generate visual diagrams of your state machines</li>
+</ul>
+<h2 id="need-help">Need Help?</h2>
+<ul>
+<li><strong>Guides</strong>: Browse the <a href="../articles/guides/index.html">Guides section</a> for detailed tutorials</li>
+<li><strong>Examples</strong>: Check out <a href="../articles/examples/index.html">complete examples</a> with working code</li>
+<li><strong>Troubleshooting</strong>: See the <a href="../articles/reference/troubleshooting.html">troubleshooting guide</a></li>
+<li><strong>Issues</strong>: Report issues on <a href="https://github.com/mivertowski/Orleans.StateMachineES/issues">GitHub</a></li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/api/index.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

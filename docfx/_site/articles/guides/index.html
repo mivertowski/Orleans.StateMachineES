@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Guides | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Guides | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/index.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="guides">Guides</h1>
+
+<p>Comprehensive guides for mastering Orleans.StateMachineES features and patterns.</p>
+<h2 id="core-guides">Core Guides</h2>
+<h3 id="async-patterns"><a href="async-patterns.html">Async Patterns</a></h3>
+<p><strong>Critical reading</strong> - Understanding async operations and Stateless library limitations.</p>
+<p>Learn the correct patterns for handling async operations in state machine grains, common mistakes to avoid, and compile-time safety with OSMES001 and OSMES002 analyzers.</p>
+<h3 id="roslyn-analyzers"><a href="analyzers.html">Roslyn Analyzers</a></h3>
+<p>Complete guide to all 10 Roslyn analyzers for compile-time safety.</p>
+<p>Understand OSMES001-OSMES010, how to configure analyzer severities, use code fixes, and integrate analyzers into your CI/CD pipeline.</p>
+<h2 id="advanced-features">Advanced Features</h2>
+<h3 id="event-sourcing"><a href="event-sourcing.html">Event Sourcing</a></h3>
+<p>Enable complete state history with automatic persistence and replay.</p>
+<p><strong>Performance discovery</strong>: Event sourcing is 30.4% faster than regular state machines when properly configured with <code>AutoConfirmEvents = true</code>.</p>
+<h3 id="hierarchical-states"><a href="hierarchical-states.html">Hierarchical States</a></h3>
+<p>Build parent-child state relationships with substates.</p>
+<p>Model complex state hierarchies, navigate state trees, and use inheritance patterns for cleaner state machine design.</p>
+<h3 id="distributed-sagas"><a href="distributed-sagas.html">Distributed Sagas</a></h3>
+<p>Implement multi-grain workflows with automatic compensation.</p>
+<p>Orchestrate complex business processes across multiple grains with automatic rollback, retry logic, and full audit trails.</p>
+<h3 id="orthogonal-regions"><a href="orthogonal-regions.html">Orthogonal Regions</a></h3>
+<p>Manage parallel independent state machines.</p>
+<p>Run multiple state machines concurrently within a single grain, perfect for systems with independent subsystems like smart home automation.</p>
+<h2 id="production-features">Production Features</h2>
+<h3 id="circuit-breaker-pattern"><a href="circuit-breaker.html">Circuit Breaker Pattern</a></h3>
+<p>Prevent cascading failures with built-in resilience.</p>
+<p>Configure failure thresholds, recovery strategies, and exception handling for production-grade reliability.</p>
+<h3 id="timers--reminders"><a href="timers.html">Timers &amp; Reminders</a></h3>
+<p>State-driven timeouts and scheduled transitions.</p>
+<p>Choose between timers (short-lived) and reminders (persistent), configure timeouts, and handle expiration gracefully.</p>
+<h3 id="distributed-tracing"><a href="tracing.html">Distributed Tracing</a></h3>
+<p>OpenTelemetry integration for complete observability.</p>
+<p>Trace state transitions across distributed systems, correlate operations, and monitor state machine performance.</p>
+<h3 id="state-visualization"><a href="visualization.html">State Visualization</a></h3>
+<p>Generate diagrams from your state machines.</p>
+<p>Export state machines to DOT, Mermaid, PlantUML, and HTML formats for documentation and debugging.</p>
+<h2 id="patterns--best-practices">Patterns &amp; Best Practices</h2>
+<h3 id="state-machine-composition"><a href="composition.html">State Machine Composition</a></h3>
+<p>Build reusable components for common patterns.</p>
+<p>Use ValidationComponent, RetryComponent, ApprovalComponent, and CircuitBreakerComponent to compose complex behaviors.</p>
+<h3 id="state-versioning"><a href="versioning.html">State Versioning</a></h3>
+<p>Manage state machine evolution across deployments.</p>
+<p>Handle version upgrades, backward compatibility, breaking changes, and migration strategies for long-running systems.</p>
+<h3 id="health-checks"><a href="health-checks.html">Health Checks</a></h3>
+<p>ASP.NET Core health monitoring integration.</p>
+<p>Monitor state machine health, expose health endpoints, and integrate with monitoring dashboards.</p>
+<h2 id="quick-navigation">Quick Navigation</h2>
+<ul>
+<li><strong>New to Orleans.StateMachineES?</strong> Start with <a href="../getting-started/index.html">Getting Started</a></li>
+<li><strong>Looking for examples?</strong> Check out <a href="../examples/index.html">Examples</a></li>
+<li><strong>Need API reference?</strong> Browse the <a href="../../api/index.html">API Documentation</a></li>
+<li><strong>Production deployment?</strong> See <a href="../architecture/index.html">Architecture</a></li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/index.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

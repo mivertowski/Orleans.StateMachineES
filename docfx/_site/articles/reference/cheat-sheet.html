@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Orleans.StateMachineES Developer Cheat Sheet | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Orleans.StateMachineES Developer Cheat Sheet | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/reference/cheat-sheet.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="orleansstatemachinees-developer-cheat-sheet">Orleans.StateMachineES Developer Cheat Sheet</h1>
+
+<h2 id="quick-start-guide">Quick Start Guide</h2>
+<h3 id="1-basic-state-machine-grain">1. Basic State Machine Grain</h3>
+<pre><code class="lang-csharp">public enum OrderState { Pending, Processing, Shipped, Delivered }
+public enum OrderTrigger { Process, Ship, Deliver, Cancel }
+
+[StorageProvider(ProviderName = &quot;Default&quot;)]
+public class OrderGrain : StateMachineGrain&lt;OrderState, OrderTrigger&gt;, IOrderGrain
+{
+    protected override StateMachine&lt;OrderState, OrderTrigger&gt; BuildStateMachine()
+    {
+        var machine = new StateMachine&lt;OrderState, OrderTrigger&gt;(OrderState.Pending);
+        
+        machine.Configure(OrderState.Pending)
+            .Permit(OrderTrigger.Process, OrderState.Processing)
+            .Permit(OrderTrigger.Cancel, OrderState.Cancelled);
+            
+        machine.Configure(OrderState.Processing)
+            .Permit(OrderTrigger.Ship, OrderState.Shipped);
+            
+        return machine;
+    }
+    
+    public Task ProcessAsync() =&gt; FireAsync(OrderTrigger.Process);
+    public Task ShipAsync() =&gt; FireAsync(OrderTrigger.Ship);
+}
+</code></pre>
+<h3 id="2-event-sourcing-enabled">2. Event Sourcing Enabled</h3>
+<pre><code class="lang-csharp">[LogConsistencyProvider(ProviderName = &quot;LogStorage&quot;)]
+[StorageProvider(ProviderName = &quot;Default&quot;)]
+public class OrderGrain : EventSourcedStateMachineGrain&lt;OrderState, OrderTrigger, OrderGrainState&gt;, IOrderGrain
+{
+    protected override void ConfigureEventSourcing(EventSourcingOptions options)
+    {
+        options.AutoConfirmEvents = true;
+        options.EnableSnapshots = true;
+        options.SnapshotInterval = 100;
+        options.EnableIdempotency = true;
+    }
+}
+
+[GenerateSerializer]
+public class OrderGrainState : EventSourcedStateMachineState&lt;OrderState&gt;
+{
+    [Id(0)] public string? CustomerId { get; set; }
+    [Id(1)] public decimal Amount { get; set; }
+}
+</code></pre>
+<h3 id="3-timer-enabled-states">3. Timer-Enabled States</h3>
+<pre><code class="lang-csharp">public class OrderGrain : TimerEnabledStateMachineGrain&lt;OrderState, OrderTrigger, OrderGrainState&gt;
+{
+    protected override void ConfigureTimeouts()
+    {
+        // Auto-cancel orders after 24 hours
+        RegisterStateTimeout(OrderState.Pending,
+            ConfigureTimeout(OrderState.Pending)
+                .After(TimeSpan.FromHours(24))
+                .TransitionTo(OrderTrigger.Cancel)
+                .UseReminder()
+                .WithName(&quot;OrderExpiry&quot;)
+                .Build());
+                
+        // Process orders within 2 hours
+        RegisterStateTimeout(OrderState.Processing,
+            ConfigureTimeout(OrderState.Processing)
+                .After(TimeSpan.FromHours(2))
+                .TransitionTo(OrderTrigger.Ship)
+                .UseTimer()
+                .WithName(&quot;ProcessingTimeout&quot;)
+                .Build());
+    }
+}
+</code></pre>
+<h3 id="4-hierarchical-states">4. Hierarchical States</h3>
+<pre><code class="lang-csharp">public enum DeviceState { Offline, Online, Idle, Active, Processing, Monitoring }
+public enum DeviceTrigger { PowerOn, PowerOff, StartProcessing, StartMonitoring, Stop }
+
+public class DeviceGrain : HierarchicalStateMachineGrain&lt;DeviceState, DeviceTrigger, DeviceGrainState&gt;
+{
+    protected override StateMachine&lt;DeviceState, DeviceTrigger&gt; BuildStateMachine()
+    {
+        var machine = new StateMachine&lt;DeviceState, DeviceTrigger&gt;(DeviceState.Offline);
+        
+        // Configure parent states
+        machine.Configure(DeviceState.Online)
+            .Permit(DeviceTrigger.PowerOff, DeviceState.Offline);
+            
+        // Configure substates
+        machine.Configure(DeviceState.Idle)
+            .SubstateOf(DeviceState.Online)
+            .Permit(DeviceTrigger.StartProcessing, DeviceState.Processing);
+            
+        machine.Configure(DeviceState.Processing)
+            .SubstateOf(DeviceState.Active)
+            .Permit(DeviceTrigger.Stop, DeviceState.Idle);
+            
+        return machine;
+    }
+    
+    protected override void ConfigureHierarchy()
+    {
+        DefineSubstate(DeviceState.Idle, DeviceState.Online);
+        DefineSubstate(DeviceState.Active, DeviceState.Online);
+        DefineSubstate(DeviceState.Processing, DeviceState.Active);
+    }
+    
+    // Query hierarchy
+    public async Task&lt;bool&gt; IsOnlineAsync() 
+        =&gt; await IsInStateOrSubstateAsync(DeviceState.Online);
+    
+    public async Task&lt;IReadOnlyList&lt;DeviceState&gt;&gt; GetCurrentPathAsync() 
+        =&gt; await GetCurrentStatePathAsync();
+}
+</code></pre>
+<h3 id="5-source-generated-state-machines-roslyn-generator">5. Source-Generated State Machines (Roslyn Generator)</h3>
+<h4 id="yaml-specification-smartlightstatemachineyaml">YAML Specification (<code>SmartLight.statemachine.yaml</code>)</h4>
+<pre><code class="lang-yaml">name: SmartLight
+namespace: SmartHome.Devices
+states: [Off, On, Dimmed, ColorMode, NightMode]
+triggers: [TurnOn, TurnOff, Dim, SetColor, ActivateNightMode]
+initialState: Off
+transitions:
+  - { from: Off, to: On, trigger: TurnOn }
+  - { from: On, to: Dimmed, trigger: Dim }
+  - { from: On, to: ColorMode, trigger: SetColor }
+</code></pre>
+<h4 id="json-specification-thermostatstatemachinejson">JSON Specification (<code>Thermostat.statemachine.json</code>)</h4>
+<pre><code class="lang-json">{
+  &quot;name&quot;: &quot;Thermostat&quot;,
+  &quot;namespace&quot;: &quot;SmartHome.Climate&quot;,
+  &quot;states&quot;: [&quot;Idle&quot;, &quot;Heating&quot;, &quot;Cooling&quot;, &quot;Auto&quot;],
+  &quot;triggers&quot;: [&quot;Heat&quot;, &quot;Cool&quot;, &quot;AutoMode&quot;, &quot;Stop&quot;],
+  &quot;transitions&quot;: [
+    { &quot;from&quot;: &quot;Idle&quot;, &quot;to&quot;: &quot;Heating&quot;, &quot;trigger&quot;: &quot;Heat&quot; },
+    { &quot;from&quot;: &quot;Heating&quot;, &quot;to&quot;: &quot;Idle&quot;, &quot;trigger&quot;: &quot;Stop&quot; }
+  ]
+}
+</code></pre>
+<h4 id="generated-code-usage">Generated Code Usage</h4>
+<pre><code class="lang-csharp">// Auto-generated interfaces and implementations
+ISmartLightGrain light = grainFactory.GetGrain&lt;ISmartLightGrain&gt;(&quot;living-room&quot;);
+IThermostatGrain thermostat = grainFactory.GetGrain&lt;IThermostatGrain&gt;(&quot;main&quot;);
+
+// Strongly-typed methods
+await light.FireTurnOnAsync();
+await light.FireDimAsync();
+bool isOn = await light.IsOnAsync();
+
+// Generated extension methods
+SmartLightState.Off.IsTerminal();
+SmartLightTrigger.TurnOn.GetDescription();
+</code></pre>
+<h4 id="project-configuration">Project Configuration</h4>
+<pre><code class="lang-xml">&lt;ItemGroup&gt;
+  &lt;AdditionalFiles Include=&quot;**\*.statemachine.yaml&quot; /&gt;
+  &lt;AdditionalFiles Include=&quot;**\*.statemachine.json&quot; /&gt;
+&lt;/ItemGroup&gt;
+&lt;ItemGroup&gt;
+  &lt;PackageReference Include=&quot;Orleans.StateMachineES.Generators&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<h3 id="6-orthogonal-regions-parallel-state-machines">6. Orthogonal Regions (Parallel State Machines)</h3>
+<pre><code class="lang-csharp">public class SmartHomeSystemGrain : OrthogonalStateMachineGrain&lt;SmartHomeState, SmartHomeTrigger&gt;
+{
+    protected override void ConfigureOrthogonalRegions()
+    {
+        // Define independent regions
+        DefineOrthogonalRegion(&quot;Security&quot;, SmartHomeState.SecurityDisarmed, machine =&gt;
+        {
+            machine.Configure(SmartHomeState.SecurityDisarmed)
+                .Permit(SmartHomeTrigger.ArmHome, SmartHomeState.SecurityArmedHome)
+                .Permit(SmartHomeTrigger.ArmAway, SmartHomeState.SecurityArmedAway);
+                
+            machine.Configure(SmartHomeState.SecurityAlarm)
+                .OnEntry(() =&gt; _logger.LogWarning(&quot;ALARM TRIGGERED!&quot;));
+        });
+        
+        DefineOrthogonalRegion(&quot;Climate&quot;, SmartHomeState.ClimateOff, machine =&gt;
+        {
+            machine.Configure(SmartHomeState.ClimateOff)
+                .Permit(SmartHomeTrigger.StartHeating, SmartHomeState.ClimateHeating)
+                .Permit(SmartHomeTrigger.StartCooling, SmartHomeState.ClimateCooling);
+        });
+        
+        DefineOrthogonalRegion(&quot;Energy&quot;, SmartHomeState.EnergyNormal, machine =&gt;
+        {
+            machine.Configure(SmartHomeState.EnergyNormal)
+                .Permit(SmartHomeTrigger.EnterPeakDemand, SmartHomeState.EnergyPeakDemand)
+                .Permit(SmartHomeTrigger.EnableSaving, SmartHomeState.EnergySaving);
+        });
+        
+        // Map triggers to regions
+        MapTriggerToRegions(SmartHomeTrigger.VacationMode, &quot;Security&quot;, &quot;Climate&quot;, &quot;Energy&quot;);
+    }
+    
+    // Cross-region synchronization
+    protected override async Task OnRegionStateChangedAsync(
+        string regionName, SmartHomeState prev, SmartHomeState next, SmartHomeTrigger trigger)
+    {
+        if (regionName == &quot;Presence&quot; &amp;&amp; next == SmartHomeState.PresenceAway)
+        {
+            // Auto-adjust when leaving home
+            await FireInRegionAsync(&quot;Security&quot;, SmartHomeTrigger.ArmAway);
+            await FireInRegionAsync(&quot;Climate&quot;, SmartHomeTrigger.SetEco);
+            await FireInRegionAsync(&quot;Energy&quot;, SmartHomeTrigger.EnableSaving);
+        }
+    }
+    
+    // Usage
+    public async Task ActivateVacationModeAsync()
+    {
+        await FireInRegionAsync(&quot;Presence&quot;, SmartHomeTrigger.StartVacation);
+        await FireInRegionAsync(&quot;Security&quot;, SmartHomeTrigger.ArmAway);
+        await FireInRegionAsync(&quot;Climate&quot;, SmartHomeTrigger.SetEco);
+        await FireInRegionAsync(&quot;Energy&quot;, SmartHomeTrigger.EnableSaving);
+    }
+}
+
+// Client usage
+var smartHome = grainFactory.GetGrain&lt;ISmartHomeSystemGrain&gt;(&quot;my-home&quot;);
+await smartHome.FireInRegionAsync(&quot;Security&quot;, SmartHomeTrigger.ArmHome);
+await smartHome.FireInRegionAsync(&quot;Climate&quot;, SmartHomeTrigger.StartHeating);
+
+var status = await smartHome.GetStateSummary();
+Console.WriteLine($&quot;Security: {status.RegionStates[&quot;Security&quot;]}&quot;);
+Console.WriteLine($&quot;Climate: {status.RegionStates[&quot;Climate&quot;]}&quot;);
+</code></pre>
+<h2 id="core-interfaces--methods">Core Interfaces &amp; Methods</h2>
+<h3 id="istatemachinegraintstate-ttrigger">IStateMachineGrain&lt;TState, TTrigger&gt;</h3>
+<pre><code class="lang-csharp">// State queries
+Task&lt;TState&gt; GetStateAsync();
+Task&lt;bool&gt; IsInStateAsync(TState state);
+Task&lt;IEnumerable&lt;TTrigger&gt;&gt; GetPermittedTriggersAsync();
+
+// Trigger execution
+Task FireAsync(TTrigger trigger);
+Task FireAsync&lt;TArg0&gt;(TTrigger trigger, TArg0 arg0);
+Task FireAsync&lt;TArg0, TArg1&gt;(TTrigger trigger, TArg0 arg0, TArg1 arg1);
+
+// Guard validation
+Task&lt;bool&gt; CanFireAsync(TTrigger trigger);
+Task&lt;(bool, ICollection&lt;string&gt;)&gt; CanFireWithUnmetGuardsAsync(TTrigger trigger);
+
+// Lifecycle
+Task ActivateAsync();
+Task DeactivateAsync();
+</code></pre>
+<h3 id="timer-configuration">Timer Configuration</h3>
+<pre><code class="lang-csharp">protected TimeoutConfiguration&lt;TState, TTrigger&gt; ConfigureTimeout(TState state)
+{
+    return new TimeoutConfiguration&lt;TState, TTrigger&gt;(state)
+        .After(TimeSpan.FromMinutes(5))           // Duration
+        .TransitionTo(OrderTrigger.Timeout)       // Target trigger
+        .UseTimer()                               // or .UseReminder()
+        .WithName(&quot;MyTimeout&quot;)                    // Optional name
+        .WithMetadata(new { reason = &quot;expired&quot; }) // Optional metadata
+        .Build();
+}
+</code></pre>
+<h3 id="event-sourcing-options">Event Sourcing Options</h3>
+<p>🚀 <strong>PERFORMANCE BREAKTHROUGH: Event sourcing is 30.4% FASTER than regular state machines!</strong></p>
+<ul>
+<li>Event-sourced: <strong>5,923 transitions/sec</strong> (0.17ms latency)</li>
+<li>Regular: 4,123 transitions/sec (0.24ms latency)</li>
+</ul>
+<pre><code class="lang-csharp">protected override void ConfigureEventSourcing(EventSourcingOptions options)
+{   
+    options.AutoConfirmEvents = true;      // Essential for optimal performance
+    
+    // Performance optimizations
+    options.EnableSnapshots = true;       // Enable periodic snapshots
+    options.SnapshotInterval = 100;       // Events between snapshots
+    options.EnableIdempotency = true;     // Deduplicate triggers
+    options.MaxDedupeKeysInMemory = 1000; // LRU cache size
+    
+    // Optional stream publishing
+    options.PublishToStream = true;       // Publish to Orleans Streams
+    options.StreamProvider = &quot;SMS&quot;;       // Stream provider name
+    options.StreamNamespace = &quot;Events&quot;;   // Stream namespace
+}
+</code></pre>
+<p>⚠️ <strong>CRITICAL:</strong> <code>AutoConfirmEvents = true</code> is <strong>essential</strong> for:</p>
+<ul>
+<li>Maximum performance</li>
+<li>Proper state recovery after grain deactivation</li>
+<li>Reliable event persistence</li>
+</ul>
+<h3 id="hierarchical-state-queries">Hierarchical State Queries</h3>
+<pre><code class="lang-csharp">// Parent-child relationships
+Task&lt;TState?&gt; GetParentStateAsync(TState state);
+Task&lt;IReadOnlyList&lt;TState&gt;&gt; GetSubstatesAsync(TState parentState);
+Task&lt;IReadOnlyList&lt;TState&gt;&gt; GetAncestorStatesAsync(TState state);
+Task&lt;IReadOnlyList&lt;TState&gt;&gt; GetDescendantStatesAsync(TState parentState);
+
+// Hierarchy navigation
+Task&lt;bool&gt; IsInStateOrSubstateAsync(TState state);
+Task&lt;IReadOnlyList&lt;TState&gt;&gt; GetCurrentStatePathAsync();
+Task&lt;TState?&gt; GetActiveSubstateAsync(TState parentState);
+Task&lt;HierarchicalStateInfo&lt;TState&gt;&gt; GetHierarchicalInfoAsync();
+</code></pre>
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="guards--conditional-transitions">Guards &amp; Conditional Transitions</h3>
+<pre><code class="lang-csharp">machine.Configure(OrderState.Processing)
+    .PermitIf(OrderTrigger.Ship, OrderState.Shipped, 
+        () =&gt; HasInventory() &amp;&amp; IsPaymentConfirmed())
+    .OnEntry(() =&gt; Logger.LogInformation(&quot;Started processing order&quot;));
+</code></pre>
+<h3 id="parameterized-triggers">Parameterized Triggers</h3>
+<pre><code class="lang-csharp">public async Task ProcessWithPriorityAsync(int priority)
+{
+    await FireAsync(OrderTrigger.ProcessWithPriority, priority);
+}
+
+// In BuildStateMachine:
+var priorityTrigger = machine.SetTriggerParameters&lt;int&gt;(OrderTrigger.ProcessWithPriority);
+machine.Configure(OrderState.Pending)
+    .Permit(priorityTrigger, OrderState.Processing);
+</code></pre>
+<h3 id="custom-state-classes">Custom State Classes</h3>
+<pre><code class="lang-csharp">[GenerateSerializer]
+public class OrderGrainState : EventSourcedStateMachineState&lt;OrderState&gt;
+{
+    [Id(0)] public string CustomerId { get; set; } = &quot;&quot;;
+    [Id(1)] public List&lt;OrderItem&gt; Items { get; set; } = new();
+    [Id(2)] public decimal Total { get; set; }
+    [Id(3)] public DateTime OrderDate { get; set; }
+}
+</code></pre>
+<h3 id="stream-integration">Stream Integration</h3>
+<pre><code class="lang-csharp">// Configure in silo
+siloBuilder.AddStreams(StreamConfigurator.StreamProvider)
+    .AddMemoryStreams(&quot;SMS&quot;);
+
+// In grain
+protected override void ConfigureEventSourcing(EventSourcingOptions options)
+{
+    options.PublishToStream = true;
+    options.StreamProvider = &quot;SMS&quot;;
+    options.StreamNamespace = &quot;OrderEvents&quot;;
+}
+</code></pre>
+<h2 id="testing-patterns">Testing Patterns</h2>
+<h3 id="basic-testing">Basic Testing</h3>
+<pre><code class="lang-csharp">[Fact]
+public async Task Should_Process_Order_Successfully()
+{
+    var grain = _cluster.Client.GetGrain&lt;IOrderGrain&gt;(&quot;order-123&quot;);
+    
+    await grain.ProcessAsync();
+    
+    var state = await grain.GetStateAsync();
+    state.Should().Be(OrderState.Processing);
+}
+</code></pre>
+<h3 id="timer-testing">Timer Testing</h3>
+<pre><code class="lang-csharp">[Fact]
+public async Task Should_Timeout_After_Configured_Duration()
+{
+    var grain = _cluster.Client.GetGrain&lt;IOrderGrain&gt;(&quot;order-timeout&quot;);
+    
+    await grain.ProcessAsync();
+    await Task.Delay(TimeSpan.FromSeconds(3)); // Wait for timeout
+    
+    var state = await grain.GetStateAsync();
+    state.Should().Be(OrderState.Cancelled);
+}
+</code></pre>
+<h3 id="hierarchical-testing">Hierarchical Testing</h3>
+<pre><code class="lang-csharp">[Fact]
+public async Task Should_Navigate_Hierarchy_Correctly()
+{
+    var grain = _cluster.Client.GetGrain&lt;IDeviceGrain&gt;(&quot;device-123&quot;);
+    
+    await grain.PowerOnAsync();
+    await grain.StartProcessingAsync();
+    
+    (await grain.IsInStateOrSubstateAsync(DeviceState.Online)).Should().BeTrue();
+    (await grain.IsInStateAsync(DeviceState.Processing)).Should().BeTrue();
+    
+    var path = await grain.GetCurrentStatePathAsync();
+    path.Should().ContainInOrder(DeviceState.Online, DeviceState.Active, DeviceState.Processing);
+}
+</code></pre>
+<h3 id="5-distributed-sagas">5. Distributed Sagas</h3>
+<pre><code class="lang-csharp">using Orleans.StateMachineES.Sagas;
+
+public class InvoiceProcessingSaga : SagaOrchestratorGrain&lt;InvoiceData&gt;, IInvoiceProcessingSagaGrain
+{
+    protected override void ConfigureSagaSteps()
+    {
+        AddStep(new PostInvoiceStep())
+            .WithTimeout(TimeSpan.FromSeconds(30))
+            .WithRetry(3)
+            .WithMetadata(&quot;Description&quot;, &quot;Posts invoice to accounting system&quot;);
+
+        AddStep(new CreateJournalEntryStep())
+            .WithTimeout(TimeSpan.FromSeconds(45))
+            .WithRetry(2)
+            .WithMetadata(&quot;Description&quot;, &quot;Creates journal entries&quot;);
+
+        AddStep(new RunControlCheckStep())
+            .WithTimeout(TimeSpan.FromSeconds(60))
+            .WithRetry(1)
+            .WithMetadata(&quot;Description&quot;, &quot;Runs compliance control checks&quot;);
+    }
+
+    protected override string GenerateBusinessTransactionId(InvoiceData sagaData)
+    {
+        return $&quot;INV-TXN-{sagaData.InvoiceId}-{DateTime.UtcNow:yyyyMMddHHmmss}&quot;;
+    }
+}
+
+// Example saga step implementation
+public class PostInvoiceStep : ISagaStep&lt;InvoiceData&gt;
+{
+    public string StepName =&gt; &quot;PostInvoice&quot;;
+    public TimeSpan Timeout =&gt; TimeSpan.FromSeconds(30);
+    public bool CanRetry =&gt; true;
+    public int MaxRetryAttempts =&gt; 3;
+
+    public async Task&lt;SagaStepResult&gt; ExecuteAsync(InvoiceData sagaData, SagaContext context)
+    {
+        try
+        {
+            var invoiceGrain = GrainFactory.GetGrain&lt;IInvoiceGrain&gt;(sagaData.InvoiceId);
+            var result = await invoiceGrain.PostAsync(sagaData, context.CorrelationId);
+            
+            return SagaStepResult.Success(result);
+        }
+        catch (BusinessRuleException ex)
+        {
+            return SagaStepResult.BusinessFailure(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return SagaStepResult.TechnicalFailure(ex.Message, ex);
+        }
+    }
+
+    public async Task&lt;CompensationResult&gt; CompensateAsync(
+        InvoiceData sagaData, 
+        SagaStepResult? stepResult, 
+        SagaContext context)
+    {
+        try
+        {
+            var invoiceGrain = GrainFactory.GetGrain&lt;IInvoiceGrain&gt;(sagaData.InvoiceId);
+            await invoiceGrain.CancelAsync(context.CorrelationId);
+            
+            return CompensationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            return CompensationResult.Failure($&quot;Failed to compensate invoice: {ex.Message}&quot;, ex);
+        }
+    }
+}
+</code></pre>
+<h4 id="usage-examples">Usage Examples</h4>
+<pre><code class="lang-csharp">// Execute saga
+var sagaGrain = grainFactory.GetGrain&lt;IInvoiceProcessingSagaGrain&gt;(&quot;saga-123&quot;);
+var correlationId = Guid.NewGuid().ToString(&quot;N&quot;);
+
+var invoiceData = new InvoiceData
+{
+    InvoiceId = &quot;INV-001&quot;,
+    CustomerId = &quot;CUST-123&quot;,
+    Amount = 1500.00m
+};
+
+var result = await sagaGrain.ExecuteAsync(invoiceData, correlationId);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine(&quot;Saga completed successfully&quot;);
+}
+else if (result.IsCompensated)
+{
+    Console.WriteLine(&quot;Saga failed but was compensated successfully&quot;);
+}
+
+// Check saga status
+var status = await sagaGrain.GetStatusAsync();
+Console.WriteLine($&quot;Saga status: {status.Status}&quot;);
+Console.WriteLine($&quot;Current step: {status.CurrentStepName}&quot;);
+Console.WriteLine($&quot;Progress: {status.CurrentStepIndex + 1}/{status.TotalSteps}&quot;);
+
+// Get detailed execution history
+var history = await sagaGrain.GetHistoryAsync();
+foreach (var step in history.StepExecutions)
+{
+    Console.WriteLine($&quot;Step {step.StepName}: {step.IsSuccess} ({step.Duration.TotalMilliseconds}ms)&quot;);
+}
+</code></pre>
+<h4 id="saga-features">Saga Features</h4>
+<ul>
+<li><strong>Orchestration Pattern</strong>: Central coordinator manages business process flow</li>
+<li><strong>Automatic Compensation</strong>: Failed steps trigger rollback of completed steps in reverse order</li>
+<li><strong>Retry Logic</strong>: Configurable retry attempts with exponential backoff for technical failures</li>
+<li><strong>Correlation Tracking</strong>: Full correlation ID propagation across all distributed operations</li>
+<li><strong>Event Sourcing Integration</strong>: Complete audit trail of saga execution and compensation</li>
+<li><strong>Timeout Handling</strong>: Per-step timeouts with graceful failure handling</li>
+<li><strong>Hierarchical State Management</strong>: Extends hierarchical state machine capabilities</li>
+<li><strong>Business vs Technical Errors</strong>: Different handling strategies for different error types</li>
+</ul>
+<h3 id="6-state-machine-versioning">6. State Machine Versioning</h3>
+<pre><code class="lang-csharp">using Orleans.StateMachineES.Versioning;
+
+public class VersionedOrderGrain : 
+    VersionedStateMachineGrain&lt;OrderState, OrderTrigger, VersionedOrderState&gt;,
+    IVersionedOrderGrain
+{
+    protected override async Task RegisterBuiltInVersionsAsync()
+    {
+        if (DefinitionRegistry != null)
+        {
+            // Register version 1.0.0
+            await DefinitionRegistry.RegisterDefinitionAsync&lt;OrderState, OrderTrigger&gt;(
+                GetType().Name,
+                new StateMachineVersion(1, 0, 0),
+                () =&gt; BuildOrderWorkflowV1(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = &quot;Initial order workflow&quot;,
+                    Features = { &quot;Basic order processing&quot; }
+                });
+
+            // Register version 1.1.0 (backward compatible)
+            await DefinitionRegistry.RegisterDefinitionAsync&lt;OrderState, OrderTrigger&gt;(
+                GetType().Name,
+                new StateMachineVersion(1, 1, 0),
+                () =&gt; BuildOrderWorkflowV11(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = &quot;Enhanced order workflow&quot;,
+                    Features = { &quot;Enhanced validation&quot;, &quot;Better error handling&quot; }
+                });
+
+            // Register version 2.0.0 (breaking changes)
+            await DefinitionRegistry.RegisterDefinitionAsync&lt;OrderState, OrderTrigger&gt;(
+                GetType().Name,
+                new StateMachineVersion(2, 0, 0),
+                () =&gt; BuildOrderWorkflowV2(),
+                new StateMachineDefinitionMetadata
+                {
+                    Description = &quot;Major refactor&quot;,
+                    Features = { &quot;New approval workflow&quot;, &quot;Multi-step processing&quot; },
+                    BreakingChanges = { &quot;Added approval states&quot;, &quot;Changed validation rules&quot; }
+                });
+        }
+    }
+
+    protected override Task&lt;StateMachine&lt;OrderState, OrderTrigger&gt;?&gt; BuildVersionedStateMachineAsync(
+        StateMachineVersion version)
+    {
+        return Task.FromResult(version switch
+        {
+            { Major: 1, Minor: 0, Patch: 0 } =&gt; BuildOrderWorkflowV1(),
+            { Major: 1, Minor: 1, Patch: 0 } =&gt; BuildOrderWorkflowV11(),
+            { Major: 2, Minor: 0, Patch: 0 } =&gt; BuildOrderWorkflowV2(),
+            _ =&gt; (StateMachine&lt;OrderState, OrderTrigger&gt;?)null
+        });
+    }
+}
+</code></pre>
+<h4 id="usage-examples-1">Usage Examples</h4>
+<pre><code class="lang-csharp">// Check current version
+var grain = grainFactory.GetGrain&lt;IVersionedOrderGrain&gt;(&quot;order-123&quot;);
+var version = await grain.GetVersionAsync();
+Console.WriteLine($&quot;Current version: {version}&quot;);
+
+// Get version compatibility info
+var compatibility = await grain.GetVersionCompatibilityAsync();
+Console.WriteLine($&quot;Available versions: {string.Join(&quot;, &quot;, compatibility.AvailableVersions)}&quot;);
+
+// Upgrade to new version
+var upgradeResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(1, 1, 0), 
+    MigrationStrategy.Automatic);
+
+if (upgradeResult.IsSuccess)
+{
+    Console.WriteLine($&quot;Upgraded to {upgradeResult.NewVersion} in {upgradeResult.UpgradeDuration.TotalMilliseconds}ms&quot;);
+}
+
+// Shadow evaluation - test without committing
+var shadowResult = await grain.RunShadowEvaluationAsync(
+    new StateMachineVersion(2, 0, 0), 
+    OrderTrigger.Submit);
+
+if (shadowResult.WouldSucceed)
+{
+    Console.WriteLine($&quot;Shadow: {shadowResult.CurrentState} -&gt; {shadowResult.PredictedState}&quot;);
+    // Safe to upgrade
+}
+
+// Blue-green deployment
+var blueGreenResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(2, 0, 0), 
+    MigrationStrategy.BlueGreen);
+
+// Custom migration with hooks
+var customResult = await grain.UpgradeToVersionAsync(
+    new StateMachineVersion(2, 0, 0), 
+    MigrationStrategy.Custom);
+</code></pre>
+<h4 id="migration-hooks">Migration Hooks</h4>
+<pre><code class="lang-csharp">public class CustomMigrationHook : IMigrationHook
+{
+    public string HookName =&gt; &quot;CustomDataMigration&quot;;
+    public int Priority =&gt; 50;
+
+    public async Task&lt;bool&gt; BeforeMigrationAsync(MigrationContext context)
+    {
+        // Pre-migration validation and data transformation
+        if (context.ToVersion.Major &gt; context.FromVersion.Major)
+        {
+            // Handle breaking changes
+            var data = context.GetStateValue&lt;OrderData&gt;(&quot;OrderData&quot;);
+            if (data != null)
+            {
+                var transformed = TransformForNewVersion(data);
+                context.SetStateValue(&quot;OrderData&quot;, transformed);
+            }
+        }
+        return true;
+    }
+
+    public async Task AfterMigrationAsync(MigrationContext context)
+    {
+        // Post-migration verification
+        Console.WriteLine($&quot;Migration completed for {context.GrainId}&quot;);
+    }
+
+    public async Task OnMigrationRollbackAsync(MigrationContext context, Exception error)
+    {
+        // Rollback custom changes
+        Console.WriteLine($&quot;Rolling back migration: {error.Message}&quot;);
+    }
+}
+</code></pre>
+<h4 id="version-compatibility-checking">Version Compatibility Checking</h4>
+<pre><code class="lang-csharp">var checker = serviceProvider.GetRequiredService&lt;IVersionCompatibilityChecker&gt;();
+
+// Check upgrade compatibility
+var result = await checker.CheckCompatibilityAsync(
+    &quot;OrderGrain&quot;,
+    new StateMachineVersion(1, 0, 0),
+    new StateMachineVersion(2, 0, 0));
+
+if (!result.IsCompatible)
+{
+    foreach (var change in result.BreakingChanges)
+    {
+        Console.WriteLine($&quot;Breaking change: {change.Description}&quot;);
+        Console.WriteLine($&quot;Impact: {change.Impact}, Mitigation: {change.Mitigation}&quot;);
+    }
+}
+
+// Get upgrade recommendations
+var recommendations = await checker.GetUpgradeRecommendationsAsync(
+    &quot;OrderGrain&quot;, 
+    new StateMachineVersion(1, 0, 0));
+
+foreach (var rec in recommendations)
+{
+    Console.WriteLine($&quot;Upgrade to {rec.ToVersion}: {rec.RecommendationType}&quot;);
+    Console.WriteLine($&quot;Risk: {rec.RiskLevel}, Effort: {rec.EstimatedEffort}&quot;);
+}
+</code></pre>
+<h4 id="versioning-features">Versioning Features</h4>
+<ul>
+<li><strong>Semantic Versioning</strong>: Full major.minor.patch version support with pre-release and build metadata</li>
+<li><strong>Backward Compatibility</strong>: Automatic compatibility checking for minor version upgrades</li>
+<li><strong>Breaking Change Detection</strong>: Identifies and documents breaking changes in major versions</li>
+<li><strong>Migration Strategies</strong>: Automatic, custom, blue-green, and dry-run migration options</li>
+<li><strong>Shadow Evaluation</strong>: Test new versions without affecting live state</li>
+<li><strong>Migration Hooks</strong>: Extensible system for custom migration logic with priorities</li>
+<li><strong>Rollback Support</strong>: Automatic state backup and rollback on migration failure</li>
+<li><strong>Deployment Validation</strong>: Check compatibility with existing deployed versions</li>
+<li><strong>Audit Trail</strong>: Complete history of version upgrades and migrations</li>
+</ul>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-state-machine-design">1. State Machine Design</h3>
+<ul>
+<li>Keep states focused and meaningful</li>
+<li>Use hierarchical states for related behaviors</li>
+<li>Design for testability with clear state transitions</li>
+<li>Enable nullable reference types (<code>&lt;Nullable&gt;enable&lt;/Nullable&gt;</code>) for better null safety</li>
+</ul>
+<h3 id="2-performance">2. Performance</h3>
+<ul>
+<li>Use timers for short durations (&lt; 5 minutes)</li>
+<li>Use reminders for long durations (&gt; 5 minutes)</li>
+<li>Enable snapshots for high-frequency state machines</li>
+<li>Configure appropriate dedupe key limits</li>
+<li>Optimize async methods by removing unnecessary <code>async</code> keywords where no await is needed</li>
+</ul>
+<h3 id="3-error-handling">3. Error Handling</h3>
+<pre><code class="lang-csharp">try
+{
+    await FireAsync(OrderTrigger.Process);
+}
+catch (InvalidStateTransitionException ex)
+{
+    Logger.LogWarning(&quot;Invalid transition: {Message}&quot;, ex.Message);
+    // Handle invalid transition gracefully
+}
+</code></pre>
+<h3 id="4-orleans-configuration">4. Orleans Configuration</h3>
+<pre><code class="lang-csharp">// In Program.cs
+siloBuilder
+    .AddMemoryGrainStorage(&quot;Default&quot;)
+    .AddLogStorageBasedLogConsistencyProvider(&quot;LogStorage&quot;)
+    .AddMemoryGrainStorage(&quot;PubSubStore&quot;)
+    .AddStreams(&quot;SMS&quot;)
+    .AddMemoryStreams(&quot;SMS&quot;);
+</code></pre>
+<h3 id="5-build-configuration">5. Build Configuration</h3>
+<pre><code class="lang-xml">&lt;!-- Recommended project settings for Orleans.StateMachineES --&gt;
+&lt;PropertyGroup&gt;
+    &lt;TargetFramework&gt;net9.0&lt;/TargetFramework&gt;
+    &lt;Nullable&gt;enable&lt;/Nullable&gt;
+    &lt;ImplicitUsings&gt;enable&lt;/ImplicitUsings&gt;
+    &lt;TreatWarningsAsErrors&gt;false&lt;/TreatWarningsAsErrors&gt;
+&lt;/PropertyGroup&gt;
+
+&lt;!-- Package references with verified compatibility --&gt;
+&lt;ItemGroup&gt;
+    &lt;PackageReference Include=&quot;Orleans.StateMachineES&quot; Version=&quot;1.0.1&quot; /&gt;
+    &lt;PackageReference Include=&quot;Microsoft.Orleans.Sdk&quot; Version=&quot;9.1.2&quot; /&gt;
+    &lt;!-- For testing --&gt;
+    &lt;PackageReference Include=&quot;xunit&quot; Version=&quot;2.8.0&quot; /&gt;
+    &lt;PackageReference Include=&quot;FluentAssertions&quot; Version=&quot;7.0.0&quot; /&gt;
+&lt;/ItemGroup&gt;
+</code></pre>
+<h3 id="6-monitoring--observability">6. Monitoring &amp; Observability</h3>
+<pre><code class="lang-csharp">protected override async Task RecordTransitionEvent(/*...*/)
+{
+    // Add custom telemetry
+    using var activity = ActivitySource.StartActivity(&quot;StateMachine.Transition&quot;);
+    activity?.SetTag(&quot;grain.id&quot;, GetPrimaryKeyString());
+    activity?.SetTag(&quot;from.state&quot;, fromState.ToString());
+    activity?.SetTag(&quot;to.state&quot;, toState.ToString());
+    
+    await base.RecordTransitionEvent(/*...*/);
+}
+</code></pre>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<ol>
+<li><strong>InvalidStateTransitionException</strong>: Check permitted triggers with <code>GetPermittedTriggersAsync()</code></li>
+<li><strong>Timer not firing</strong>: Verify reminder/timer registration and Orleans configuration</li>
+<li><strong>Events not persisting</strong>: Check log consistency provider configuration</li>
+<li><strong>Hierarchy not working</strong>: Ensure both <code>SubstateOf()</code> and <code>DefineSubstate()</code> are called</li>
+</ol>
+<h3 id="debug-commands">Debug Commands</h3>
+<pre><code class="lang-csharp">// Check current state and permitted triggers
+var state = await grain.GetStateAsync();
+var triggers = await grain.GetPermittedTriggersAsync();
+var info = await grain.GetInfoAsync();
+
+// For hierarchical grains
+var hierarchy = await grain.GetHierarchicalInfoAsync();
+var path = await grain.GetCurrentStatePathAsync();
+</code></pre>
+<h2 id="complete-example-applications">Complete Example Applications</h2>
+<p>The <code>examples/</code> directory contains four applications:</p>
+<ol>
+<li><strong>ECommerceWorkflow</strong> - Order processing with event sourcing, timers, and monitoring</li>
+<li><strong>DocumentApproval</strong> - Hierarchical states with saga orchestration</li>
+<li><strong>MonitoringDashboard</strong> - Health checks, metrics, and visualization</li>
+<li><strong>SmartHome</strong> - Source generator and orthogonal regions demonstration</li>
+</ol>
+<h3 id="smarthome-example-highlights">SmartHome Example Highlights</h3>
+<p>The SmartHome example demonstrates the newest features:</p>
+<ul>
+<li>State machines generated from YAML/JSON specifications</li>
+<li>Orthogonal regions with 4 independent subsystems (Security, Climate, Energy, Presence)</li>
+<li>Cross-region synchronization and reactions</li>
+<li>Integration between generated device grains and orthogonal system grain</li>
+</ul>
+<p>See <a href="../examples/README.md">examples/README.md</a> for complete documentation and usage instructions.</p>
+<p>This cheat sheet covers all major features of Orleans.StateMachineES. For detailed examples, see the test projects and documentation.</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/reference/cheat-sheet.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

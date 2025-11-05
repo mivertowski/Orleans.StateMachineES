@@ -19,6 +19,7 @@
     <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
     <PackageProjectUrl>https://github.com/mivertowski/Orleans.StateMachineES</PackageProjectUrl>
     <PackageTags>Orleans;StateMachine;SourceGenerator;CodeGeneration</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Core Concepts | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Core Concepts | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/core-concepts.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="core-concepts">Core Concepts</h1>
+
+<p>Understanding the fundamental concepts of Orleans.StateMachineES is essential for building robust state machines.</p>
+<h2 id="state-machines-fundamentals">State Machines Fundamentals</h2>
+<p>A <strong>state machine</strong> models a system that can be in exactly one state at a time, with defined transitions between states triggered by events.</p>
+<h3 id="components">Components</h3>
+<ol>
+<li><strong>States</strong> - Possible conditions the system can be in</li>
+<li><strong>Triggers</strong> - Events that cause transitions</li>
+<li><strong>Transitions</strong> - Rules for moving between states</li>
+<li><strong>Guards</strong> - Conditions that control whether transitions are allowed</li>
+<li><strong>Callbacks</strong> - Actions executed during transitions</li>
+</ol>
+<h2 id="states">States</h2>
+<p>States represent distinct conditions or phases in your system's lifecycle.</p>
+<h3 id="defining-states">Defining States</h3>
+<p>Use enums for type-safe state definitions:</p>
+<pre><code class="lang-csharp">public enum OrderState
+{
+    Draft,        // Initial state
+    Submitted,    // Awaiting payment
+    Processing,   // Being fulfilled
+    Shipped,      // In transit
+    Delivered,    // Complete
+    Cancelled     // Terminated
+}
+</code></pre>
+<h3 id="state-properties">State Properties</h3>
+<p><strong>Mutually Exclusive</strong>: A state machine can only be in one state at a time (except with <a href="../guides/orthogonal-regions.html">orthogonal regions</a>).</p>
+<p><strong>Persistent</strong>: The current state persists across grain activations.</p>
+<p><strong>Observable</strong>: You can always query the current state with <code>GetStateAsync()</code>.</p>
+<h3 id="state-configuration">State Configuration</h3>
+<p>Configure each state in <code>BuildStateMachine()</code>:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Processing)
+    .Permit(OrderTrigger.Ship, OrderState.Shipped)
+    .Permit(OrderTrigger.Cancel, OrderState.Cancelled)
+    .OnEntry(() =&gt; StartFulfillmentProcess())
+    .OnExit(() =&gt; CleanupResources());
+</code></pre>
+<h2 id="triggers">Triggers</h2>
+<p>Triggers are events that cause state transitions.</p>
+<h3 id="defining-triggers">Defining Triggers</h3>
+<p>Use enums for type-safe trigger definitions:</p>
+<pre><code class="lang-csharp">public enum OrderTrigger
+{
+    Submit,
+    ConfirmPayment,
+    Ship,
+    Deliver,
+    Cancel
+}
+</code></pre>
+<h3 id="firing-triggers">Firing Triggers</h3>
+<p>Execute transitions with <code>FireAsync()</code>:</p>
+<pre><code class="lang-csharp">await orderGrain.FireAsync(OrderTrigger.Submit);
+</code></pre>
+<h3 id="trigger-types">Trigger Types</h3>
+<p><strong>Simple Triggers</strong>: No additional data</p>
+<pre><code class="lang-csharp">await grain.FireAsync(OrderTrigger.Cancel);
+</code></pre>
+<p><strong>Parameterized Triggers</strong>: Pass data with the transition</p>
+<pre><code class="lang-csharp">var trigger = StateMachine.SetTriggerParameters&lt;string&gt;(OrderTrigger.Ship);
+await grain.FireAsync(trigger, &quot;UPS123456789&quot;);
+</code></pre>
+<p>See <a href="parameterized-triggers.html">Parameterized Triggers</a> for details.</p>
+<h2 id="transitions">Transitions</h2>
+<p>Transitions define how the state machine moves from one state to another.</p>
+<h3 id="permit-transitions">Permit Transitions</h3>
+<p>Use <code>.Permit()</code> to allow a transition:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Submitted)
+    .Permit(OrderTrigger.ConfirmPayment, OrderState.Processing);
+</code></pre>
+<h3 id="conditional-transitions">Conditional Transitions</h3>
+<p>Use <code>.PermitIf()</code> with guard conditions:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Submitted)
+    .PermitIf(
+        OrderTrigger.ConfirmPayment,
+        OrderState.Processing,
+        () =&gt; _paymentReceived &amp;&amp; _inventoryAvailable
+    );
+</code></pre>
+<h3 id="self-transitions">Self-Transitions</h3>
+<p>Allow a state to transition to itself:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Processing)
+    .PermitReentry(OrderTrigger.UpdateStatus);
+</code></pre>
+<h3 id="ignore-triggers">Ignore Triggers</h3>
+<p>Ignore triggers without error:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Cancelled)
+    .Ignore(OrderTrigger.Ship);  // Silently ignored
+</code></pre>
+<h2 id="guard-conditions">Guard Conditions</h2>
+<p>Guards control whether a transition is allowed based on runtime conditions.</p>
+<h3 id="simple-guards">Simple Guards</h3>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Draft)
+    .PermitIf(
+        OrderTrigger.Submit,
+        OrderState.Submitted,
+        () =&gt; _items.Count &gt; 0  // Guard: must have items
+    );
+</code></pre>
+<h3 id="multiple-guards">Multiple Guards</h3>
+<p>All guards must pass for the transition to succeed:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Submitted)
+    .PermitIf(
+        OrderTrigger.ConfirmPayment,
+        OrderState.Processing,
+        () =&gt; _paymentReceived,
+        () =&gt; _inventoryAvailable,
+        () =&gt; _shippingAddressValid
+    );
+</code></pre>
+<h3 id="unmet-guards">Unmet Guards</h3>
+<p>Check guard status before firing:</p>
+<pre><code class="lang-csharp">// Returns list of unmet guard descriptions
+var unmetGuards = await grain.CanFireWithUnmetGuardsAsync(
+    OrderTrigger.ConfirmPayment
+);
+
+if (unmetGuards.UnmetGuards.Any())
+{
+    Console.WriteLine(&quot;Cannot confirm payment:&quot;);
+    foreach (var guard in unmetGuards.UnmetGuards)
+    {
+        Console.WriteLine($&quot;  - {guard}&quot;);
+    }
+}
+</code></pre>
+<p>See <a href="guard-conditions.html">Guard Conditions</a> for advanced patterns.</p>
+<h2 id="callbacks">Callbacks</h2>
+<p>Callbacks execute custom logic during state transitions.</p>
+<h3 id="onentry-callbacks">OnEntry Callbacks</h3>
+<p>Execute when entering a state:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Processing)
+    .OnEntry(() =&gt;
+    {
+        _processingStartTime = DateTime.UtcNow;
+        NotifyWarehouse();
+    });
+</code></pre>
+<h3 id="onexit-callbacks">OnExit Callbacks</h3>
+<p>Execute when leaving a state:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Processing)
+    .OnExit(() =&gt;
+    {
+        _processingDuration = DateTime.UtcNow - _processingStartTime;
+        RecordMetrics();
+    });
+</code></pre>
+<h3 id="onentryfrom-callbacks">OnEntryFrom Callbacks</h3>
+<p>Execute when entering from a specific trigger:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Cancelled)
+    .OnEntryFrom(OrderTrigger.CancelByCustomer, () =&gt;
+    {
+        _cancellationReason = &quot;Customer requested&quot;;
+        RefundPayment();
+    })
+    .OnEntryFrom(OrderTrigger.CancelBySystem, () =&gt;
+    {
+        _cancellationReason = &quot;Fraud detected&quot;;
+        BlockCustomer();
+    });
+</code></pre>
+<h3 id="onexitfrom-callbacks">OnExitFrom Callbacks</h3>
+<p>Execute when leaving to a specific state:</p>
+<pre><code class="lang-csharp">StateMachine.Configure(OrderState.Processing)
+    .OnExitFrom(OrderState.Shipped, () =&gt;
+    {
+        GenerateTrackingNumber();
+    });
+</code></pre>
+<h3 id="callback-constraints">Callback Constraints</h3>
+<blockquote>
+<p><strong>Critical</strong>: Callbacks must be synchronous. Async operations are not supported.</p>
+</blockquote>
+<pre><code class="lang-csharp">// ❌ Wrong: Async not supported
+.OnEntry(async () =&gt; await SendEmailAsync())
+
+// ✅ Correct: Use timers for async work
+.OnEntry(() =&gt; RegisterTimer(_ =&gt; SendEmailAsync(), null, TimeSpan.Zero, TimeSpan.MaxValue))
+</code></pre>
+<p>See <a href="../guides/async-patterns.html">Async Patterns</a> for handling async operations correctly.</p>
+<h2 id="state-machine-lifecycle">State Machine Lifecycle</h2>
+<h3 id="activation">Activation</h3>
+<p>When a grain activates, <code>BuildStateMachine()</code> is called to construct the state machine:</p>
+<pre><code class="lang-csharp">public override async Task OnActivateAsync(CancellationToken cancellationToken)
+{
+    await base.OnActivateAsync(cancellationToken);
+    // State machine is now ready
+}
+</code></pre>
+<h3 id="state-persistence">State Persistence</h3>
+<p>The current state is persisted automatically:</p>
+<ul>
+<li><strong>Automatic</strong>: State survives grain deactivation</li>
+<li><strong>Consistent</strong>: State is part of grain state storage</li>
+<li><strong>Event-Sourced</strong>: Optional full history with <code>EventSourcedStateMachineGrain</code></li>
+</ul>
+<h3 id="deactivation">Deactivation</h3>
+<p>On deactivation, state is saved:</p>
+<pre><code class="lang-csharp">public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken cancellationToken)
+{
+    // State is automatically persisted
+    await base.OnDeactivateAsync(reason, cancellationToken);
+}
+</code></pre>
+<h2 id="state-machine-metadata">State Machine Metadata</h2>
+<p>Query state machine information at runtime:</p>
+<h3 id="current-state">Current State</h3>
+<pre><code class="lang-csharp">var state = await grain.GetStateAsync();
+</code></pre>
+<h3 id="permitted-triggers">Permitted Triggers</h3>
+<pre><code class="lang-csharp">var triggers = await grain.GetPermittedTriggersAsync();
+// Returns: [OrderTrigger.Ship, OrderTrigger.Cancel]
+</code></pre>
+<h3 id="can-fire-check">Can Fire Check</h3>
+<pre><code class="lang-csharp">bool canShip = await grain.CanFireAsync(OrderTrigger.Ship);
+</code></pre>
+<h3 id="complete-info">Complete Info</h3>
+<pre><code class="lang-csharp">var info = await grain.GetStateMachineInfoAsync();
+Console.WriteLine($&quot;Current: {info.State}&quot;);
+Console.WriteLine($&quot;Initial: {info.InitialState}&quot;);
+Console.WriteLine($&quot;All states: {string.Join(&quot;, &quot;, info.States)}&quot;);
+Console.WriteLine($&quot;All triggers: {string.Join(&quot;, &quot;, info.Triggers)}&quot;);
+</code></pre>
+<h2 id="state-diagrams">State Diagrams</h2>
+<p>Visualize your state machine:</p>
+<pre><code class="lang-csharp">var dot = await grain.GetDotGraphAsync();
+var mermaid = await grain.GetMermaidDiagramAsync();
+var plantUml = await grain.GetPlantUmlDiagramAsync();
+</code></pre>
+<p>See <a href="../guides/visualization.html">Visualization Guide</a> for details.</p>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-use-descriptive-names">1. Use Descriptive Names</h3>
+<pre><code class="lang-csharp">// ✅ Good: Clear intent
+public enum OrderState { Draft, Submitted, Processing, Shipped }
+public enum OrderTrigger { Submit, ConfirmPayment, Ship }
+
+// ❌ Bad: Unclear meaning
+public enum State { S1, S2, S3 }
+public enum Event { E1, E2 }
+</code></pre>
+<h3 id="2-define-all-transitions">2. Define All Transitions</h3>
+<pre><code class="lang-csharp">// ✅ Good: All states configured
+StateMachine.Configure(OrderState.Draft)
+    .Permit(OrderTrigger.Submit, OrderState.Submitted)
+    .Permit(OrderTrigger.Cancel, OrderState.Cancelled);
+
+// ❌ Bad: Unreachable states
+StateMachine.Configure(OrderState.Draft)
+    .Permit(OrderTrigger.Submit, OrderState.Submitted);
+// OrderState.Cancelled is unreachable!
+</code></pre>
+<p>The <strong>OSMES004</strong> analyzer detects unreachable states.</p>
+<h3 id="3-handle-all-triggers">3. Handle All Triggers</h3>
+<pre><code class="lang-csharp">// ✅ Good: Define what happens with unexpected triggers
+StateMachine.OnUnhandledTrigger((state, trigger) =&gt;
+{
+    _logger.LogWarning(&quot;Unexpected trigger {Trigger} in state {State}&quot;, trigger, state);
+});
+</code></pre>
+<h3 id="4-keep-guards-simple">4. Keep Guards Simple</h3>
+<pre><code class="lang-csharp">// ✅ Good: Simple, testable guard
+.PermitIf(trigger, nextState, () =&gt; _isValid)
+
+// ❌ Bad: Complex logic in guard
+.PermitIf(trigger, nextState, () =&gt;
+{
+    // 50 lines of complex validation
+    // Cyclomatic complexity &gt; 10
+})
+</code></pre>
+<p>The <strong>OSMES008</strong> analyzer warns about complex guards.</p>
+<h3 id="5-avoid-side-effects-in-guards">5. Avoid Side Effects in Guards</h3>
+<pre><code class="lang-csharp">// ❌ Bad: Guard modifies state
+.PermitIf(trigger, nextState, () =&gt;
+{
+    _counter++;  // Side effect!
+    return _counter &gt; 5;
+})
+
+// ✅ Good: Guard is pure
+.PermitIf(trigger, nextState, () =&gt; _counter &gt; 5)
+</code></pre>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li><a href="parameterized-triggers.html">Parameterized Triggers</a> - Pass data with transitions</li>
+<li><a href="guard-conditions.html">Guard Conditions</a> - Advanced validation patterns</li>
+<li><a href="../guides/async-patterns.html">Async Patterns</a> - Handling async operations correctly</li>
+<li><a href="../guides/event-sourcing.html">Event Sourcing</a> - Complete state history</li>
+</ul>
+<h2 id="additional-resources">Additional Resources</h2>
+<ul>
+<li><a href="https://github.com/dotnet-state-machine/stateless">Stateless Library Docs</a> - Underlying state machine library</li>
+<li><a href="../../api/Orleans.StateMachineES.StateMachineGrain-2.yml">API Reference</a></li>
+<li><a href="../examples/index.html">Examples</a></li>
+</ul>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/getting-started/core-concepts.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+      <title>Orleans.StateMachineES Analyzers Documentation | Orleans.StateMachineES </title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="title" content="Orleans.StateMachineES Analyzers Documentation | Orleans.StateMachineES ">
+      
+      
+      <link rel="icon" href="../../favicon.ico">
+      <link rel="stylesheet" href="../../public/docfx.min.css">
+      <link rel="stylesheet" href="../../public/main.css">
+      <meta name="docfx:navrel" content="../../toc.html">
+      <meta name="docfx:tocrel" content="../../toc.html">
+      
+      <meta name="docfx:rel" content="../../">
+      
+      
+      <meta name="docfx:docurl" content="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/analyzers.md/#L1">
+      <meta name="loc:inThisArticle" content="In this article">
+      <meta name="loc:searchResultsCount" content="{count} results for &quot;{query}&quot;">
+      <meta name="loc:searchNoResults" content="No results for &quot;{query}&quot;">
+      <meta name="loc:tocFilter" content="Filter by title">
+      <meta name="loc:nextArticle" content="Next">
+      <meta name="loc:prevArticle" content="Previous">
+      <meta name="loc:themeLight" content="Light">
+      <meta name="loc:themeDark" content="Dark">
+      <meta name="loc:themeAuto" content="Auto">
+      <meta name="loc:changeTheme" content="Change theme">
+      <meta name="loc:copy" content="Copy">
+      <meta name="loc:downloadPdf" content="Download PDF">
+
+      <script type="module" src="./../../public/docfx.min.js"></script>
+
+      <script>
+        const theme = localStorage.getItem('theme') || 'auto'
+        document.documentElement.setAttribute('data-bs-theme', theme === 'auto' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme)
+      </script>
+
+  </head>
+
+  <body class="tex2jax_ignore" data-layout="" data-yaml-mime="">
+    <header class="bg-body border-bottom">
+      <nav id="autocollapse" class="navbar navbar-expand-md" role="navigation">
+        <div class="container-xxl flex-nowrap">
+          <a class="navbar-brand" href="../../index.html">
+            <img id="logo" class="svg" src="../../images/logo.svg" alt="Orleans.StateMachineES Documentation">
+            Orleans.StateMachineES Documentation
+          </a>
+          <button class="btn btn-lg d-md-none border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navpanel" aria-controls="navpanel" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-three-dots"></i>
+          </button>
+          <div class="collapse navbar-collapse" id="navpanel">
+            <div id="navbar">
+              <form class="search" role="search" id="search">
+                <i class="bi bi-search"></i>
+                <input class="form-control" id="search-query" type="search" disabled placeholder="Search" autocomplete="off" aria-label="Search">
+              </form>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main class="container-xxl">
+
+      <div class="content">
+        <div class="actionbar">
+
+          <nav id="breadcrumb"></nav>
+        </div>
+
+        <article data-uid="">
+<h1 id="orleansstatemachinees-analyzers-documentation">Orleans.StateMachineES Analyzers Documentation</h1>
+
+<h2 id="overview">Overview</h2>
+<p>Orleans.StateMachineES includes a comprehensive set of Roslyn analyzers that provide compile-time safety and guidance for common state machine patterns and pitfalls. These analyzers help developers avoid runtime errors and follow best practices when implementing state machines with Orleans.</p>
+<h2 id="available-analyzers">Available Analyzers</h2>
+<h3 id="osmes001-async-lambda-in-state-callback">OSMES001: Async Lambda in State Callback</h3>
+<p><strong>Severity</strong>: Warning<br>
+<strong>Category</strong>: Usage</p>
+<p>Detects async lambdas in state callbacks (OnEntry, OnExit, OnEntryFrom, OnExitFrom) that won't be awaited due to Stateless library limitations.</p>
+<h4 id="problem-example">Problem Example</h4>
+<pre><code class="lang-csharp">Configure(State.Processing)
+    .OnEntry(async () =&gt; await ProcessDataAsync()); // ⚠️ OSMES001
+</code></pre>
+<h4 id="solution">Solution</h4>
+<pre><code class="lang-csharp">Configure(State.Processing)
+    .OnEntry(() =&gt; Console.WriteLine(&quot;Entered Processing&quot;));
+
+// Move async logic to grain method
+public async Task StartProcessingAsync()
+{
+    await FireAsync(Trigger.Start);
+    await ProcessDataAsync(); // Async work after transition
+}
+</code></pre>
+<h3 id="osmes002-fireasync-within-callback">OSMES002: FireAsync Within Callback</h3>
+<p><strong>Severity</strong>: Error<br>
+<strong>Category</strong>: Usage</p>
+<p>Detects FireAsync calls within state callbacks that can cause deadlocks or reentrancy issues.</p>
+<h4 id="problem-example-1">Problem Example</h4>
+<pre><code class="lang-csharp">Configure(State.Active)
+    .OnEntry(() =&gt; 
+    {
+        FireAsync(Trigger.Process).Wait(); // 🚫 OSMES002
+    });
+</code></pre>
+<h4 id="solution-1">Solution</h4>
+<pre><code class="lang-csharp">Configure(State.Active)
+    .OnEntry(() =&gt; LogEntry(&quot;Active&quot;));
+    
+// Trigger transitions from grain methods instead
+public async Task ProcessAsync()
+{
+    await FireAsync(Trigger.Process);
+}
+</code></pre>
+<h3 id="osmes003-missing-buildstatemachine-implementation">OSMES003: Missing BuildStateMachine Implementation</h3>
+<p><strong>Severity</strong>: Error<br>
+<strong>Category</strong>: Implementation</p>
+<p>Detects classes deriving from StateMachineGrain that don't properly implement BuildStateMachine.</p>
+<h4 id="problem-example-2">Problem Example</h4>
+<pre><code class="lang-csharp">public class MyStateMachine : StateMachineGrain&lt;State, Trigger&gt;
+{
+    protected override void BuildStateMachine()
+    {
+        // Empty or missing implementation 🚫 OSMES003
+    }
+}
+</code></pre>
+<h4 id="solution-2">Solution</h4>
+<pre><code class="lang-csharp">public class MyStateMachine : StateMachineGrain&lt;State, Trigger&gt;
+{
+    protected override void BuildStateMachine()
+    {
+        Configure(State.Idle)
+            .Permit(Trigger.Start, State.Active);
+            
+        Configure(State.Active)
+            .Permit(Trigger.Stop, State.Idle);
+    }
+}
+</code></pre>
+<h3 id="osmes004-unreachable-state">OSMES004: Unreachable State</h3>
+<p><strong>Severity</strong>: Warning<br>
+<strong>Category</strong>: Design</p>
+<p>Detects states that have no incoming transitions and aren't the initial state.</p>
+<h4 id="problem-example-3">Problem Example</h4>
+<pre><code class="lang-csharp">protected override void BuildStateMachine()
+{
+    Configure(State.Idle)
+        .Permit(Trigger.Start, State.Active);
+    
+    Configure(State.Active)
+        .Permit(Trigger.Stop, State.Idle);
+    
+    Configure(State.Orphaned) // ⚠️ OSMES004: No way to reach this state
+        .OnEntry(() =&gt; Console.WriteLine(&quot;Never reached&quot;));
+}
+</code></pre>
+<h4 id="solution-3">Solution</h4>
+<pre><code class="lang-csharp">protected override void BuildStateMachine()
+{
+    Configure(State.Idle)
+        .Permit(Trigger.Start, State.Active)
+        .Permit(Trigger.Error, State.Orphaned); // Add transition
+    
+    Configure(State.Active)
+        .Permit(Trigger.Stop, State.Idle);
+    
+    Configure(State.Orphaned)
+        .OnEntry(() =&gt; Console.WriteLine(&quot;Error state&quot;));
+}
+</code></pre>
+<h3 id="osmes005-duplicate-state-configuration">OSMES005: Duplicate State Configuration</h3>
+<p><strong>Severity</strong>: Warning<br>
+<strong>Category</strong>: Design</p>
+<p>Detects states that are configured multiple times in BuildStateMachine.</p>
+<h4 id="problem-example-4">Problem Example</h4>
+<pre><code class="lang-csharp">protected override void BuildStateMachine()
+{
+    Configure(State.Active)
+        .Permit(Trigger.Pause, State.Paused);
+    
+    // Later in the method...
+    Configure(State.Active) // ⚠️ OSMES005: Duplicate configuration
+        .OnEntry(() =&gt; Console.WriteLine(&quot;Active&quot;));
+}
+</code></pre>
+<h4 id="solution-4">Solution</h4>
+<pre><code class="lang-csharp">protected override void BuildStateMachine()
+{
+    // Combine all configuration for each state
+    Configure(State.Active)
+        .Permit(Trigger.Pause, State.Paused)
+        .OnEntry(() =&gt; Console.WriteLine(&quot;Active&quot;));
+}
+</code></pre>
+<h2 id="code-fix-providers">Code Fix Providers</h2>
+<h3 id="asynclambdacodefixprovider">AsyncLambdaCodeFixProvider</h3>
+<p>Automatically converts async lambdas to synchronous callbacks and generates separate async methods.</p>
+<p><strong>Before Fix</strong>:</p>
+<pre><code class="lang-csharp">Configure(State.Processing)
+    .OnEntry(async () =&gt; 
+    {
+        await LoadDataAsync();
+        await ProcessAsync();
+    });
+</code></pre>
+<p><strong>After Fix</strong>:</p>
+<pre><code class="lang-csharp">Configure(State.Processing)
+    .OnEntry(() =&gt; _ = OnProcessingEntryAsync());
+
+private async Task OnProcessingEntryAsync()
+{
+    await LoadDataAsync();
+    await ProcessAsync();
+}
+</code></pre>
+<h2 id="configuration">Configuration</h2>
+<h3 id="using-editorconfig">Using .editorconfig</h3>
+<p>You can customize analyzer severities in your <code>.editorconfig</code> file:</p>
+<pre><code class="lang-ini">[*.cs]
+# Treat async lambda warning as error
+dotnet_diagnostic.OSMES001.severity = error
+
+# Disable unreachable state warning for generated code
+[**/Generated/**.cs]
+dotnet_diagnostic.OSMES004.severity = none
+
+# Suppress duplicate configuration in tests
+[**/*Tests.cs]
+dotnet_diagnostic.OSMES005.severity = none
+</code></pre>
+<h3 id="global-suppression">Global Suppression</h3>
+<p>For project-wide suppression, add to your project file:</p>
+<pre><code class="lang-xml">&lt;PropertyGroup&gt;
+  &lt;NoWarn&gt;$(NoWarn);OSMES004;OSMES005&lt;/NoWarn&gt;
+&lt;/PropertyGroup&gt;
+</code></pre>
+<h3 id="inline-suppression">Inline Suppression</h3>
+<p>Suppress specific instances using pragmas:</p>
+<pre><code class="lang-csharp">#pragma warning disable OSMES004 // Unreachable state
+Configure(State.Debug)
+    .OnEntry(() =&gt; Console.WriteLine(&quot;Debug mode&quot;));
+#pragma warning restore OSMES004
+</code></pre>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><p><strong>Enable All Analyzers</strong>: Keep all analyzers enabled during development to catch issues early.</p>
+</li>
+<li><p><strong>Configure Severities</strong>: Adjust severities based on your project needs:</p>
+<ul>
+<li>Use <code>error</code> for critical issues in production code</li>
+<li>Use <code>warning</code> for code quality issues</li>
+<li>Use <code>none</code> only for generated or test code</li>
+</ul>
+</li>
+<li><p><strong>Use Code Fixes</strong>: Take advantage of automatic code fixes when available to quickly resolve issues.</p>
+</li>
+<li><p><strong>Document Suppressions</strong>: When suppressing analyzer warnings, add comments explaining why:</p>
+<pre><code class="lang-csharp">// Orphaned state used only in unit tests
+#pragma warning disable OSMES004
+</code></pre>
+</li>
+<li><p><strong>CI/CD Integration</strong>: Consider treating warnings as errors in CI/CD:</p>
+<pre><code class="lang-xml">&lt;PropertyGroup Condition=&quot;'$(CI)' == 'true'&quot;&gt;
+  &lt;TreatWarningsAsErrors&gt;true&lt;/TreatWarningsAsErrors&gt;
+&lt;/PropertyGroup&gt;
+</code></pre>
+</li>
+</ol>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="analyzer-not-working">Analyzer Not Working</h3>
+<ol>
+<li><p>Ensure the analyzer package is referenced:</p>
+<pre><code class="lang-xml">&lt;PackageReference Include=&quot;Orleans.StateMachineES.Generators&quot; Version=&quot;1.0.2&quot; /&gt;
+</code></pre>
+</li>
+<li><p>Clean and rebuild the solution:</p>
+<pre><code class="lang-bash">dotnet clean
+dotnet build
+</code></pre>
+</li>
+<li><p>Check if analyzers are loaded:</p>
+<ul>
+<li>In Visual Studio: View → Other Windows → Syntax Visualizer</li>
+<li>In VS Code: Check Problems panel</li>
+</ul>
+</li>
+</ol>
+<h3 id="false-positives">False Positives</h3>
+<p>If you encounter false positives:</p>
+<ol>
+<li>Verify you're using the latest version of the analyzers</li>
+<li>Check if the code pattern is supported</li>
+<li>Report issues at: <a href="https://github.com/mivertowski/Orleans.StateMachineES/issues">https://github.com/mivertowski/Orleans.StateMachineES/issues</a></li>
+</ol>
+<h3 id="performance-impact">Performance Impact</h3>
+<p>The analyzers are designed to have minimal impact on build performance:</p>
+<ul>
+<li>They run concurrently</li>
+<li>They use efficient pattern matching</li>
+<li>They skip generated code by default</li>
+</ul>
+<p>If you experience slow builds, you can temporarily disable analyzers:</p>
+<pre><code class="lang-xml">&lt;PropertyGroup&gt;
+  &lt;RunAnalyzers&gt;false&lt;/RunAnalyzers&gt;
+&lt;/PropertyGroup&gt;
+</code></pre>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Planned analyzer improvements:</p>
+<ul>
+<li>Detection of infinite state loops</li>
+<li>Validation of trigger parameter types</li>
+<li>Performance hints for large state machines</li>
+<li>Integration with Orleans Dashboard</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<p>To contribute new analyzers or improvements:</p>
+<ol>
+<li>Follow the existing analyzer patterns</li>
+<li>Include comprehensive tests</li>
+<li>Update documentation</li>
+<li>Add entries to AnalyzerReleases.Unshipped.md</li>
+</ol>
+<p>See <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> for more details.</p>
+
+</article>
+
+        <div class="contribution d-print-none">
+          <a href="https://github.com/mivertowski/Orleans.StateMachineES/blob/main/docfx/articles/guides/analyzers.md/#L1" class="edit-link">Edit this page</a>
+        </div>
+
+        <div class="next-article d-print-none border-top" id="nextArticle"></div>
+
+      </div>
+
+      <div class="affix">
+        <nav id="affix"></nav>
+      </div>
+    </main>
+
+    <div class="container-xxl search-results" id="search-results"></div>
+
+    <footer class="border-top text-secondary">
+      <div class="container-xxl">
+        <div class="flex-fill">
+          Orleans.StateMachineES - Production-ready state machines for Microsoft Orleans
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

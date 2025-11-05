@@ -1,0 +1,25 @@
+apiRules:
+- exclude:
+    uidRegex: ^Orleans\.StateMachineES\.Tests
+    type: Namespace
+- exclude:
+    uidRegex: ^Orleans\.StateMachineES\.Benchmarks
+    type: Namespace
+- exclude:
+    uidRegex: \.Internal
+    type: Namespace
+- exclude:
+    hasAttribute:
+      uid: System.Runtime.CompilerServices.CompilerGeneratedAttribute
+- exclude:
+    hasAttribute:
+      uid: System.CodeDom.Compiler.GeneratedCodeAttribute
+- exclude:
+    type: Type
+    modifiers:
+    - internal
+- exclude:
+    type: Member
+    modifiers:
+    - internal
+    - private
