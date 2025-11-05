@@ -12,8 +12,8 @@
     <PackageId>Orleans.StateMachineES.Generators</PackageId>
     <Description>Roslyn analyzers and source generators for Orleans.StateMachineES providing compile-time safety and code generation</Description>
     <Authors>Michael Ivertowski</Authors>
-    <Version>1.0.4</Version>
-    <PackageReleaseNotes>Version sync with main package (v1.0.4). All 10 analyzers (OSMES001-010) officially shipped.</PackageReleaseNotes>
+    <Version>1.0.5</Version>
+    <PackageReleaseNotes>Version sync with main package (v1.0.5). All 10 analyzers (OSMES001-010) officially shipped.</PackageReleaseNotes>
     <PackageReadmeFile></PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>

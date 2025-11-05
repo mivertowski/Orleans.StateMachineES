@@ -60,7 +60,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// </summary>
     public async Task ActivateAsync()
     {
-        await StateMachine.ActivateAsync().ConfigureAwait(false);
+        await StateMachine.ActivateAsync();
     }
 
     /// <summary>
@@ -68,7 +68,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     /// </summary>
     public async Task DeactivateAsync()
     {
-        await StateMachine.DeactivateAsync().ConfigureAwait(false);
+        await StateMachine.DeactivateAsync();
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     public virtual async Task FireAsync(TTrigger trigger)
     {
         ValidateNotInCallback(trigger);
-        await StateMachine.FireAsync(trigger).ConfigureAwait(false);
+        await StateMachine.FireAsync(trigger);
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     {
         ValidateNotInCallback(trigger);
         var tp = TriggerCache!.GetOrCreate<TArg0>(trigger);
-        await StateMachine.FireAsync(tp, arg0).ConfigureAwait(false);
+        await StateMachine.FireAsync(tp, arg0);
     }
 
     /// <summary>
@@ -98,7 +98,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     {
         ValidateNotInCallback(trigger);
         var tp = TriggerCache!.GetOrCreate<TArg0, TArg1>(trigger);
-        await StateMachine.FireAsync(tp, arg0, arg1).ConfigureAwait(false);
+        await StateMachine.FireAsync(tp, arg0, arg1);
     }
 
     /// <summary>
@@ -108,7 +108,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
     {
         ValidateNotInCallback(trigger);
         var tp = TriggerCache!.GetOrCreate<TArg0, TArg1, TArg2>(trigger);
-        await StateMachine.FireAsync(tp, arg0, arg1, arg2).ConfigureAwait(false);
+        await StateMachine.FireAsync(tp, arg0, arg1, arg2);
     }
 
     /// <summary>
@@ -252,7 +252,7 @@ public abstract class StateMachineGrain<TState, TTrigger> : Grain, IStateMachine
         StateMachine = BuildStateMachine();
         NotNull(StateMachine, nameof(StateMachine));
         TriggerCache = new TriggerParameterCache<TState, TTrigger>(StateMachine);
-        await base.OnActivateAsync(cancellationToken).ConfigureAwait(false);
+        await base.OnActivateAsync(cancellationToken);
     }
 
     /// <summary>

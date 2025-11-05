@@ -38,8 +38,7 @@ public sealed class MigrationPathCalculator(ILogger? logger = null)
             grainType, fromVersion, toVersion);
 
         // Build or retrieve version graph
-        var graph = await GetOrBuildVersionGraphAsync(grainType, availableVersions, compatibilityMatrix)
-            .ConfigureAwait(false);
+        var graph = await GetOrBuildVersionGraphAsync(grainType, availableVersions, compatibilityMatrix);
 
         // Find all possible paths
         var allPaths = FindAllPaths(graph, fromVersion, toVersion);
@@ -73,8 +72,7 @@ public sealed class MigrationPathCalculator(ILogger? logger = null)
         int maxPaths = 3,
         CompatibilityMatrix? compatibilityMatrix = null)
     {
-        var graph = await GetOrBuildVersionGraphAsync(grainType, availableVersions, compatibilityMatrix)
-            .ConfigureAwait(false);
+        var graph = await GetOrBuildVersionGraphAsync(grainType, availableVersions, compatibilityMatrix);
 
         var allPaths = FindAllPaths(graph, fromVersion, toVersion);
         var evaluatedPaths = await EvaluatePathsAsync(allPaths, compatibilityMatrix);

@@ -64,7 +64,7 @@ public class VersionCompatibilityChecker(
         try
         {
             // Check if versions exist
-            var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
+            var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
             var fromExists = availableVersions.Any(v => v.CompareTo(fromVersion) == 0);
             var toExists = availableVersions.Any(v => v.CompareTo(toVersion) == 0);
 
@@ -80,14 +80,14 @@ public class VersionCompatibilityChecker(
             var context = BuildCompatibilityContextAsync(grainTypeName, fromVersion, toVersion);
 
             // Evaluate rules
-            var result = await _rulesEngine.EvaluateCompatibilityAsync(context).ConfigureAwait(false);
+            var result = await _rulesEngine.EvaluateCompatibilityAsync(context);
 
             // Calculate migration path if needed
             MigrationPath? migrationPath = null;
             if (!result.IsCompatible || result.CompatibilityLevel == VersionCompatibilityLevel.RequiresMigration)
             {
                 migrationPath = await _pathCalculator.CalculateOptimalPathAsync(
-                    grainTypeName, fromVersion, toVersion, availableVersions).ConfigureAwait(false);
+                    grainTypeName, fromVersion, toVersion, availableVersions);
             }
 
             return new CompatibilityCheckResult
@@ -114,7 +114,7 @@ public class VersionCompatibilityChecker(
         _logger.LogInformation("Analyzing compatibility matrix for {GrainType}", grainTypeName);
 
         var matrix = new CompatibilityMatrix(grainTypeName);
-        var versions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
+        var versions = await _registry.GetAvailableVersionsAsync(grainTypeName);
         var versionList = versions.ToList();
 
         foreach (var fromVersion in versionList)
@@ -141,14 +141,14 @@ public class VersionCompatibilityChecker(
             grainTypeName, currentVersion);
 
         var recommendations = new List<UpgradeRecommendation>();
-        var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName).ConfigureAwait(false);
+        var availableVersions = await _registry.GetAvailableVersionsAsync(grainTypeName);
 
         foreach (var targetVersion in availableVersions.Where(v => v.CompareTo(currentVersion) > 0))
         {
             var compatibility = await CheckCompatibilityAsync(grainTypeName, currentVersion, targetVersion);
 
             var paths = await _pathCalculator.CalculateAlternativePathsAsync(
-                grainTypeName, currentVersion, targetVersion, availableVersions, 3).ConfigureAwait(false);
+                grainTypeName, currentVersion, targetVersion, availableVersions, 3);
 
             var recommendation = new UpgradeRecommendation
             {

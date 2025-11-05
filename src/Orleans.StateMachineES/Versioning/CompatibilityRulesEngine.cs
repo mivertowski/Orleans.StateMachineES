@@ -72,7 +72,7 @@ public sealed class CompatibilityRulesEngine
             context.FromVersion, context.ToVersion);
 
         var evaluationTasks = _rules.Select(rule => EvaluateRuleAsync(rule, context)).ToList();
-        var ruleResults = await Task.WhenAll(evaluationTasks).ConfigureAwait(false);
+        var ruleResults = await Task.WhenAll(evaluationTasks);
 
         foreach (var ruleResult in ruleResults)
         {
@@ -111,7 +111,7 @@ public sealed class CompatibilityRulesEngine
     {
         try
         {
-            var result = await rule.EvaluateAsync(context).ConfigureAwait(false);
+            var result = await rule.EvaluateAsync(context);
             result.RuleName = rule.Name;
             result.RuleCategory = rule.Category;
             return result;

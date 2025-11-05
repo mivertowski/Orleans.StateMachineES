@@ -5,6 +5,35 @@ All notable changes to Orleans.StateMachineES will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-11-05
+
+### Fixed
+
+#### Critical Bug Fix: Orleans Task Scheduler Compliance
+- **ConfigureAwait(false) Removed**: Eliminated all 42 occurrences of `ConfigureAwait(false)` from grain code to maintain Orleans' single-threaded execution model guarantees
+  - **StateMachineGrain.cs**: Removed 7 instances from core grain operations (lines 63, 71, 81, 91, 101, 111, 255)
+  - **EventSourcedStateMachineGrain.cs**: Removed 25 instances from event sourcing implementation
+  - **VersionCompatibilityChecker.cs**: Removed 6 instances from versioning service
+  - **MigrationPathCalculator.cs**: Removed 2 instances from migration path calculator
+  - **CompatibilityRulesEngine.cs**: Removed 2 instances from compatibility rules evaluator
+
+#### Impact
+- **Prevents Race Conditions**: Using `ConfigureAwait(false)` in Orleans grain code can cause continuations to run on thread pool threads instead of Orleans' task scheduler, potentially breaking the single-threaded execution guarantee
+- **Maintains Orleans Guarantees**: All async operations now properly flow through Orleans' execution context
+- **Thread Safety**: Ensures grain state access remains properly synchronized through Orleans' runtime
+
+#### Technical Details
+This fix addresses [GitHub Issue #5](https://github.com/mivertowski/Orleans.StateMachineES/issues/5) reported by @zbarrier. In Orleans grains, using `ConfigureAwait(false)` can cause unpredictable behavior because:
+- Orleans grains rely on single-threaded execution guarantees
+- `ConfigureAwait(false)` allows continuations to run on arbitrary thread pool threads
+- This can lead to concurrent access to grain state, violating Orleans' programming model
+- The fix ensures all async operations respect Orleans' task scheduler
+
+### Changed
+- **Versioning Components**: Updated service classes (VersionCompatibilityChecker, MigrationPathCalculator, CompatibilityRulesEngine) to maintain execution context when called from grain code
+
+---
+
 ## [1.0.1] - 2025-08-27
 
 ### Added
