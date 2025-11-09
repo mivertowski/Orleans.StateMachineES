@@ -27,6 +27,11 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     private readonly SemaphoreSlim _stateLock = new(1, 1);
 
     /// <summary>
+    /// Timeout for acquiring semaphore locks to prevent deadlocks (30 seconds).
+    /// </summary>
+    private static readonly TimeSpan SemaphoreTimeout = TimeSpan.FromSeconds(30);
+
+    /// <summary>
     /// The current state of the circuit breaker.
     /// </summary>
     public CircuitState State => _circuitState;
@@ -52,7 +57,10 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
     /// </summary>
     public async Task<bool> BeforeFireAsync(TTrigger trigger, StateMachine<TState, TTrigger> stateMachine)
     {
-        await _stateLock.WaitAsync();
+        if (!await _stateLock.WaitAsync(SemaphoreTimeout))
+        {
+            throw new TimeoutException($"Failed to acquire circuit breaker lock within {SemaphoreTimeout.TotalSeconds}s - potential deadlock detected");
+        }
         try
         {
             // Check if circuit should transition from Open to HalfOpen
@@ -67,8 +75,15 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
                     _circuitOpenedTime = null;
                     _consecutiveSuccesses = 0;
 
-                    // Invoke callback if configured
-                    _options.OnCircuitHalfOpened?.Invoke(_circuitState);
+                    // Invoke callback if configured (with exception handling to prevent callback failures from affecting circuit state)
+                    try
+                    {
+                        _options.OnCircuitHalfOpened?.Invoke(_circuitState);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Exception in OnCircuitHalfOpened callback - circuit breaker state transition will proceed");
+                    }
                 }
             }
 
@@ -118,7 +133,10 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
             }
         }
 
-        await _stateLock.WaitAsync();
+        if (!await _stateLock.WaitAsync(SemaphoreTimeout))
+        {
+            throw new TimeoutException($"Failed to acquire circuit breaker lock within {SemaphoreTimeout.TotalSeconds}s - potential deadlock detected");
+        }
         try
         {
             await RecordSuccessAsync();
@@ -152,7 +170,10 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
             }
         }
 
-        await _stateLock.WaitAsync();
+        if (!await _stateLock.WaitAsync(SemaphoreTimeout))
+        {
+            throw new TimeoutException($"Failed to acquire circuit breaker lock within {SemaphoreTimeout.TotalSeconds}s - potential deadlock detected");
+        }
         try
         {
             await RecordFailureAsync(trigger, exception);
@@ -233,8 +254,15 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
             _consecutiveFailures,
             _options.OpenDuration.TotalMilliseconds);
 
-        // Invoke callback if configured
-        _options.OnCircuitOpened?.Invoke(_circuitState, _consecutiveFailures);
+        // Invoke callback if configured (with exception handling to prevent callback failures from affecting circuit state)
+        try
+        {
+            _options.OnCircuitOpened?.Invoke(_circuitState, _consecutiveFailures);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Exception in OnCircuitOpened callback - circuit breaker state transition will proceed");
+        }
 
         await Task.CompletedTask;
     }
@@ -251,8 +279,15 @@ public class CircuitBreakerComponent<TState, TTrigger>(CircuitBreakerOptions opt
 
         _logger?.LogInformation("Circuit breaker CLOSED after successful recovery");
 
-        // Invoke callback if configured
-        _options.OnCircuitClosed?.Invoke(_circuitState);
+        // Invoke callback if configured (with exception handling to prevent callback failures from affecting circuit state)
+        try
+        {
+            _options.OnCircuitClosed?.Invoke(_circuitState);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Exception in OnCircuitClosed callback - circuit breaker state transition will proceed");
+        }
 
         await Task.CompletedTask;
     }
