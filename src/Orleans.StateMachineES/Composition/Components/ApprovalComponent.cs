@@ -151,8 +151,10 @@ public class ApprovalComponent<TState, TTrigger> : ComposableStateMachineBase<TS
             ConfigureState(stateMachine, _escalatedState,
                 onEntry: () =>
                 {
+                    // Cache DateTime.UtcNow to avoid multiple system calls
+                    var now = DateTime.UtcNow;
                     _logger.LogWarning("Approval escalated in component {ComponentId} after {Duration}",
-                        ComponentId, DateTime.UtcNow - (_submittedAt ?? DateTime.UtcNow));
+                        ComponentId, now - (_submittedAt ?? now));
                 });
         }
     }
@@ -241,10 +243,12 @@ public class ApprovalComponent<TState, TTrigger> : ComposableStateMachineBase<TS
     /// <inheritdoc />
     protected override async Task OnExitAsync(CompositionContext context)
     {
+        // Cache DateTime.UtcNow to avoid multiple system calls
+        var now = DateTime.UtcNow;
         context.SharedData[$"{ComponentId}_ApproverId"] = _approverId ?? string.Empty;
         context.SharedData[$"{ComponentId}_Comments"] = _comments ?? string.Empty;
-        context.SharedData[$"{ComponentId}_Duration"] = 
-            DateTime.UtcNow - (_submittedAt ?? DateTime.UtcNow);
+        context.SharedData[$"{ComponentId}_Duration"] =
+            now - (_submittedAt ?? now);
 
         // Determine outcome based on exit state
         string outcome = "Unknown";

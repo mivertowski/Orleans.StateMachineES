@@ -28,6 +28,12 @@ public class RetryComponent<TState, TTrigger> : ComposableStateMachineBase<TStat
     private int _currentAttempt;
 
     /// <summary>
+    /// Gets the last calculated retry delay. This value is set when entering the retrying state
+    /// and should be used by the grain implementation to schedule the retry trigger externally.
+    /// </summary>
+    public TimeSpan LastCalculatedRetryDelay { get; private set; }
+
+    /// <summary>
     /// Initializes a new instance of the retry component.
     /// </summary>
     public RetryComponent(
@@ -94,15 +100,17 @@ public class RetryComponent<TState, TTrigger> : ComposableStateMachineBase<TStat
             .PermitIf(_fail, _failedState, () => _currentAttempt >= _maxAttempts);
 
         // Configure retrying state
+        // NOTE: OnEntry must be synchronous per Stateless library requirements
+        // Retry delay and trigger firing should be handled externally by the grain implementation
         stateMachine.Configure(_retryingState)
-            .OnEntry(async () =>
+            .OnEntry(() =>
             {
                 var delay = CalculateRetryDelay();
-                _logger.LogInformation("Retrying in {Delay}ms (attempt {CurrentAttempt}/{MaxAttempts})",
+                _logger.LogInformation("Retrying in {Delay}ms (attempt {CurrentAttempt}/{MaxAttempts}) - grain should schedule retry trigger",
                     delay.TotalMilliseconds, _currentAttempt, _maxAttempts);
-                
-                await Task.Delay(delay);
-                stateMachine.Fire(_retry);
+
+                // Store the calculated delay in a property for external access
+                LastCalculatedRetryDelay = delay;
             })
             .Permit(_retry, _attemptingState);
 
@@ -140,11 +148,13 @@ public class RetryComponent<TState, TTrigger> : ComposableStateMachineBase<TStat
 
     /// <summary>
     /// Adds jitter to the retry delay to avoid thundering herd.
+    /// Uses Random.Shared (thread-safe in .NET 6+) for optimal performance.
     /// </summary>
     private static TimeSpan AddJitter(TimeSpan baseDelay)
     {
-        var random = new Random();
-        var jitter = random.Next(0, (int)(baseDelay.TotalMilliseconds * 0.3));
+        // Use Random.Shared instead of creating new Random() instances
+        // Random.Shared is thread-safe and avoids allocation overhead
+        var jitter = Random.Shared.Next(0, (int)(baseDelay.TotalMilliseconds * 0.3));
         return baseDelay.Add(TimeSpan.FromMilliseconds(jitter));
     }
 
