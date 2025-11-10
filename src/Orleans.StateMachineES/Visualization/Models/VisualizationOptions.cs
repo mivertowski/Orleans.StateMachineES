@@ -43,7 +43,7 @@ public class VisualizationOptions
     /// <summary>
     /// Layout direction for the graph.
     /// </summary>
-    public GraphLayout Layout { get; set} = GraphLayout.TopToBottom;
+    public GraphLayout Layout { get; set; } = GraphLayout.TopToBottom;
 }
 
 /// <summary>

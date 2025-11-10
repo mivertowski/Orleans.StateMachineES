@@ -812,12 +812,13 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
     /// </summary>
     protected virtual async Task ReplayEventsAsync()
     {
+        IEnumerable<object>? events = null;
         try
         {
             _logger?.LogDebug("Starting event replay for grain {GrainId}", this.GetPrimaryKeyString());
 
             // Get the events from the journal
-            var events = await RetrieveConfirmedEvents(0, Version);
+            events = await RetrieveConfirmedEvents(0, Version);
 
             if (events != null && events.Any())
             {

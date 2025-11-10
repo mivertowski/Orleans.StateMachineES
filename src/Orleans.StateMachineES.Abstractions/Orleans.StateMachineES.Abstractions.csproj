@@ -6,10 +6,10 @@
         <Nullable>enable</Nullable>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
         <PackageId>Orleans.StateMachineES.Abstractions</PackageId>
-        <Version>1.0.5</Version>
+        <Version>1.0.6</Version>
         <Authors>Michael Ivertowski</Authors>
         <Description>Core abstractions for Orleans StateMachine Event Sourcing library. Contains interfaces and models for building event-sourced state machines in Orleans applications.</Description>
-        <PackageReleaseNotes>Version sync with main package (v1.0.5). No API changes.</PackageReleaseNotes>
+        <PackageReleaseNotes>Version sync with main package (v1.0.6). No API changes.</PackageReleaseNotes>
         <PackageTags>Orleans;StateMachine;EventSourcing;Abstractions;Interfaces</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/mivertowski/Orleans.StateMachineES</RepositoryUrl>
@@ -18,6 +18,7 @@
         <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
         <WarningsAsErrors />
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

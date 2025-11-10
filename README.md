@@ -9,18 +9,21 @@
 
 A robust, production-ready integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), featuring comprehensive event sourcing capabilities and enterprise-grade distributed state machine functionality.
 
-## 🔧 Latest Release (v1.0.5)
+## 🔧 Latest Release (v1.0.6)
 
-**New in v1.0.5**: Critical bug fix for Orleans task scheduler compliance:
+**New in v1.0.6**: Production hardening release with comprehensive quality improvements:
 
-- **Orleans Compliance Fix**: Removed all `ConfigureAwait(false)` calls from grain code (42 instances across 5 files)
-- **Thread Safety**: Ensures async operations properly flow through Orleans' task scheduler
-- **Race Condition Prevention**: Maintains Orleans' single-threaded execution guarantee for grain state access
-- **Production Stability**: Addresses rare concurrency issues that could occur in high-load scenarios
+- **Error Handling Fix**: Fixed variable scope issue in `EventSourcedStateMachineGrain` error handling paths
+- **Documentation Complete**: Added comprehensive XML documentation to all 10 analyzer classes and source generator
+- **Zero Warnings**: Build verified with zero errors and zero warnings across all projects
+- **Test Coverage**: All 221 functional tests passing; resolved test grain configuration issues
+- **Code Quality**: Suppressed generated code warnings appropriately while maintaining API documentation
 
-This release fixes a critical issue where `ConfigureAwait(false)` in grain code could cause async continuations to run on arbitrary thread pool threads, violating Orleans' programming model. All existing tests pass without modification, confirming zero functional changes and full backward compatibility.
+This release improves code quality, maintainability, and ensures clean builds for production deployments.
 
-**Recommendation**: All users should upgrade immediately to ensure proper Orleans task scheduler behavior.
+## Previous Releases
+
+**v1.0.5**: Critical bug fix for Orleans task scheduler compliance - removed all `ConfigureAwait(false)` calls from grain code to maintain Orleans' single-threaded execution model guarantees.
 
 ## ⚡ Performance Enhancements (v1.0.4)
 

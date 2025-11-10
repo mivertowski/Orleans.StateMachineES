@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Orleans.EventSourcing;
 using Orleans.Providers;
 using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.EventSourcing.Configuration;
@@ -7,8 +8,9 @@ using Stateless;
 
 namespace Orleans.StateMachineES.Tests.Integration.TestGrains;
 
+[LogConsistencyProvider(ProviderName = "LogStorage")]
 [StorageProvider(ProviderName = "Default")]
-public class PerformanceTestGrain : 
+public class PerformanceTestGrain :
     EventSourcedStateMachineGrain<PerformanceState, PerformanceTrigger, PerformanceTestState>,
     IPerformanceTestGrain
 {
@@ -77,8 +79,9 @@ public class PerformanceTestState : EventSourcedStateMachineState<PerformanceSta
     [Id(0)] public new int TransitionCount { get; set; }
 }
 
+[LogConsistencyProvider(ProviderName = "LogStorage")]
 [StorageProvider(ProviderName = "Default")]
-public class ResilientWorkflowGrain : 
+public class ResilientWorkflowGrain :
     EventSourcedStateMachineGrain<ResilientState, ResilientTrigger, ResilientWorkflowState>,
     IResilientWorkflowGrain
 {

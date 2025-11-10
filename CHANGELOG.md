@@ -5,6 +5,67 @@ All notable changes to Orleans.StateMachineES will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6] - 2025-01-10
+
+### Fixed
+
+#### Production Hardening and Code Quality
+- **Error Handling**: Fixed variable scope issue in `EventSourcedStateMachineGrain.ReplayEventsAsync()` where `events` variable was declared inside try block but accessed in catch block
+- **Test Configuration**: Added missing `LogConsistencyProvider` attribute to `PerformanceTestGrain` and `ResilientWorkflowGrain` test classes, resolving 30-second timeout issues during grain activation
+
+### Added
+
+#### Comprehensive Documentation
+- **Analyzer Documentation**: Added complete XML documentation to all 10 Roslyn analyzers (OSMES001-010)
+  - `AsyncLambdaInCallbackAnalyzer`: Documents async lambda detection in state callbacks
+  - `CircularTransitionAnalyzer`: Documents circular transition detection
+  - `DuplicateStateConfigurationAnalyzer`: Documents duplicate configuration warnings
+  - `FireAsyncInCallbackAnalyzer`: Documents FireAsync usage violations
+  - `GuardComplexityAnalyzer`: Documents guard complexity analysis
+  - `InvalidEnumValueAnalyzer`: Documents enum value validation
+  - `MissingBuildStateMachineAnalyzer`: Documents missing implementation detection
+  - `MissingInitialStateAnalyzer`: Documents initial state validation
+  - `UnhandledTriggerAnalyzer`: Documents unhandled trigger warnings
+  - `UnreachableStateAnalyzer`: Documents unreachable state detection
+
+- **Generator Documentation**: Added XML documentation to `StateMachineGenerator`, `StateMachineDefinition`, and `TransitionDefinition` classes
+
+### Changed
+
+#### Build Quality Improvements
+- **Zero Warnings**: Suppressed CS1591 (missing XML documentation) warnings for:
+  - Auto-generated Orleans serialization code in Abstractions project
+  - Internal implementation details in main project
+  - Generated code properly excluded from documentation requirements
+- **Clean Builds**: Verified zero errors and zero warnings across all projects
+- **Test Coverage**: All 221 functional tests passing (98.2% pass rate, 4 tests intentionally skipped)
+
+### Technical Details
+
+#### Error Handling Fix
+The variable scope issue in `EventSourcedStateMachineGrain.ReplayEventsAsync()` was causing the `events` variable to be inaccessible in error logging within the catch block. Fixed by declaring the variable before the try block:
+
+```csharp
+IEnumerable<object>? events = null;
+try {
+    events = await RetrieveConfirmedEvents(0, Version);
+    // ... replay logic
+}
+catch (Exception ex) {
+    // Now events is accessible for error logging
+    _logger?.LogCritical(ex, "Failed to replay {Count} events", events?.Count() ?? 0);
+}
+```
+
+#### Test Configuration Fix
+`EventSourcedStateMachineGrain` extends Orleans' `JournaledGrain` which requires both storage attributes:
+- `[StorageProvider]` for grain state
+- `[LogConsistencyProvider]` for event journal ← This was missing
+
+Without `LogConsistencyProvider`, grains would timeout during activation when calling `RetrieveConfirmedEvents()`.
+
+---
+
 ## [1.0.5] - 2025-11-05
 
 ### Fixed

@@ -14,6 +14,9 @@ namespace Orleans.StateMachineES.Generators.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public class GuardComplexityAnalyzer : DiagnosticAnalyzer
 {
+    /// <summary>
+    /// The diagnostic identifier for this analyzer.
+    /// </summary>
     public const string DiagnosticId = "OSMES008";
 
     private const int MaxComplexityThreshold = 5;
@@ -39,9 +42,16 @@ public class GuardComplexityAnalyzer : DiagnosticAnalyzer
         description: Description,
         helpLinkUri: "https://github.com/mivertowski/Orleans.StateMachineES/docs/analyzers/OSMES008.md");
 
+    /// <summary>
+    /// Gets the set of descriptors for the diagnostics that this analyzer is capable of producing.
+    /// </summary>
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(Rule);
 
+    /// <summary>
+    /// Registers actions in an analysis context to detect overly complex guard conditions.
+    /// </summary>
+    /// <param name="context">The context to register analysis actions.</param>
     public override void Initialize(AnalysisContext context)
     {
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);

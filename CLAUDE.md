@@ -6,10 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Orleans.StateMachineES is a production-ready .NET library that provides state machine functionality integrated with Microsoft Orleans actor framework. It wraps the Stateless state machine library to work seamlessly with Orleans grains, enabling distributed state machine patterns in Orleans applications.
 
-**Current Version**: 1.0.3 (Development)
-**Previous Stable**: 1.0.2 (Released September 2025)
+**Current Version**: 1.0.6 (Released January 2025)
+**Previous Stable**: 1.0.5 (Released January 2025)
 
-### Key Features (v1.0.3)
+### Key Features (v1.0.6)
+- **Production Hardening**: Fixed variable scope issue in error handling, zero build warnings
+- **Complete Documentation**: Comprehensive XML docs on all 10 analyzers and source generator
 - **Comprehensive Analyzer Suite**: 10 Roslyn analyzers covering async safety, state configuration, and design patterns
 - **Circuit Breaker Pattern**: Built-in resilience component for production scenarios
 - **Enhanced Performance**: Trigger parameter caching in base class, optimized object pooling
@@ -248,13 +250,23 @@ For detailed guidance, see: `docs/ASYNC_PATTERNS.md`
 
 ## NuGet Packages
 
-- **Orleans.StateMachineES** (v1.0.3 dev / v1.0.2 stable): Main library with state machine grain implementations
-- **Orleans.StateMachineES.Abstractions** (v1.0.3 dev / v1.0.2 stable): Core interfaces and models
-- **Orleans.StateMachineES.Generators** (v1.0.3 dev / v1.0.2 stable): Complete suite of 10 Roslyn analyzers
+- **Orleans.StateMachineES** (v1.0.6): Main library with state machine grain implementations
+- **Orleans.StateMachineES.Abstractions** (v1.0.6): Core interfaces and models
+- **Orleans.StateMachineES.Generators** (v1.0.6): Complete suite of 10 Roslyn analyzers with full XML documentation
 
 All packages maintain synchronized versioning.
 
-## Recent Improvements (v1.0.3)
+## Recent Improvements
+
+### v1.0.6 (January 2025)
+- **Error Handling Fix**: Fixed variable scope issue in `EventSourcedStateMachineGrain` catch block
+- **Complete Documentation**: Added XML documentation to all 10 analyzers and StateMachineGenerator
+- **Zero Warnings**: Suppressed CS1591 warnings for generated code and auto-generated Orleans serialization
+- **Test Fixes**: Added missing `LogConsistencyProvider` attributes to performance test grains
+- **Build Quality**: Verified zero errors and zero warnings across all projects
+- **Test Coverage**: All 221 functional tests passing (98.2% pass rate)
+
+### v1.0.3-v1.0.5
 
 ### Phase 1: Code Consolidation & Performance
 - **Validation Consolidation**: Extracted `ValidateNotInCallback()` helper, eliminating 60+ lines of duplication

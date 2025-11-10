@@ -17,11 +17,19 @@ namespace Orleans.StateMachineES.Generators;
 [Generator]
 public class StateMachineGenerator : ISourceGenerator
 {
+    /// <summary>
+    /// Initializes the generator. Called before Execute during each generation pass.
+    /// </summary>
+    /// <param name="context">The initialization context provided by the compiler.</param>
     public void Initialize(GeneratorInitializationContext context)
     {
         // No initialization required for this generator
     }
 
+    /// <summary>
+    /// Executes the source generator to create typed state machines from YAML/JSON specifications.
+    /// </summary>
+    /// <param name="context">The execution context provided by the compiler.</param>
     public void Execute(GeneratorExecutionContext context)
     {
         // Find all additional files with .statemachine.yaml or .statemachine.json extension
@@ -348,25 +356,78 @@ public class StateMachineGenerator : ISourceGenerator
 }
 
 /// <summary>
-/// Model classes for state machine definition
+/// Represents the complete definition of a state machine parsed from YAML or JSON.
 /// </summary>
 public class StateMachineDefinition
 {
+    /// <summary>
+    /// Gets or sets the name of the state machine class to generate.
+    /// </summary>
     public string Name { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the namespace for the generated state machine class.
+    /// </summary>
     public string? Namespace { get; set; }
+
+    /// <summary>
+    /// Gets or sets the description of the state machine's purpose.
+    /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of all possible states in the state machine.
+    /// </summary>
     public List<string> States { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the list of all possible triggers that can cause state transitions.
+    /// </summary>
     public List<string> Triggers { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the initial state of the state machine.
+    /// </summary>
     public string? InitialState { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of terminal (final) states from which no transitions are possible.
+    /// </summary>
     public List<string>? TerminalStates { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of transitions between states.
+    /// </summary>
     public List<TransitionDefinition>? Transitions { get; set; }
 }
 
+/// <summary>
+/// Represents a single state transition definition in the state machine.
+/// </summary>
 public class TransitionDefinition
 {
+    /// <summary>
+    /// Gets or sets the source state of the transition.
+    /// </summary>
     public string From { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the destination state of the transition.
+    /// </summary>
     public string To { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the trigger that causes this transition.
+    /// </summary>
     public string Trigger { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets the optional guard condition that must be satisfied for the transition to occur.
+    /// </summary>
     public string? Guard { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional action to execute when the transition occurs.
+    /// </summary>
     public string? Action { get; set; }
 }
