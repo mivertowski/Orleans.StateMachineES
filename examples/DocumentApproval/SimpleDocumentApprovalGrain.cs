@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.Timers;
 using Orleans.StateMachineES.Tracing;
 using Stateless;
@@ -7,7 +9,7 @@ namespace Orleans.StateMachineES.Examples.DocumentApproval;
 /// <summary>
 /// Simplified document approval workflow demonstrating hierarchical state machines.
 /// </summary>
-public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<DocumentState, DocumentTrigger>, IDocumentApprovalGrain
+public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<SimpleDocumentApprovalGrain.DocumentState, SimpleDocumentApprovalGrain.DocumentTrigger, DocumentApprovalState>, IDocumentApprovalGrain
 {
     public enum DocumentState
     {
@@ -56,22 +58,13 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
 
         config.Configure(DocumentState.SubmittedForReview)
             .Permit(DocumentTrigger.StartTechnicalReview, DocumentState.TechnicalReview)
-            .OnEntry(async () =>
-            {
-                _logger.LogInformation("Document submitted for review");
-                await FireAsync(DocumentTrigger.StartTechnicalReview);
-            });
+            .OnEntry(() => _logger.LogInformation("Document submitted for review"));
 
         config.Configure(DocumentState.TechnicalReview)
             .Permit(DocumentTrigger.TechnicalApproval, DocumentState.LegalReview)
             .Permit(DocumentTrigger.TechnicalRejection, DocumentState.Rejected)
             .Permit(DocumentTrigger.ReviewTimeout, DocumentState.Rejected)
-            .OnEntry(async () =>
-            {
-                _logger.LogInformation("Technical review started");
-                await SetTimerAsync("ReviewTimeout", TimeSpan.FromDays(7), DocumentTrigger.ReviewTimeout);
-            })
-            .OnExit(() => ClearTimer("ReviewTimeout"));
+            .OnEntry(() => _logger.LogInformation("Technical review started"));
 
         config.Configure(DocumentState.LegalReview)
             .Permit(DocumentTrigger.LegalApproval, DocumentState.ManagerialApproval)
@@ -97,13 +90,19 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
         config.Configure(DocumentState.Archived)
             .OnEntry(() => _logger.LogInformation("Document archived"));
 
-        ConfigureTimers();
         return config;
     }
 
-    private void ConfigureTimers()
+    protected override void ConfigureTimeouts()
     {
-        ConfigureTimer("ReviewTimeout", TimeSpan.FromDays(7), DocumentTrigger.ReviewTimeout);
+        base.ConfigureTimeouts();
+
+        // Configure review timeout for TechnicalReview state
+        RegisterStateTimeout(DocumentState.TechnicalReview,
+            ConfigureTimeout(DocumentState.TechnicalReview)
+                .After(TimeSpan.FromDays(7))
+                .TransitionTo(DocumentTrigger.ReviewTimeout)
+                .Build());
     }
 
     // Public interface methods
@@ -113,11 +112,13 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleDocumentApprovalGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             DocumentTrigger.Submit.ToString(),
             async () =>
             {
                 await FireAsync(DocumentTrigger.Submit);
+                // Automatically start technical review
+                await FireAsync(DocumentTrigger.StartTechnicalReview);
                 return "Document submitted for approval";
             });
     }
@@ -135,11 +136,11 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleDocumentApprovalGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             trigger.ToString(),
             async () =>
             {
-                _logger.LogInformation("Document approved at {Stage} stage by {ReviewerId}: {Comments}", 
+                _logger.LogInformation("Document approved at {Stage} stage by {ReviewerId}: {Comments}",
                     stage, reviewerId, comments);
                 await FireAsync(trigger);
                 return $"Document approved at {stage} stage";
@@ -159,18 +160,18 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleDocumentApprovalGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             trigger.ToString(),
             async () =>
             {
-                _logger.LogInformation("Document rejected at {Stage} stage by {ReviewerId}: {Reason}", 
+                _logger.LogInformation("Document rejected at {Stage} stage by {ReviewerId}: {Reason}",
                     stage, reviewerId, reason);
                 await FireAsync(trigger);
                 return $"Document rejected at {stage} stage";
             });
     }
 
-    public Task<DocumentState> GetCurrentStateAsync() => Task.FromResult(State);
+    public Task<DocumentState> GetCurrentStateAsync() => Task.FromResult(State.CurrentState);
 
     public async Task<List<string>> GetValidActionsAsync()
     {
@@ -183,7 +184,7 @@ public class SimpleDocumentApprovalGrain : TimerEnabledStateMachineGrain<Documen
         return new DocumentStatusInfo
         {
             DocumentId = this.GetPrimaryKeyString(),
-            CurrentState = State,
+            CurrentState = State.CurrentState,
             ValidActions = await GetValidActionsAsync(),
             ReviewHistory = new List<ReviewEvent>
             {
@@ -224,4 +225,10 @@ public class ReviewEvent
     public string EventType { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
     public object? Data { get; set; }
+}
+
+[GenerateSerializer]
+[Alias("Orleans.StateMachineES.Examples.DocumentApproval.DocumentApprovalState")]
+public class DocumentApprovalState : TimerEnabledStateMachineState<SimpleDocumentApprovalGrain.DocumentState>
+{
 }

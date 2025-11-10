@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Orleans.StateMachineES.EventSourcing;
 using Orleans.StateMachineES.Timers;
 using Orleans.StateMachineES.Tracing;
 using Stateless;
@@ -7,7 +9,7 @@ namespace Orleans.StateMachineES.Examples.ECommerceWorkflow;
 /// <summary>
 /// Simplified order processing grain demonstrating core state machine features.
 /// </summary>
-public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderState, OrderTrigger>, IOrderProcessingGrain
+public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<SimpleOrderProcessingGrain.OrderState, SimpleOrderProcessingGrain.OrderTrigger, OrderProcessingState>, IOrderProcessingGrain
 {
     public enum OrderState
     {
@@ -53,12 +55,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
             .Permit(OrderTrigger.ProcessPayment, OrderState.PaymentProcessing)
             .Permit(OrderTrigger.CancelOrder, OrderState.Cancelled)
             .Permit(OrderTrigger.PaymentTimeout, OrderState.Cancelled)
-            .OnEntry(async () =>
-            {
-                _logger.LogInformation("Order pending payment");
-                await SetTimerAsync("PaymentTimeout", TimeSpan.FromMinutes(15), OrderTrigger.PaymentTimeout);
-            })
-            .OnExit(() => ClearTimer("PaymentTimeout"));
+            .OnEntry(() => _logger.LogInformation("Order pending payment"));
 
         config.Configure(OrderState.PaymentProcessing)
             .Permit(OrderTrigger.PaymentSucceeded, OrderState.PaymentConfirmed)
@@ -83,13 +80,19 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         config.Configure(OrderState.Cancelled)
             .OnEntry(() => _logger.LogInformation("Order cancelled"));
 
-        ConfigureTimers();
         return config;
     }
 
-    private void ConfigureTimers()
+    protected override void ConfigureTimeouts()
     {
-        ConfigureTimer("PaymentTimeout", TimeSpan.FromMinutes(15), OrderTrigger.PaymentTimeout);
+        base.ConfigureTimeouts();
+
+        // Configure payment timeout for PendingPayment state
+        RegisterStateTimeout(OrderState.PendingPayment,
+            ConfigureTimeout(OrderState.PendingPayment)
+                .After(TimeSpan.FromMinutes(15))
+                .TransitionTo(OrderTrigger.PaymentTimeout)
+                .Build());
     }
 
     // Public interface methods
@@ -99,7 +102,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleOrderProcessingGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             OrderTrigger.SubmitOrder.ToString(),
             async () =>
             {
@@ -113,7 +116,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleOrderProcessingGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             OrderTrigger.ProcessPayment.ToString(),
             async () =>
             {
@@ -130,7 +133,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleOrderProcessingGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             OrderTrigger.Ship.ToString(),
             async () =>
             {
@@ -144,7 +147,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleOrderProcessingGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             OrderTrigger.MarkDelivered.ToString(),
             async () =>
             {
@@ -158,7 +161,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return await TracingHelper.TraceStateTransition(
             nameof(SimpleOrderProcessingGrain),
             this.GetPrimaryKeyString(),
-            State.ToString(),
+            State.CurrentState.ToString(),
             OrderTrigger.CancelOrder.ToString(),
             async () =>
             {
@@ -167,7 +170,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
             });
     }
 
-    public Task<OrderState> GetCurrentStateAsync() => Task.FromResult(State);
+    public Task<OrderState> GetCurrentStateAsync() => Task.FromResult(State.CurrentState);
 
     public async Task<List<string>> GetValidTransitionsAsync()
     {
@@ -180,7 +183,7 @@ public class SimpleOrderProcessingGrain : TimerEnabledStateMachineGrain<OrderSta
         return new OrderStatusInfo
         {
             OrderId = this.GetPrimaryKeyString(),
-            CurrentState = State,
+            CurrentState = State.CurrentState,
             ValidTransitions = await GetValidTransitionsAsync(),
             EventHistory = new List<string> { "Order created" },
             LastUpdated = DateTime.UtcNow
@@ -218,4 +221,10 @@ public class OrderStatusInfo
     public List<string> ValidTransitions { get; set; } = new();
     public List<string> EventHistory { get; set; } = new();
     public DateTime LastUpdated { get; set; }
+}
+
+[GenerateSerializer]
+[Alias("Orleans.StateMachineES.Examples.ECommerceWorkflow.OrderProcessingState")]
+public class OrderProcessingState : TimerEnabledStateMachineState<SimpleOrderProcessingGrain.OrderState>
+{
 }
