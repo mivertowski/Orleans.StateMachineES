@@ -727,9 +727,16 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                     _logger?.LogWarning("Could not copy state machine configuration using reflection, using workaround");
 
                     // Fallback: rebuild from scratch and use ForceStateAsync
+                    // Fire-and-forget with continuation to log errors
                     var currentState = machine.State;
                     StateMachine = BuildStateMachine();
-                    _ = ForceStateAsync(currentState);
+                    _ = ForceStateAsync(currentState).ContinueWith(task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            _logger?.LogError(task.Exception, "Failed to force state during configuration fallback");
+                        }
+                    }, TaskScheduler.Default);
                 }
             }
             else
@@ -737,19 +744,33 @@ public abstract class EventSourcedStateMachineGrain<TState, TTrigger, TGrainStat
                 _logger?.LogWarning("Could not access state machine configuration field, using workaround");
 
                 // Fallback: rebuild from scratch and use ForceStateAsync
+                // Fire-and-forget with continuation to log errors
                 var currentState = machine.State;
                 StateMachine = BuildStateMachine();
-                _ = ForceStateAsync(currentState);
+                _ = ForceStateAsync(currentState).ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        _logger?.LogError(task.Exception, "Failed to force state during configuration fallback");
+                    }
+                }, TaskScheduler.Default);
             }
         }
         catch (Exception ex)
         {
             _logger?.LogError(ex, "Failed to apply configuration to state machine, falling back to rebuild");
-            
+
             // Fallback: rebuild from scratch
+            // Fire-and-forget with continuation to log errors
             var currentState = machine.State;
             StateMachine = BuildStateMachine();
-            _ = ForceStateAsync(currentState);
+            _ = ForceStateAsync(currentState).ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                {
+                    _logger?.LogError(task.Exception, "Failed to force state during exception fallback");
+                }
+            }, TaskScheduler.Default);
         }
     }
 
