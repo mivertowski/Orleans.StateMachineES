@@ -55,21 +55,33 @@ public sealed class StringInternPool
         if (_pool.TryGetValue(value, out var interned))
             return interned;
 
-        // Check if we should add to pool
-        if (_currentSize >= _maxSize)
+        // Atomically reserve a slot in the pool before adding
+        // This prevents the race condition where multiple threads check _currentSize
+        // and all decide to add, exceeding _maxSize
+        int currentSize;
+        int newSize;
+        do
         {
-            // Pool is full, return original string
-            return value;
+            currentSize = _currentSize;
+            if (currentSize >= _maxSize)
+            {
+                // Pool is full, return original string without caching
+                return value;
+            }
+            newSize = currentSize + 1;
+        }
+        while (Interlocked.CompareExchange(ref _currentSize, newSize, currentSize) != currentSize);
+
+        // We've atomically reserved a slot, now try to add to the pool
+        // If TryAdd fails (another thread added the same string), we need to decrement
+        if (!_pool.TryAdd(value, value))
+        {
+            // Another thread added this string first, decrement our reservation
+            Interlocked.Decrement(ref _currentSize);
         }
 
-        // Try to add to pool
-        var added = _pool.TryAdd(value, value);
-        if (added)
-        {
-            System.Threading.Interlocked.Increment(ref _currentSize);
-        }
-
-        return value;
+        // Return the value (either our added copy or the one from another thread)
+        return _pool.TryGetValue(value, out interned) ? interned : value;
     }
 
     /// <summary>
