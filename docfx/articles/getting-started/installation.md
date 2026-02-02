@@ -44,8 +44,8 @@ Add to your `.csproj` file:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="Orleans.StateMachineES" Version="1.0.4" />
-  <PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.4" />
+  <PackageReference Include="Orleans.StateMachineES" Version="1.1.0" />
+  <PackageReference Include="Orleans.StateMachineES.Generators" Version="1.1.0" />
 </ItemGroup>
 ```
 
@@ -69,8 +69,8 @@ You should see:
 Project 'YourProject' has the following package references
    [net9.0]:
    Top-level Package                           Requested   Resolved
-   > Orleans.StateMachineES                    1.0.4       1.0.4
-   > Orleans.StateMachineES.Generators         1.0.4       1.0.4
+   > Orleans.StateMachineES                    1.1.0       1.1.0
+   > Orleans.StateMachineES.Generators         1.1.0       1.1.0
 ```
 
 ## Analyzer Configuration

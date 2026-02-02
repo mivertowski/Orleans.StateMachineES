@@ -225,13 +225,15 @@ Browse the complete API documentation for all packages:
 
 ## Version Information
 
-**Current Version**: 1.0.4 (Released November 2025)
+**Current Version**: 1.1.0 (Released February 2025)
 
 **Latest Improvements**:
-- Event sourcing performance: 30.4% faster with AutoConfirmEvents
-- Enhanced production resilience components
-- Comprehensive analyzer suite (10 analyzers)
-- Performance optimizations across the board
+- **Rate Limiting**: Token bucket algorithm with burst capacity and wait support
+- **Batch Operations**: Parallel execution API with retry and progress tracking
+- **Event Schema Evolution**: Automatic event upcasting with version chains
+- **Persistence Abstraction**: Provider-agnostic IEventStore/ISnapshotStore interfaces
+- **State Machine Templates**: Reusable patterns for approval, order, retry workflows
+- **State History Queries**: Fluent API for temporal queries with analytics
 
 [View Changelog](https://github.com/mivertowski/Orleans.StateMachineES/blob/main/CHANGELOG.md) | [Migration Guide](articles/reference/migration-guide.md)
 

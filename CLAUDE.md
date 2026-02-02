@@ -6,18 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Orleans.StateMachineES is a production-ready .NET library that provides state machine functionality integrated with Microsoft Orleans actor framework. It wraps the Stateless state machine library to work seamlessly with Orleans grains, enabling distributed state machine patterns in Orleans applications.
 
-**Current Version**: 1.0.6 (Released January 2025)
-**Previous Stable**: 1.0.5 (Released January 2025)
+**Current Version**: 1.1.0 (Released February 2025)
+**Previous Stable**: 1.0.6 (Released January 2025)
 
-### Key Features (v1.0.6)
-- **Production Hardening**: Fixed variable scope issue in error handling, zero build warnings
-- **Complete Documentation**: Comprehensive XML docs on all 10 analyzers and source generator
+### Key Features (v1.1.0)
+- **Rate Limiting**: Token bucket algorithm with configurable burst capacity and wait support
+- **Batch Operations**: Parallel execution API with retry support and progress tracking
+- **Event Schema Evolution**: Automatic event upcasting with version chain discovery
+- **Persistence Abstraction**: Provider-agnostic IEventStore, ISnapshotStore, IStateMachinePersistence
+- **State Machine Templates**: Reusable patterns for approval, order processing, and retry workflows
+- **State History Queries**: Fluent API for temporal queries with analytics and aggregations
 - **Comprehensive Analyzer Suite**: 10 Roslyn analyzers covering async safety, state configuration, and design patterns
 - **Circuit Breaker Pattern**: Built-in resilience component for production scenarios
 - **Enhanced Performance**: Trigger parameter caching in base class, optimized object pooling
-- **Code Quality**: Consolidated validation logic, thread-safe concurrency patterns
-- **Compile-time Safety**: Complete coverage of state machine anti-patterns
-- **Runtime Validation**: Prevents dangerous operations like FireAsync within callbacks
 - **Event Sourcing**: Complete state history and replay capabilities
 
 ## Build and Development Commands
@@ -250,35 +251,41 @@ For detailed guidance, see: `docs/ASYNC_PATTERNS.md`
 
 ## NuGet Packages
 
-- **Orleans.StateMachineES** (v1.0.6): Main library with state machine grain implementations
-- **Orleans.StateMachineES.Abstractions** (v1.0.6): Core interfaces and models
-- **Orleans.StateMachineES.Generators** (v1.0.6): Complete suite of 10 Roslyn analyzers with full XML documentation
+- **Orleans.StateMachineES** (v1.1.0): Main library with state machine grain implementations
+- **Orleans.StateMachineES.Abstractions** (v1.1.0): Core interfaces and models
+- **Orleans.StateMachineES.Generators** (v1.1.0): Complete suite of 10 Roslyn analyzers with full XML documentation
 
 All packages maintain synchronized versioning.
 
 ## Recent Improvements
+
+### v1.1.0 (February 2025)
+
+#### Production Enhancement Suite
+- **Rate Limiting Component**: Token bucket algorithm with burst capacity, sliding/fixed window support
+- **Batch Operations API**: Parallel execution with configurable parallelism and retry support
+- **Event Schema Evolution**: Event upcasting with version chains and BFS path finding
+- **Persistence Abstraction**: Provider-agnostic IEventStore, ISnapshotStore with in-memory implementation
+- **State Machine Templates**: ApprovalWorkflow, OrderProcessing, RetryableOperation patterns
+- **State History Queries**: Fluent API for temporal queries with GroupByState/Trigger/Time analytics
+
+#### New Components
+- `RateLimiterComponent<TState, TTrigger>` - Production-ready rate limiting
+- `BatchStateMachineService` - Parallel batch execution service
+- `EventUpcastRegistry` - Event version migration management
+- `IStateMachinePersistence<TState, TTrigger>` - Combined persistence interface
+- `StateHistoryQueryBuilder<TState, TTrigger>` - Fluent query API
+
+**Total Impact**: +9,455 lines added across 39 files
 
 ### v1.0.6 (January 2025)
 - **Error Handling Fix**: Fixed variable scope issue in `EventSourcedStateMachineGrain` catch block
 - **Complete Documentation**: Added XML documentation to all 10 analyzers and StateMachineGenerator
 - **Zero Warnings**: Suppressed CS1591 warnings for generated code and auto-generated Orleans serialization
 - **Test Fixes**: Added missing `LogConsistencyProvider` attributes to performance test grains
-- **Build Quality**: Verified zero errors and zero warnings across all projects
-- **Test Coverage**: All 221 functional tests passing (98.2% pass rate)
 
 ### v1.0.3-v1.0.5
-
-### Phase 1: Code Consolidation & Performance
-- **Validation Consolidation**: Extracted `ValidateNotInCallback()` helper, eliminating 60+ lines of duplication
-- **ObjectPool Fix**: Fixed race condition using CompareExchange loop for atomic slot reservation
-- **TriggerParameterCache**: New high-performance cache component with ~100x speedup
-- **Base Class Enhancement**: Moved trigger caching to StateMachineGrain base class for universal performance benefits
-- **Analyzer Infrastructure**: Created AnalyzerHelpers utility with 15+ shared methods
-
-### Phase 2: Advanced Analyzers & Resilience
-- **Five New Analyzers**: Added OSMES006-010 for comprehensive compile-time safety
 - **Circuit Breaker**: Production-ready CircuitBreakerComponent with three-state pattern
-- **Complete Coverage**: 10 analyzers covering async safety, state configuration, and design quality
-- **Enhanced Diagnostics**: Detailed error messages with actionable guidance
-
-**Total Impact**: +1,784 lines added, -206 lines removed across 13 files
+- **TriggerParameterCache**: ~100x performance improvement for parameterized triggers
+- **ObjectPool Fix**: Fixed race condition using CompareExchange loop
+- **10 Roslyn Analyzers**: Complete compile-time safety coverage
