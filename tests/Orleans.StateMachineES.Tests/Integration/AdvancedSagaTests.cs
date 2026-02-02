@@ -188,23 +188,23 @@ public class AdvancedSagaTests(TestClusterApplication testApp, ITestOutputHelper
     }
 
     [Fact]
-    public async Task SagaWorkflowBuilder_FluentAPIConstruction_ShouldBuildCorrectWorkflow()
+    public void SagaWorkflowBuilder_FluentAPIConstruction_ShouldBuildCorrectWorkflow()
     {
         var builder = new SagaWorkflowBuilder<TestSagaData>();
 
         // Build a complex workflow using fluent API
         builder
-            .AddStep("init", async (data, context) => 
+            .AddStep("init", (data, context) =>
             {
                 data.ExecutionLog.Add($"Initialized at {DateTime.UtcNow:HH:mm:ss.fff}");
-                return SagaStepResult.Success("Initialization complete");
+                return Task.FromResult(SagaStepResult.Success("Initialization complete"));
             })
             .And()
             .AddStep("validate")
-            .WithExecution(async (data, context) =>
+            .WithExecution((data, context) =>
             {
                 data.ExecutionLog.Add($"Validated at {DateTime.UtcNow:HH:mm:ss.fff}");
-                return SagaStepResult.Success("Validation complete");
+                return Task.FromResult(SagaStepResult.Success("Validation complete"));
             })
             .DependsOn("init")
             .And()
@@ -221,10 +221,10 @@ public class AdvancedSagaTests(TestClusterApplication testApp, ITestOutputHelper
                 data.ExecutionLog.Add($"Process B completed at {DateTime.UtcNow:HH:mm:ss.fff}");
                 return SagaStepResult.Success("Process B complete");
             })
-            .ThenJoin("finalize", new InlineSagaStep<TestSagaData>("finalize", async (data, context) =>
+            .ThenJoin("finalize", new InlineSagaStep<TestSagaData>("finalize", (data, context) =>
             {
                 data.ExecutionLog.Add($"Finalized at {DateTime.UtcNow:HH:mm:ss.fff}");
-                return SagaStepResult.Success("Finalization complete");
+                return Task.FromResult(SagaStepResult.Success("Finalization complete"));
             }));
 
         var configuration = builder.GetConfiguration();
@@ -254,30 +254,30 @@ public class AdvancedSagaTests(TestClusterApplication testApp, ITestOutputHelper
     }
 
     [Fact]
-    public async Task SagaExecutionGraph_GraphAnalysis_ShouldProvideCorrectStatistics()
+    public void SagaExecutionGraph_GraphAnalysis_ShouldProvideCorrectStatistics()
     {
         var builder = new SagaWorkflowBuilder<TestSagaData>();
 
         // Create a complex graph for analysis
         builder
-            .AddStep("start", async (data, context) => SagaStepResult.Success())
+            .AddStep("start", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .And()
-            .AddStep("branch1", async (data, context) => SagaStepResult.Success())
+            .AddStep("branch1", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("start")
             .And()
-            .AddStep("branch2", async (data, context) => SagaStepResult.Success())
+            .AddStep("branch2", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("start")
             .And()
-            .AddStep("branch3", async (data, context) => SagaStepResult.Success())
+            .AddStep("branch3", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("start")
             .And()
-            .AddStep("merge1", async (data, context) => SagaStepResult.Success())
+            .AddStep("merge1", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("branch1", "branch2")
             .And()
-            .AddStep("merge2", async (data, context) => SagaStepResult.Success())
+            .AddStep("merge2", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("branch2", "branch3")
             .And()
-            .AddStep("final", async (data, context) => SagaStepResult.Success())
+            .AddStep("final", (data, context) => Task.FromResult(SagaStepResult.Success()))
             .DependsOn("merge1", "merge2");
 
         var configuration = builder.GetConfiguration();

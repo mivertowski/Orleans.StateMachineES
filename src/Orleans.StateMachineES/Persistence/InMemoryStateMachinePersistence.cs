@@ -188,13 +188,15 @@ public class InMemoryStateMachinePersistence<TState, TTrigger> : IStateMachinePe
         var eventsList = events.ToList();
 
         // Calculate current state
-        TState? currentState = snapshot?.State;
+        var hasState = snapshot != null;
+        TState currentState = snapshot != null ? snapshot.State : default!;
         DateTime? lastTimestamp = snapshot?.CreatedAt;
 
         foreach (var evt in eventsList)
         {
             currentState = evt.ToState;
             lastTimestamp = evt.Timestamp;
+            hasState = true;
         }
 
         stopwatch.Stop();
@@ -202,7 +204,7 @@ public class InMemoryStateMachinePersistence<TState, TTrigger> : IStateMachinePe
         return new LoadedState<TState, TTrigger>
         {
             CurrentState = currentState,
-            Version = (snapshot?.Version ?? -1) + eventsList.Count,
+            Version = (snapshot?.Version ?? 0) + eventsList.Count,
             LoadedFromSnapshot = snapshot != null,
             SnapshotVersion = snapshot?.Version,
             EventsReplayedCount = eventsList.Count,
@@ -280,13 +282,15 @@ public class InMemoryStateMachinePersistence<TState, TTrigger> : IStateMachinePe
         }
 
         // Calculate state at version
-        TState? currentState = snapshot?.State;
+        var hasState = snapshot != null;
+        TState currentState = snapshot != null ? snapshot.State : default!;
         DateTime? lastTimestamp = snapshot?.CreatedAt;
 
         foreach (var evt in eventsList)
         {
             currentState = evt.ToState;
             lastTimestamp = evt.Timestamp;
+            hasState = true;
         }
 
         stopwatch.Stop();
@@ -294,7 +298,7 @@ public class InMemoryStateMachinePersistence<TState, TTrigger> : IStateMachinePe
         return new LoadedState<TState, TTrigger>
         {
             CurrentState = currentState,
-            Version = (snapshot?.Version ?? -1) + eventsList.Count,
+            Version = (snapshot?.Version ?? 0) + eventsList.Count,
             LoadedFromSnapshot = snapshot != null,
             SnapshotVersion = snapshot?.Version,
             EventsReplayedCount = eventsList.Count,

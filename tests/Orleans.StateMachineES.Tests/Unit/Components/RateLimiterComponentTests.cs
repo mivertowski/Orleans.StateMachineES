@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Orleans.StateMachineES.Composition.Components;
 using Stateless;
+using Xunit;
 
 namespace Orleans.StateMachineES.Tests.Unit.Components;
 
@@ -15,7 +16,7 @@ public class RateLimiterComponentTests
         machine.Configure(TestState.Idle)
             .Permit(TestTrigger.Start, TestState.Processing);
         machine.Configure(TestState.Processing)
-            .Permit(TestTrigger.Process, TestState.Processing)
+            .PermitReentry(TestTrigger.Process)
             .Permit(TestTrigger.Complete, TestState.Completed);
         return machine;
     }
@@ -47,7 +48,7 @@ public class RateLimiterComponentTests
         // Arrange
         var options = new RateLimiterOptions
         {
-            TokensPerInterval = 5,
+            TokensPerInterval = 3,
             BurstCapacity = 3,
             ThrowWhenExceeded = false
         };
@@ -75,7 +76,7 @@ public class RateLimiterComponentTests
         // Arrange
         var options = new RateLimiterOptions
         {
-            TokensPerInterval = 5,
+            TokensPerInterval = 2,
             BurstCapacity = 2,
             ThrowWhenExceeded = true
         };
@@ -101,7 +102,7 @@ public class RateLimiterComponentTests
         // Arrange
         var options = new RateLimiterOptions
         {
-            TokensPerInterval = 5,
+            TokensPerInterval = 1,
             BurstCapacity = 1,
             ThrowWhenExceeded = true,
             MonitoredTriggers = new object[] { TestTrigger.Process }
@@ -126,7 +127,7 @@ public class RateLimiterComponentTests
         // Arrange
         var options = new RateLimiterOptions
         {
-            TokensPerInterval = 100,
+            TokensPerInterval = 5,
             BurstCapacity = 5,
             RefillInterval = TimeSpan.FromMilliseconds(100),
             UseSlidingWindow = true
@@ -177,7 +178,7 @@ public class RateLimiterComponentTests
     }
 
     [Fact]
-    public void Reset_ShouldRestoreFullCapacity()
+    public async Task Reset_ShouldRestoreFullCapacity()
     {
         // Arrange
         var options = new RateLimiterOptions
@@ -191,7 +192,7 @@ public class RateLimiterComponentTests
         // Consume some tokens
         for (int i = 0; i < 50; i++)
         {
-            rateLimiter.TryAcquireAsync(TestTrigger.Process, stateMachine).GetAwaiter().GetResult();
+            await rateLimiter.TryAcquireAsync(TestTrigger.Process, stateMachine);
         }
         rateLimiter.AvailableTokens.Should().Be(50);
 
@@ -203,7 +204,7 @@ public class RateLimiterComponentTests
     }
 
     [Fact]
-    public void GetStatistics_ShouldReturnAccurateStats()
+    public async Task GetStatistics_ShouldReturnAccurateStats()
     {
         // Arrange
         var options = new RateLimiterOptions
@@ -218,7 +219,7 @@ public class RateLimiterComponentTests
         // Perform some operations
         for (int i = 0; i < 5; i++)
         {
-            rateLimiter.TryAcquireAsync(TestTrigger.Process, stateMachine).GetAwaiter().GetResult();
+            await rateLimiter.TryAcquireAsync(TestTrigger.Process, stateMachine);
         }
 
         // Act
@@ -246,7 +247,7 @@ public class RateLimiterComponentTests
 
         var options = new RateLimiterOptions
         {
-            TokensPerInterval = 5,
+            TokensPerInterval = 1,
             BurstCapacity = 1,
             ThrowWhenExceeded = false,
             OnTokensAcquired = (trigger, remaining) =>

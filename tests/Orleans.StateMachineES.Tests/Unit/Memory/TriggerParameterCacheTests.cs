@@ -191,7 +191,7 @@ public class TriggerParameterCacheTests
     }
 
     [Fact]
-    public void GetOrCreate_MultipleThreads_ShouldBeThreadSafe()
+    public async Task GetOrCreate_MultipleThreads_ShouldBeThreadSafe()
     {
         // Arrange
         var stateMachine = new StateMachine<TestState, TestTrigger>(TestState.Idle);
@@ -222,7 +222,7 @@ public class TriggerParameterCacheTests
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll([.. tasks]);
+        await System.Threading.Tasks.Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty();

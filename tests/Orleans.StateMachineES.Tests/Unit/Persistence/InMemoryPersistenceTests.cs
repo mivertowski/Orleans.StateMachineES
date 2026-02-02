@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Orleans.StateMachineES.Persistence;
+using Xunit;
 
 namespace Orleans.StateMachineES.Tests.Unit.Persistence;
 

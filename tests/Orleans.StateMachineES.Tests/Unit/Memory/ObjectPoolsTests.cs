@@ -331,7 +331,7 @@ public class ObjectPoolsTests
     }
 
     [Fact]
-    public void ObjectPool_ConcurrentAccess_ShouldBeThreadSafe()
+    public async Task ObjectPool_ConcurrentAccess_ShouldBeThreadSafe()
     {
         // Arrange
         var pool = new ObjectPool<List<int>>(() => [], list => list.Clear());
@@ -362,7 +362,7 @@ public class ObjectPoolsTests
             }));
         }
 
-        System.Threading.Tasks.Task.WaitAll([.. tasks]);
+        await System.Threading.Tasks.Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty();

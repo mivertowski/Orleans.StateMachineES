@@ -71,18 +71,18 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
         await Task.CompletedTask;
     }
 
-    public async Task<OrleansStateMachineInfo> GetStateMachineInfoAsync()
+    public Task<OrleansStateMachineInfo> GetStateMachineInfoAsync()
     {
         // Use the actual StateMachine to get StateMachineInfo
         var stateMachineInfo = StateMachine.GetInfo();
-        
+
         // Create OrleansStateMachineInfo from the Stateless StateMachineInfo
         var info = new OrleansStateMachineInfo(stateMachineInfo);
 
-        return info;
+        return Task.FromResult(info);
     }
 
-    public async Task<EnhancedStateMachineConfiguration<WorkflowState, WorkflowTrigger>> GetDetailedConfigurationAsync()
+    public Task<EnhancedStateMachineConfiguration<WorkflowState, WorkflowTrigger>> GetDetailedConfigurationAsync()
     {
         var config = new EnhancedStateMachineConfiguration<WorkflowState, WorkflowTrigger>
         {
@@ -133,7 +133,7 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
             {
                 config.TransitionMap[key] = [];
             }
-            
+
             config.TransitionMap[key].Add(new EnhancedTransitionConfiguration<WorkflowState, WorkflowTrigger>
             {
                 SourceState = from,
@@ -146,7 +146,7 @@ public class IntrospectableWorkflowGrain : StateMachineGrain<WorkflowState, Work
             });
         }
 
-        return config;
+        return Task.FromResult(config);
     }
 
     public async Task<string> GetDotGraphAsync()

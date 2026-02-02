@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Orleans.StateMachineES.Batch;
+using Xunit;
 
 namespace Orleans.StateMachineES.Tests.Unit.Batch;
 

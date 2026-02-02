@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Orleans.StateMachineES.EventSourcing.Evolution;
+using Xunit;
 
 namespace Orleans.StateMachineES.Tests.Unit.Evolution;
 

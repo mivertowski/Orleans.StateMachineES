@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Orleans.StateMachineES.Persistence;
 using Orleans.StateMachineES.Queries;
+using Xunit;
 
 namespace Orleans.StateMachineES.Tests.Unit.Queries;
 
@@ -26,15 +27,17 @@ public class StateHistoryQueryTests
 
     private readonly InMemoryStateMachinePersistence<TestState, TestTrigger> _persistence;
     private readonly string _streamId = "test-stream";
+    private readonly DateTime _baseTime;
 
     public StateHistoryQueryTests()
     {
         _persistence = new InMemoryStateMachinePersistence<TestState, TestTrigger>();
+        _baseTime = DateTime.UtcNow.AddDays(-7);
     }
 
     private async Task SeedEventsAsync()
     {
-        var baseTime = DateTime.UtcNow.AddDays(-7);
+        var baseTime = _baseTime;
         var events = new List<StoredEvent<TestState, TestTrigger>>
         {
             new(_streamId, 0, TestState.Initial, TestState.Processing, TestTrigger.Start, baseTime,
@@ -162,11 +165,10 @@ public class StateHistoryQueryTests
     {
         // Arrange
         await SeedEventsAsync();
-        var baseTime = DateTime.UtcNow.AddDays(-7);
 
         // Act
         var result = await _persistence.Query(_streamId)
-            .InTimeRange(baseTime, baseTime.AddDays(1))
+            .InTimeRange(_baseTime, _baseTime.AddDays(1))
             .ExecuteAsync();
 
         // Assert
@@ -178,7 +180,8 @@ public class StateHistoryQueryTests
     {
         // Arrange
         await SeedEventsAsync();
-        var afterTime = DateTime.UtcNow.AddDays(-5);
+        // Use _baseTime + 2 days (equals now - 5 days when _baseTime = now - 7 days)
+        var afterTime = _baseTime.AddDays(2);
 
         // Act
         var result = await _persistence.Query(_streamId)
@@ -186,7 +189,9 @@ public class StateHistoryQueryTests
             .ExecuteAsync();
 
         // Assert
-        result.Should().HaveCount(3);
+        // After uses > (strictly after), so events at exactly _baseTime + 2 days are excluded
+        // Events 6 (_baseTime + 3d) and 7 (_baseTime + 4d) are included
+        result.Should().HaveCount(2);
     }
 
     [Fact]
@@ -194,7 +199,8 @@ public class StateHistoryQueryTests
     {
         // Arrange
         await SeedEventsAsync();
-        var beforeTime = DateTime.UtcNow.AddDays(-5);
+        // Use _baseTime + 2 days (equals now - 5 days when _baseTime = now - 7 days)
+        var beforeTime = _baseTime.AddDays(2);
 
         // Act
         var result = await _persistence.Query(_streamId)
@@ -202,6 +208,7 @@ public class StateHistoryQueryTests
             .ExecuteAsync();
 
         // Assert
+        // Events 0-4 are before _baseTime + 2 days (events 0,1,2,3,4 = 5 events)
         result.Should().HaveCount(5);
     }
 
@@ -476,7 +483,9 @@ public class StateHistoryQueryTests
             .ExecuteAsync();
 
         // Assert
-        result.Should().HaveCount(4); // Events from last 5 days
+        // LastDays(5) uses After(now - 5 days) which means > (strictly after)
+        // Events 6 (-4 days) and 7 (-3 days) are included
+        result.Should().HaveCount(2);
     }
 
     #endregion
@@ -488,13 +497,12 @@ public class StateHistoryQueryTests
     {
         // Arrange
         await SeedEventsAsync();
-        var baseTime = DateTime.UtcNow.AddDays(-7);
 
         // Act
         var result = await _persistence.Query(_streamId)
             .FromState(TestState.Processing)
             .WithTrigger(TestTrigger.Complete)
-            .InTimeRange(baseTime, baseTime.AddDays(2))
+            .InTimeRange(_baseTime, _baseTime.AddDays(2))
             .ExecuteAsync();
 
         // Assert

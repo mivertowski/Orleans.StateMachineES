@@ -283,7 +283,7 @@ public class StringInternPoolTests
     }
 
     [Fact]
-    public void Intern_ConcurrentAccess_ShouldBeThreadSafe()
+    public async Task Intern_ConcurrentAccess_ShouldBeThreadSafe()
     {
         // Arrange
         var pool = new StringInternPool(1000);
@@ -312,11 +312,11 @@ public class StringInternPoolTests
             });
         }
 
-        System.Threading.Tasks.Task.WaitAll(tasks);
+        await System.Threading.Tasks.Task.WhenAll(tasks);
 
         // Assert
         exceptions.Should().BeEmpty();
-        
+
         // Verify that same strings return same instances
         var string0Instances = results.Where(r => r == "string0").ToList();
         string0Instances.Should().NotBeEmpty();

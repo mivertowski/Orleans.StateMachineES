@@ -131,23 +131,23 @@ public class TestParallelSagaGrain : ParallelSagaOrchestrator<TestSagaData>, ITe
         // Configure workflow with conditional steps
         var builder = new SagaWorkflowBuilder<TestSagaData>();
 
-        builder.AddStep("always", async (data, context) =>
+        builder.AddStep("always", (data, context) =>
         {
             data.ExecutionLog.Add($"Always step executed at {DateTime.UtcNow:HH:mm:ss.fff}");
-            return SagaStepResult.Success("Always step completed");
+            return Task.FromResult(SagaStepResult.Success("Always step completed"));
         })
         .And()
-        .AddStep("conditional", async (data, context) =>
+        .AddStep("conditional", (data, context) =>
         {
             data.ExecutionLog.Add($"Conditional step executed at {DateTime.UtcNow:HH:mm:ss.fff}");
-            return SagaStepResult.Success("Conditional step completed");
+            return Task.FromResult(SagaStepResult.Success("Conditional step completed"));
         })
         .WithCondition(context => Task.FromResult(!context.SagaData.SkipConditionalSteps))
         .And()
-        .AddStep("never", async (data, context) =>
+        .AddStep("never", (data, context) =>
         {
             data.ExecutionLog.Add($"Never step executed at {DateTime.UtcNow:HH:mm:ss.fff}");
-            return SagaStepResult.Success("Never step completed");
+            return Task.FromResult(SagaStepResult.Success("Never step completed"));
         })
         .WithCondition(context => Task.FromResult(false)); // Always false
 

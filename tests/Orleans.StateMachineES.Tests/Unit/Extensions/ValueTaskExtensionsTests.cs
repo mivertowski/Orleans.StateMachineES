@@ -7,7 +7,7 @@ namespace Orleans.StateMachineES.Tests.Unit.Extensions;
 public class ValueTaskExtensionsTests
 {
     [Fact]
-    public void FromResult_ShouldCreateValueTaskWithValue()
+    public async Task FromResult_ShouldCreateValueTaskWithValue()
     {
         // Arrange
         var value = "test value";
@@ -17,18 +17,18 @@ public class ValueTaskExtensionsTests
 
         // Assert
         valueTask.IsCompletedSuccessfully.Should().BeTrue();
-        valueTask.Result.Should().Be(value);
+        (await valueTask).Should().Be(value);
     }
 
     [Fact]
-    public void FromResult_WithNull_ShouldCreateValueTaskWithNull()
+    public async Task FromResult_WithNull_ShouldCreateValueTaskWithNull()
     {
         // Act
         var valueTask = ValueTaskExtensions.FromResult<string?>(null);
 
         // Assert
         valueTask.IsCompletedSuccessfully.Should().BeTrue();
-        valueTask.Result.Should().BeNull();
+        (await valueTask).Should().BeNull();
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class ValueTaskExtensionsTests
     }
 
     [Fact]
-    public void FromSyncOrAsync_WithSyncTrue_ShouldUseValue()
+    public async Task FromSyncOrAsync_WithSyncTrue_ShouldUseValue()
     {
         // Arrange
         var value = "sync value";
@@ -102,7 +102,7 @@ public class ValueTaskExtensionsTests
 
         // Assert
         valueTask.IsCompletedSuccessfully.Should().BeTrue();
-        valueTask.Result.Should().Be(value);
+        (await valueTask).Should().Be(value);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class ValueTaskExtensionsTests
     }
 
     [Fact]
-    public void TryExecute_WithSuccessfulFunction_ShouldReturnResult()
+    public async Task TryExecute_WithSuccessfulFunction_ShouldReturnResult()
     {
         // Arrange
         var expectedValue = "success";
@@ -189,7 +189,7 @@ public class ValueTaskExtensionsTests
 
         // Assert
         valueTask.IsCompletedSuccessfully.Should().BeTrue();
-        valueTask.Result.Should().Be(expectedValue);
+        (await valueTask).Should().Be(expectedValue);
     }
 
     [Fact]
@@ -255,11 +255,11 @@ public class ValueTaskExtensionsTests
     }
 
     [Fact]
-    public void ValueTaskExtensions_Methods_ShouldHaveZeroAllocationForCompletedPaths()
+    public async Task ValueTaskExtensions_Methods_ShouldHaveZeroAllocationForCompletedPaths()
     {
         // This test verifies that the extension methods don't create unnecessary allocations
         // for synchronous/completed paths
-        
+
         // Act & Assert - These should not allocate Tasks
         var valueTask1 = ValueTaskExtensions.FromResult(42);
         var valueTask2 = ValueTaskExtensions.CompletedTask();
@@ -269,9 +269,9 @@ public class ValueTaskExtensionsTests
         valueTask2.IsCompletedSuccessfully.Should().BeTrue();
         valueTask3.IsCompletedSuccessfully.Should().BeTrue();
 
-        // Verify results without await (no Task allocation)
-        valueTask1.Result.Should().Be(42);
-        valueTask3.Result.Should().Be("sync");
+        // Verify results - await completed ValueTasks (no actual async work)
+        (await valueTask1).Should().Be(42);
+        (await valueTask3).Should().Be("sync");
     }
 
     [Fact]
@@ -292,7 +292,7 @@ public class ValueTaskExtensionsTests
     }
 
     [Fact]
-    public void ValueTaskExtensions_WithValueTypes_ShouldWorkCorrectly()
+    public async Task ValueTaskExtensions_WithValueTypes_ShouldWorkCorrectly()
     {
         // Act
         var intValueTask = ValueTaskExtensions.FromResult(123);
@@ -300,9 +300,9 @@ public class ValueTaskExtensionsTests
         var doubleValueTask = ValueTaskExtensions.FromResult(3.14);
 
         // Assert
-        intValueTask.Result.Should().Be(123);
-        boolValueTask.Result.Should().Be(true);
-        doubleValueTask.Result.Should().Be(3.14);
+        (await intValueTask).Should().Be(123);
+        (await boolValueTask).Should().Be(true);
+        (await doubleValueTask).Should().Be(3.14);
     }
 
     [Fact]
