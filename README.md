@@ -9,21 +9,41 @@
 
 A robust, production-ready integration of the [Stateless](https://github.com/dotnet-state-machine/stateless) state machine library with [Microsoft Orleans](https://github.com/dotnet/orleans), featuring comprehensive event sourcing capabilities and enterprise-grade distributed state machine functionality.
 
-## 🔧 Latest Release (v1.0.6)
+## 🔧 Latest Release (v1.1.0)
 
-**New in v1.0.6**: Production hardening release with comprehensive quality improvements:
+**New in v1.1.0**: Major feature release with six production-ready enhancements:
 
-- **Error Handling Fix**: Fixed variable scope issue in `EventSourcedStateMachineGrain` error handling paths
-- **Documentation Complete**: Added comprehensive XML documentation to all 10 analyzer classes and source generator
-- **Zero Warnings**: Build verified with zero errors and zero warnings across all projects
-- **Test Coverage**: All 221 functional tests passing; resolved test grain configuration issues
-- **Code Quality**: Suppressed generated code warnings appropriately while maintaining API documentation
+### Rate Limiting Component
+- **Token Bucket Algorithm**: Production-ready rate limiter with configurable tokens, burst capacity, and wait support
+- **Real-time Statistics**: Utilization tracking and rejection rate monitoring
 
-This release improves code quality, maintainability, and ensures clean builds for production deployments.
+### Batch Operations API
+- **Parallel Execution**: Execute multiple state machine operations with configurable parallelism
+- **Retry Support**: Built-in exponential backoff for transient failures
+
+### Event Schema Evolution
+- **Event Upcasting**: Transform old event versions to current schema automatically
+- **Version Chains**: BFS-based path finding for multi-step event upgrades
+
+### Persistence Abstraction Layer
+- **Provider-Agnostic**: `IEventStore`, `ISnapshotStore`, `IStateMachinePersistence` interfaces
+- **In-Memory Implementation**: Development/testing implementation included
+- **Provider Options**: Configuration classes for CosmosDB, PostgreSQL, MongoDB
+
+### State Machine Templates
+- **Approval Workflow**: Multi-level approvals with escalation and cancellation
+- **Order Processing**: E-commerce workflow pattern
+- **Retryable Operations**: Operations with configurable retry logic
+
+### State History Queries
+- **Fluent API**: LINQ-style query builder for event history
+- **Analytics**: GroupByState, GroupByTrigger, GroupByTime with statistics
 
 ## Previous Releases
 
-**v1.0.5**: Critical bug fix for Orleans task scheduler compliance - removed all `ConfigureAwait(false)` calls from grain code to maintain Orleans' single-threaded execution model guarantees.
+**v1.0.6**: Production hardening release - error handling fixes, comprehensive XML documentation, zero warnings build.
+
+**v1.0.5**: Critical bug fix for Orleans task scheduler compliance - removed all `ConfigureAwait(false)` calls from grain code.
 
 ## ⚡ Performance Enhancements (v1.0.4)
 
@@ -120,8 +140,8 @@ dotnet add package Orleans.StateMachineES
 
 ### NuGet Package
 ```xml
-<PackageReference Include="Orleans.StateMachineES" Version="1.0.5" />
-<PackageReference Include="Orleans.StateMachineES.Generators" Version="1.0.5" />
+<PackageReference Include="Orleans.StateMachineES" Version="1.1.0" />
+<PackageReference Include="Orleans.StateMachineES.Generators" Version="1.1.0" />
 ```
 
 ## Quick Start

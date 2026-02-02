@@ -1,7 +1,7 @@
 # Orleans.StateMachineES Production Readiness Assessment
 
-**Version Assessed**: 1.0.6
-**Assessment Date**: February 2026
+**Version Assessed**: 1.1.0
+**Assessment Date**: February 2025
 **Assessor**: Production Readiness Review
 
 ---
@@ -10,7 +10,15 @@
 
 Orleans.StateMachineES is a **mature, production-ready** library for building distributed state machines with Microsoft Orleans. The library demonstrates enterprise-grade quality through comprehensive feature implementation, robust error handling, extensive documentation, and solid test coverage.
 
-### Overall Production Readiness Score: **8.5/10** (Production Ready)
+### Overall Production Readiness Score: **9.0/10** (Production Ready)
+
+**v1.1.0 Update**: Six major production enhancements have been added, significantly improving the library's enterprise capabilities:
+- Rate Limiting Component with token bucket algorithm
+- Batch Operations API with parallel execution
+- Event Schema Evolution with automatic upcasting
+- Persistence Abstraction (IEventStore, ISnapshotStore)
+- State Machine Templates for common workflows
+- State History Queries with fluent API
 
 | Category | Score | Status |
 |----------|-------|--------|

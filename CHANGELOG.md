@@ -5,6 +5,140 @@ All notable changes to Orleans.StateMachineES will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-02-02
+
+### Added
+
+#### Production Enhancement Suite
+This release introduces six major production-ready features for enterprise state machine applications.
+
+#### Rate Limiting Component
+- **Token Bucket Algorithm**: Production-ready rate limiter with configurable tokens per interval
+- **Sliding/Fixed Window**: Support for both sliding and fixed window rate limiting strategies
+- **Burst Capacity**: Configurable burst capacity for handling traffic spikes
+- **Wait Support**: Optional blocking with configurable max wait time
+- **Statistics**: Real-time rate limiter statistics including utilization and rejection rates
+- **Location**: `Orleans.StateMachineES/Composition/Components/RateLimiterComponent.cs`
+
+```csharp
+var options = new RateLimiterOptions
+{
+    TokensPerInterval = 100,
+    BurstCapacity = 150,
+    RefillInterval = TimeSpan.FromSeconds(1),
+    MaxWaitTime = TimeSpan.FromMilliseconds(500)
+};
+var rateLimiter = new RateLimiterComponent<State, Trigger>(options);
+```
+
+#### Batch Operations API
+- **Parallel Execution**: Execute multiple state machine operations in parallel with configurable parallelism
+- **Failure Handling**: Options for stop-on-first-failure or continue-on-error
+- **Retry Support**: Built-in retry with exponential backoff for transient failures
+- **Progress Tracking**: Real-time progress tracking with success/failure counts
+- **Results Aggregation**: Comprehensive batch results with per-item status
+- **Location**: `Orleans.StateMachineES/Batch/BatchStateMachineService.cs`
+
+```csharp
+var batchService = new BatchStateMachineService();
+var result = await batchService.ExecuteBatchAsync(requests, grainResolver, fireAsync, getState);
+Console.WriteLine($"Success rate: {result.SuccessRate:P2}");
+```
+
+#### Event Schema Evolution
+- **Event Upcasting**: Transform old event versions to current schema automatically
+- **Version Chains**: BFS-based path finding for multi-step event upgrades
+- **Attribute-Based**: `[EventVersion]` attribute for declarative version metadata
+- **Registry Pattern**: Centralized `EventUpcastRegistry` for managing transformations
+- **Type Safety**: Generic `IEventUpcast<TFrom, TTo>` interface for type-safe migrations
+- **Location**: `Orleans.StateMachineES/EventSourcing/Evolution/`
+
+```csharp
+var registry = new EventUpcastRegistry();
+registry.Register(new OrderEventV1ToV2Upcaster());
+var currentEvent = registry.UpcastToLatest(oldEvent);
+```
+
+#### Persistence Abstraction Layer
+- **Provider-Agnostic**: Abstractions for event stores and snapshot stores
+- **IEventStore**: Complete event storage interface with append, read, subscribe operations
+- **ISnapshotStore**: Snapshot management with versioned loading and pruning
+- **IStateMachinePersistence**: Combined persistence with temporal queries
+- **In-Memory Implementation**: Development/testing implementation included
+- **Provider Options**: Configuration classes for CosmosDB, PostgreSQL, MongoDB
+- **Location**: `Orleans.StateMachineES/Persistence/`
+
+```csharp
+services.AddInMemoryStateMachinePersistence<State, Trigger>(options =>
+{
+    options.EnableSnapshots = true;
+    options.SnapshotInterval = 100;
+});
+```
+
+#### State Machine Templates
+- **Reusable Patterns**: Pre-built templates for common workflow patterns
+- **Approval Workflow**: Multi-level approvals with escalation, cancellation, resubmit
+- **Order Processing**: E-commerce workflow: Created → Confirmed → Paid → Shipping → Completed
+- **Retryable Operations**: Operations with configurable retries and failure handling
+- **Extensible Base**: `IStateMachineTemplate` and `StateMachineTemplateBase` for custom templates
+- **Location**: `Orleans.StateMachineES/Templates/`
+
+```csharp
+var template = new ApprovalWorkflowTemplate<ApprovalState, ApprovalTrigger>(config);
+template.Apply(stateMachine);
+```
+
+#### State History Queries
+- **Fluent API**: LINQ-style query builder for event history
+- **Temporal Filters**: InTimeRange, After, Before, Today, LastDays, LastHours
+- **State/Trigger Filters**: FromState, ToState, WithTrigger, WithCorrelationId
+- **Aggregations**: GroupByState, GroupByTrigger, GroupByTime with statistics
+- **Pagination**: Skip/Take support for large event streams
+- **Location**: `Orleans.StateMachineES/Queries/`
+
+```csharp
+var stats = await persistence.Query(streamId)
+    .LastDays(7)
+    .FromState(State.Processing)
+    .GroupByTriggerAsync();
+```
+
+### Test Coverage
+- **Rate Limiter Tests**: Token bucket algorithm, burst handling, wait behavior
+- **Batch Operation Tests**: Parallel execution, failure handling, retry logic
+- **Event Evolution Tests**: Upcast chains, version discovery, type safety
+- **Persistence Tests**: Event store, snapshot store, combined persistence
+- **Query Tests**: Filters, aggregations, pagination, time-based queries
+
+### Technical Details
+
+#### Rate Limiter Implementation
+- Thread-safe token bucket with `SemaphoreSlim`
+- Atomic token operations with `Interlocked` methods
+- Configurable refill intervals with `System.Threading.Timer`
+- Statistics tracking with lock-free counters
+
+#### Batch Operations Implementation
+- `SemaphoreSlim`-based parallelism control
+- Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+- Cancellation token propagation throughout
+- Result aggregation with success/failure categorization
+
+#### Persistence Implementation
+- Optimistic concurrency with expected version checking
+- Snapshot-based recovery to minimize event replay
+- Subscription support for real-time event streaming
+- Comprehensive exception hierarchy for error handling
+
+### Migration Notes
+- All new features are additive - no breaking changes
+- Existing code continues to work without modification
+- New persistence abstraction is opt-in
+- Templates can be adopted incrementally
+
+---
+
 ## [1.0.6] - 2025-01-10
 
 ### Fixed
@@ -190,5 +324,8 @@ This fix addresses [GitHub Issue #5](https://github.com/mivertowski/Orleans.Stat
 - **Efficient State Management**: Orleans grain lifecycle integration
 - **Memory Conscious**: Initial implementation with standard .NET patterns
 
+[1.1.0]: https://github.com/mivertowski/Orleans.StateMachineES/compare/v1.0.6...v1.1.0
+[1.0.6]: https://github.com/mivertowski/Orleans.StateMachineES/compare/v1.0.5...v1.0.6
+[1.0.5]: https://github.com/mivertowski/Orleans.StateMachineES/compare/v1.0.1...v1.0.5
 [1.0.1]: https://github.com/mivertowski/Orleans.StateMachineES/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mivertowski/Orleans.StateMachineES/releases/tag/v1.0.0

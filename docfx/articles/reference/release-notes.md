@@ -1,5 +1,70 @@
 # Release Notes
 
+## Version 1.1.0 (February 2, 2025)
+
+### Production Enhancement Suite
+
+This major feature release introduces six production-ready enhancements for enterprise state machine applications.
+
+#### Rate Limiting Component
+
+- **Token Bucket Algorithm**: Production-ready rate limiter with configurable tokens per interval
+- **Sliding/Fixed Window**: Support for both rate limiting strategies
+- **Burst Capacity**: Configurable burst handling for traffic spikes
+- **Real-time Statistics**: Utilization and rejection rate monitoring
+- **Location**: `Orleans.StateMachineES/Composition/Components/RateLimiterComponent.cs`
+
+#### Batch Operations API
+
+- **Parallel Execution**: Execute multiple state machine operations with configurable parallelism
+- **Failure Handling**: Stop-on-first-failure or continue-on-error options
+- **Retry Support**: Built-in exponential backoff for transient failures
+- **Progress Tracking**: Real-time success/failure counts
+- **Location**: `Orleans.StateMachineES/Batch/BatchStateMachineService.cs`
+
+#### Event Schema Evolution
+
+- **Event Upcasting**: Transform old event versions to current schema automatically
+- **Version Chains**: BFS-based path finding for multi-step upgrades
+- **Attribute-Based**: `[EventVersion]` attribute for declarative version metadata
+- **Registry Pattern**: Centralized `EventUpcastRegistry` for managing transformations
+- **Location**: `Orleans.StateMachineES/EventSourcing/Evolution/`
+
+#### Persistence Abstraction Layer
+
+- **Provider-Agnostic**: Abstractions for event stores and snapshot stores
+- **IEventStore**: Complete event storage interface with optimistic concurrency
+- **ISnapshotStore**: Snapshot management with versioned loading and pruning
+- **IStateMachinePersistence**: Combined persistence with temporal queries
+- **In-Memory Implementation**: Development/testing implementation included
+- **Provider Options**: Configuration for CosmosDB, PostgreSQL, MongoDB
+- **Location**: `Orleans.StateMachineES/Persistence/`
+
+#### State Machine Templates
+
+- **Reusable Patterns**: Pre-built templates for common workflow patterns
+- **Approval Workflow**: Multi-level approvals with escalation, cancellation, resubmit
+- **Order Processing**: E-commerce workflow: Created → Confirmed → Paid → Shipping → Completed
+- **Retryable Operations**: Operations with configurable retries and failure handling
+- **Location**: `Orleans.StateMachineES/Templates/`
+
+#### State History Queries
+
+- **Fluent API**: LINQ-style query builder for event history
+- **Temporal Filters**: InTimeRange, After, Before, Today, LastDays, LastHours
+- **State/Trigger Filters**: FromState, ToState, WithTrigger, WithCorrelationId
+- **Aggregations**: GroupByState, GroupByTrigger, GroupByTime with statistics
+- **Location**: `Orleans.StateMachineES/Queries/`
+
+#### Migration Notes
+
+- All new features are additive - no breaking changes
+- Existing code continues to work without modification
+- New persistence abstraction is opt-in
+- Templates can be adopted incrementally
+
+---
+
 ## Version 1.0.6 (January 10, 2025)
 
 ### Production Hardening Release
